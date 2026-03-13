@@ -1,27 +1,47 @@
 # Registry Model
 
-M3 dua Product Resolution vao file-based registry nhe, deterministic.
+M5 mo rong file-based registry cua ATP de phuc vu routing capability-based, van giu nhe va deterministic.
 
-Registry phuc vu M3:
+Registry phuc vu M5:
 
 - Product Registry trong `registry/products`
 - Policy Registry trong `registry/policies`
 - Product Profiles trong `profiles/<product>/profile.yaml`
+- Capability Registry trong `registry/capabilities`
+- Provider Registry trong `registry/providers`
+- Node Registry trong `registry/nodes`
 
-Product registry entry toi thieu:
+Capability registry v0 chua:
 
-- `product`
-- `product_type`
-- `repo_boundary`
-- `profile_ref`
-- `policy_refs`
+- `capability`
+- `description`
+- `category`
+- `supported_provider_types`
+- `notes`
+
+Provider registry v0 chua:
+
+- `provider`
+- `provider_type`
+- `supported_capabilities`
+- `supported_nodes`
+- `interaction_pattern`
+- `cost_profile`
+
+Node registry v0 chua:
+
+- `node`
+- `node_type`
+- `locality`
+- `supported_provider_types`
 - `status`
 
-Policy loading trong v0 co nghia la:
+Route preparation se doc registry de tao:
 
-- doc file policy theo `policy_refs`
-- khong merge engine
-- khong override chain
-- khong policy evaluation runtime
+- `required_capabilities`
+- `candidate_providers`
+- `candidate_nodes`
+- `routing_policy_refs`
+- `cost_policy_refs`
 
-ATP va TDF la hai product dau tien duoc support trong M3.
+Route selection v0 chi dung luat don gian, local-first, khong co dynamic arbitration.

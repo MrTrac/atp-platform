@@ -1,3 +1,7 @@
-id: build_operation
-category: execution
-status: active
+capability: build_operation
+description: Perform deterministic local build commands.
+category: operation
+supported_provider_types:
+  - execution
+notes:
+  - Build routing remains local-first in v0

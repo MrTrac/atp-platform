@@ -1,8 +1,6 @@
 policy_name: cost_policy
 policy_type: cost_control
-applies_to:
-  - ATP
-  - TDF
 mode: local_first
 rules:
-  - prefer file-based local resolution in M3
+  - prefer low cost local providers when capability support is equivalent
+  - explain local-first selection in routing result

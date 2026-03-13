@@ -1,3 +1,7 @@
-id: git_operation
-category: execution
-status: active
+capability: git_operation
+description: Perform local git-oriented repository operations.
+category: operation
+supported_provider_types:
+  - execution
+notes:
+  - Seed capability for future repo-aware flows

@@ -1,3 +1,7 @@
-id: test_operation
-category: execution
-status: active
+capability: test_operation
+description: Run local test commands and suites.
+category: operation
+supported_provider_types:
+  - execution
+notes:
+  - Used for test-focused requests in later milestones

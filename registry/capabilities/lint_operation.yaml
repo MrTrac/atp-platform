@@ -1,3 +1,7 @@
-id: lint_operation
-category: execution
-status: active
+capability: lint_operation
+description: Run local lint and static check commands.
+category: operation
+supported_provider_types:
+  - execution
+notes:
+  - Seed capability for review and quality-focused routing

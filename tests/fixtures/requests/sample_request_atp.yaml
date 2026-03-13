@@ -1,8 +1,8 @@
-request_id: req-atp-m4-atp-0001
+request_id: req-atp-m5-atp-0001
 product: ATP
 request_type: implementation
 execution_intent: preview
 payload:
-  input_text: Build ATP task manifest and product context
+  input_text: Build ATP route preparation and route selection preview
 metadata:
   capability: shell_execution

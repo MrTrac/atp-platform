@@ -1,8 +1,8 @@
-request_id: req-atp-m4-tdf-0001
+request_id: req-atp-m5-tdf-0001
 product: TDF
 request_type: implementation
 execution_intent: preview
 payload:
-  input_text: Build TDF task manifest and product context
+  input_text: Build TDF route preparation and route selection preview
 metadata:
   capability: shell_execution

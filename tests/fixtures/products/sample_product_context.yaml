@@ -9,6 +9,11 @@ component_scope:
   - product_resolution
 policy_refs:
   - approval_policy
+  - routing_policy
+  - cost_policy
+policy_names:
+  - approval_policy
+  - routing_policy
   - cost_policy
 context_notes:
-  - Sample product context fixture for ATP M4 tests
+  - Sample product context fixture for ATP M5 tests

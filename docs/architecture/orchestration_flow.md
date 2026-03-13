@@ -1,6 +1,6 @@
 # Orchestration Flow
 
-Flow ATP v0 van giu day du theo architecture da khoa, nhung implementation hien tai chi bao phu den M4.
+Flow ATP v0 van giu day du theo architecture da khoa, nhung implementation hien tai chi bao phu den M5.
 
 Flow chuan:
 
@@ -21,14 +21,15 @@ Flow chuan:
 
 Trang thai implementation hien tai:
 
-- Implemented shallow: 1, 2, 3, 4, 5
-- Stub only: 6-14
+- Implemented shallow: 1, 2, 3, 4, 5, 6, 7
+- Stub only: 8-14
 
-Context Packaging trong M4 thuc hien:
+Routing trong M5 thuc hien:
 
-- build task manifest
-- build product context
-- select evidence artifacts
-- materialize evidence bundle trong memory
+- derive required capability
+- load provider candidates
+- load node candidates
+- chon mot route local-first, rule-based
+- tao routing result summary
 
-ATP chua thuc thi routing, execution, hay side effect runtime nao trong repo source nay.
+ATP chua thuc thi adapter, command, hay runtime side effect nao trong repo source nay.

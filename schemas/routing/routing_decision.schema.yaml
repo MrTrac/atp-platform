@@ -1,13 +1,38 @@
 type: object
+title: ATP Routing Decision
 required:
-  - decision
-  - reason
+  - route_id
+  - request_id
+  - product
+  - required_capabilities
+  - candidate_providers
+  - candidate_nodes
+  - selected_provider
+  - selected_node
+  - reason_codes
+  - cost_summary
+  - status
 properties:
-  decision:
+  route_id:
     type: string
-  reason:
+  request_id:
     type: string
-  provider:
+  product:
     type: string
-  capability:
+  required_capabilities:
+    type: array
+  candidate_providers:
+    type: array
+  candidate_nodes:
+    type: array
+  selected_provider:
     type: string
+  selected_node:
+    type: string
+  reason_codes:
+    type: array
+  cost_summary:
+    type: object
+  status:
+    type: string
+additionalProperties: true

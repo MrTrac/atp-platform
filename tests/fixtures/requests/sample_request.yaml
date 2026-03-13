@@ -1,9 +1,9 @@
-request_id: req-atp-m4-0001
+request_id: req-atp-m5-0001
 product: ATP
 request_type: implementation
 execution_intent: preview
 payload:
-  input_text: Build ATP M4 context packaging preview
+  input_text: Build ATP M5 routing preview
 metadata:
   provider: local
   adapter: subprocess

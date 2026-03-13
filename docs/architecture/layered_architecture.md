@@ -16,4 +16,10 @@ Boundary:
 - Product repo target toi thieu: `products/TDF`
 - Runtime workspace: `workspace`
 
-Routing phai provider-agnostic va dua tren capability.
+M5 giu routing o lop core + registry:
+
+- `core/context` tao input cho routing
+- `core/routing` doc capability/provider/node registry va chon route
+- registry cung cap rule input, khong thuc thi side effect
+
+Routing van provider-agnostic, capability-based, local-first, va chua buoc sang execution.

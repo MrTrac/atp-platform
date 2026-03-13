@@ -22,6 +22,8 @@ properties:
     type: object
   context_package:
     type: object
+  routing:
+    type: object
   approval_gate:
     type: string
   created_at:

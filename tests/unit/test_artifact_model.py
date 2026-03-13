@@ -1,4 +1,4 @@
-"""Unit tests for ATP M4 artifact, evidence, and state seed models."""
+"""Unit tests for ATP M4-M5 artifact, evidence, routing, and state seed models."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from core.context.evidence_selector import select_evidence
 from core.handoff.evidence_bundle import build_evidence_bundle
 from core.handoff.inline_context import build_inline_context
 from core.handoff.manifest_reference import build_manifest_reference
+from core.routing.routing_result import build_routing_result
 from core.state.run_state import RunState, build_run_record
 from core.state.transitions import advance_run_state, build_transition_record
 
@@ -53,18 +54,29 @@ class TestArtifactModel(unittest.TestCase):
         self.assertEqual(bundle["manifest_reference"], "task-manifest-req-1")
         self.assertEqual(handoff_bundle["handoff_type"], "evidence_bundle")
 
-    def test_state_transition_helper_returns_expected_structure(self) -> None:
-        run_record = build_run_record(run_id="run-1", request_id="req-1")
-        updated = advance_run_state(run_record, RunState.CONTEXT_PACKAGED, "context packaged")
-        transition = build_transition_record(
-            "run-1",
-            RunState.RESOLVED,
-            RunState.CONTEXT_PACKAGED,
-            RunState.CONTEXT_PACKAGED,
+    def test_routing_result_builder_returns_stable_structure(self) -> None:
+        routing_result = build_routing_result(
+            request_id="req-1",
+            product="ATP",
+            required_capabilities=["shell_execution"],
+            candidate_providers=["non_llm_execution"],
+            candidate_nodes=["local_mac"],
+            selected_provider="non_llm_execution",
+            selected_node="local_mac",
+            reason_codes=["capability_supported"],
+            cost_summary={"policy_mode": "local_first"},
         )
 
-        self.assertEqual(updated["state"], RunState.CONTEXT_PACKAGED)
-        self.assertEqual(updated["latest_transition"]["detail"], "context packaged")
+        self.assertEqual(routing_result["route_id"], "route-req-1")
+        self.assertEqual(routing_result["status"], "selected")
+
+    def test_state_transition_helper_returns_expected_structure(self) -> None:
+        run_record = build_run_record(run_id="run-1", request_id="req-1")
+        updated = advance_run_state(run_record, RunState.ROUTED, "route selected")
+        transition = build_transition_record("run-1", RunState.CONTEXT_PACKAGED, RunState.ROUTED, RunState.ROUTED)
+
+        self.assertEqual(updated["state"], RunState.ROUTED)
+        self.assertEqual(updated["latest_transition"]["detail"], "route selected")
         self.assertEqual(
             set(transition.keys()),
             {"run_id", "from_state", "to_state", "stage", "detail", "recorded_at"},

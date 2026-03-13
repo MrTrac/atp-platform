@@ -1,10 +1,16 @@
-id: non_llm_execution
+provider: non_llm_execution
 provider_type: execution
-adapter: subprocess.local_exec_adapter
-capabilities:
+status: active
+supported_capabilities:
   - shell_execution
   - git_operation
   - build_operation
   - test_operation
   - lint_operation
-status: active
+supported_nodes:
+  - local_mac
+interaction_pattern: direct_local
+ownership_model: platform_managed
+cost_profile: low
+notes:
+  - Preferred provider for local operational requests in ATP v0

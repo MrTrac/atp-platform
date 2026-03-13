@@ -1,3 +1,7 @@
-id: shell_execution
+capability: shell_execution
+description: Run local shell-oriented operational steps.
 category: execution
-status: active
+supported_provider_types:
+  - execution
+notes:
+  - Default capability for local operational preview flows

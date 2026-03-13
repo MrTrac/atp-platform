@@ -1,4 +1,4 @@
-"""ATP M1-M4 validate CLI."""
+"""ATP M1-M5 validate CLI."""
 
 from __future__ import annotations
 
@@ -20,10 +20,12 @@ from core.context.task_manifest import build_task_manifest
 from core.intake.loader import RequestLoadError, load_request
 from core.intake.normalizer import normalize_request
 from core.resolution.product_resolver import ProductResolutionError, resolve_product
+from core.routing.route_prepare import RoutePreparationError, prepare_route
+from core.routing.route_select import RouteSelectionError, select_route
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Validate an ATP M1-M4 request preview.")
+    parser = argparse.ArgumentParser(description="Validate an ATP M1-M5 request preview.")
     parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
     return parser
 
@@ -35,59 +37,17 @@ def _build_core_artifacts(
 ) -> list[dict[str, Any]]:
     manifest_reference = task_manifest["manifest_id"]
     return [
-        {
-            "artifact_id": f"raw-request-{request_id}",
-            "artifact_type": "request_raw",
-            "artifact_freshness": "current",
-            "authoritative": False,
-            "manifest_reference": manifest_reference,
-            "product": product,
-        },
-        {
-            "artifact_id": f"normalized-request-{request_id}",
-            "artifact_type": "request_normalized",
-            "artifact_freshness": "current",
-            "authoritative": True,
-            "manifest_reference": manifest_reference,
-            "product": product,
-        },
-        {
-            "artifact_id": f"classification-{request_id}",
-            "artifact_type": "classification",
-            "artifact_freshness": "current",
-            "authoritative": True,
-            "manifest_reference": manifest_reference,
-            "product": product,
-        },
-        {
-            "artifact_id": f"resolution-{request_id}",
-            "artifact_type": "resolution",
-            "artifact_freshness": "current",
-            "authoritative": True,
-            "manifest_reference": manifest_reference,
-            "product": product,
-        },
-        {
-            "artifact_id": task_manifest["manifest_id"],
-            "artifact_type": "task_manifest",
-            "artifact_freshness": "current",
-            "authoritative": True,
-            "manifest_reference": manifest_reference,
-            "product": product,
-        },
-        {
-            "artifact_id": f"product-context-{request_id}",
-            "artifact_type": "product_context",
-            "artifact_freshness": "current",
-            "authoritative": True,
-            "manifest_reference": manifest_reference,
-            "product": product,
-        },
+        {"artifact_id": f"raw-request-{request_id}", "artifact_type": "request_raw", "artifact_freshness": "current", "authoritative": False, "manifest_reference": manifest_reference, "product": product},
+        {"artifact_id": f"normalized-request-{request_id}", "artifact_type": "request_normalized", "artifact_freshness": "current", "authoritative": True, "manifest_reference": manifest_reference, "product": product},
+        {"artifact_id": f"classification-{request_id}", "artifact_type": "classification", "artifact_freshness": "current", "authoritative": True, "manifest_reference": manifest_reference, "product": product},
+        {"artifact_id": f"resolution-{request_id}", "artifact_type": "resolution", "artifact_freshness": "current", "authoritative": True, "manifest_reference": manifest_reference, "product": product},
+        {"artifact_id": task_manifest["manifest_id"], "artifact_type": "task_manifest", "artifact_freshness": "current", "authoritative": True, "manifest_reference": manifest_reference, "product": product},
+        {"artifact_id": f"product-context-{request_id}", "artifact_type": "product_context", "artifact_freshness": "current", "authoritative": True, "manifest_reference": manifest_reference, "product": product},
     ]
 
 
 def validate_request(request_file: str) -> dict[str, Any]:
-    """Load, normalize, classify, resolve, and package a request."""
+    """Load, normalize, classify, resolve, package context, and select a route."""
 
     raw_request = load_request(request_file)
     normalized_request = normalize_request(raw_request)
@@ -104,18 +64,24 @@ def validate_request(request_file: str) -> dict[str, Any]:
         evidence_selection=evidence_selection,
         manifest_reference=task_manifest["manifest_id"],
     )
+    prepared_route = prepare_route(
+        normalized_request,
+        classification,
+        resolution,
+        task_manifest,
+        product_context,
+        evidence_bundle,
+    )
+    routing_result = select_route(prepared_route)
 
     return {
         "request_file": request_file,
         "request_id": normalized_request["request_id"],
         "product": resolution["product"],
-        "repo_boundary": resolution["repo_boundary"],
-        "manifest_id": task_manifest["manifest_id"],
-        "selected_evidence_artifacts": [
-            artifact["artifact_type"] for artifact in evidence_selection["selected_artifacts"]
-        ],
-        "product_context_profile": product_context["profile_ref"],
-        "evidence_bundle_id": evidence_bundle["bundle_id"],
+        "required_capabilities": routing_result["required_capabilities"],
+        "selected_provider": routing_result["selected_provider"],
+        "selected_node": routing_result["selected_node"],
+        "reason_codes": routing_result["reason_codes"],
     }
 
 
@@ -127,7 +93,13 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         summary = validate_request(args.request_file)
-    except (RequestLoadError, ProductResolutionError, ValueError) as exc:
+    except (
+        RequestLoadError,
+        ProductResolutionError,
+        RoutePreparationError,
+        RouteSelectionError,
+        ValueError,
+    ) as exc:
         print(
             json.dumps(
                 {"status": "error", "error": str(exc), "request_file": args.request_file},
@@ -137,13 +109,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    print(
-        json.dumps(
-            {"status": "ok", "summary": summary},
-            indent=2,
-            sort_keys=True,
-        )
-    )
+    print(json.dumps({"status": "ok", "summary": summary}, indent=2, sort_keys=True))
     return 0
 
 

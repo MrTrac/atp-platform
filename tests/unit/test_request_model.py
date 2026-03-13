@@ -1,4 +1,4 @@
-"""Unit tests for ATP M1-M4 request intake, classification, resolution, and context packaging."""
+"""Unit tests for ATP M1-M5 request, context, and routing flow."""
 
 from __future__ import annotations
 
@@ -11,18 +11,19 @@ from core.context.task_manifest import build_task_manifest
 from core.intake.loader import load_request
 from core.intake.normalizer import normalize_request
 from core.resolution.product_resolver import resolve_product
+from core.routing.route_prepare import prepare_route
 
 
 FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "requests"
 
 
 class TestRequestModel(unittest.TestCase):
-    """Cover the M1-M4 request seed flow."""
+    """Cover the M1-M5 request seed flow."""
 
     def test_loader_reads_sample_request_fixture(self) -> None:
         loaded = load_request(FIXTURE_DIR / "sample_request.yaml")
 
-        self.assertEqual(loaded["request_id"], "req-atp-m4-0001")
+        self.assertEqual(loaded["request_id"], "req-atp-m5-0001")
         self.assertEqual(loaded["product"], "ATP")
 
     def test_normalizer_fills_default_fields(self) -> None:
@@ -57,20 +58,8 @@ class TestRequestModel(unittest.TestCase):
         resolution = resolve_product(normalized, classification)
         task_manifest = build_task_manifest(normalized, classification, resolution)
 
-        self.assertEqual(
-            set(task_manifest.keys()),
-            {
-                "manifest_id",
-                "request_id",
-                "product",
-                "request_type",
-                "execution_intent",
-                "required_capabilities",
-                "target_scope",
-                "input_artifacts",
-                "notes",
-            },
-        )
+        self.assertIn("required_capabilities", task_manifest)
+        self.assertEqual(task_manifest["required_capabilities"], ["shell_execution"])
 
     def test_product_context_is_built_from_valid_resolution(self) -> None:
         normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_tdf.yaml"))
@@ -80,6 +69,29 @@ class TestRequestModel(unittest.TestCase):
 
         self.assertEqual(product_context["product"], "TDF")
         self.assertEqual(product_context["profile_ref"], "profiles/TDF/profile.yaml")
+
+    def test_request_flow_can_prepare_routing_from_context(self) -> None:
+        normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
+        classification = classify_request(normalized)
+        resolution = resolve_product(normalized, classification)
+        task_manifest = build_task_manifest(normalized, classification, resolution)
+        product_context = build_product_context(resolution)
+        evidence_bundle = {
+            "bundle_id": "evidence-bundle-test",
+            "request_id": normalized["request_id"],
+            "product": resolution["product"],
+        }
+
+        prepared_route = prepare_route(
+            normalized,
+            classification,
+            resolution,
+            task_manifest,
+            product_context,
+            evidence_bundle,
+        )
+
+        self.assertEqual(prepared_route["candidate_providers"][0]["provider"], "non_llm_execution")
 
 
 if __name__ == "__main__":

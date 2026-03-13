@@ -1,5 +1,8 @@
-id: local_mac
+node: local_mac
 node_type: workstation
-os: macos
-execution_mode: local_first
+locality: local
 status: active
+supported_provider_types:
+  - execution
+notes:
+  - Preferred local node for ATP v0 routing preview on macOS

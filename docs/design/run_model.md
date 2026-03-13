@@ -1,6 +1,6 @@
 # Run Model
 
-Run model dai dien cho mot lan ATP orchestration. Trong M4, run model du de the hien intake, classification, resolution, va context packaging.
+Run model dai dien cho mot lan ATP orchestration. Trong M5, run model du de the hien intake, classification, resolution, context packaging, va routing.
 
 Run fields toi thieu:
 
@@ -16,6 +16,7 @@ Run co the mang them thong tin seed:
 - `product`
 - `resolution`
 - `context_package`
+- `routing`
 - `latest_transition`
 
 State duoc khoa cho giai doan hien tai:
@@ -25,13 +26,16 @@ State duoc khoa cho giai doan hien tai:
 - `CLASSIFIED`
 - `RESOLVED`
 - `CONTEXT_PACKAGED`
+- `ROUTED`
 - `FAILED`
 
-`context_package` trong M4 co the chua summary nhe cua:
+`routing` trong M5 co the chua summary nhe cua:
 
-- task manifest
-- product context
-- evidence selection
-- evidence bundle
+- required capabilities
+- candidate providers
+- candidate nodes
+- selected provider
+- selected node
+- reason codes
 
 Transition record van giu nhe, khong persistence, khong queue, khong retry.

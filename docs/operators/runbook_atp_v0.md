@@ -1,15 +1,16 @@
 # Runbook ATP v0
 
-Runbook M4 cho ATP:
+Runbook M5 cho ATP:
 
 1. tiep nhan request file
 2. normalize request
 3. classify request
 4. resolve product qua registry/profile/policy
-5. build task manifest
-6. build product context
-7. select evidence artifacts va tao evidence bundle preview
-8. xem summary tren CLI
+5. build task manifest va product context
+6. tao evidence bundle preview
+7. prepare route tu capability/provider/node registry
+8. select provider + node route
+9. xem summary tren CLI
 
 Supported products hien tai:
 
@@ -18,7 +19,7 @@ Supported products hien tai:
 
 Van hanh v0:
 
-- Context Packaging chi dung data dang co trong ATP flow
-- khong scan `SOURCE_DEV/workspace`
-- khong doc source that cua repo TDF
+- routing chi dung data dang co trong ATP flow va registry ATP
+- uu tien `non_llm_execution` + `local_mac` khi capability phu hop
+- khong thuc thi adapter hay command
 - `run` van chi la preview, chua execute pipeline

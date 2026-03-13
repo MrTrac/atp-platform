@@ -1,8 +1,8 @@
 policy_name: routing_policy
 policy_type: routing
-applies_to:
-  - ATP
-  - TDF
-mode: seed_only
+mode: capability_based
 rules:
-  - routing is not executed in M3
+  - derive required capability from task manifest or request intent
+  - prefer providers that support all required capabilities
+  - prefer local_mac when a compatible local node exists
+  - prefer non_llm_execution for local operational requests
