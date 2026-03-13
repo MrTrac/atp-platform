@@ -1,5 +1,10 @@
-id: ATP
-type: platform
-repo_path: /Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP
-runtime_root: /Users/nguyenthanhthu/SOURCE_DEV/workspace
+product: ATP
+product_type: platform
+repo_boundary: SOURCE_DEV/platforms/ATP
+profile_ref: profiles/ATP/profile.yaml
+policy_refs:
+  - approval_policy
+  - routing_policy
+  - escalation_policy
+  - cost_policy
 status: active

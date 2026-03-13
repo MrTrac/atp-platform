@@ -1,5 +1,10 @@
-id: TDF
-type: product
-repo_path: /Users/nguyenthanhthu/SOURCE_DEV/products/TDF
-runtime_root: /Users/nguyenthanhthu/SOURCE_DEV/workspace
+product: TDF
+product_type: product
+repo_boundary: SOURCE_DEV/products/TDF
+profile_ref: profiles/TDF/profile.yaml
+policy_refs:
+  - approval_policy
+  - routing_policy
+  - escalation_policy
+  - cost_policy
 status: active

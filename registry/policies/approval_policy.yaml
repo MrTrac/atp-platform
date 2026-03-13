@@ -1,5 +1,8 @@
-id: approval_policy
-mode: human_gated
-required_for:
-  - finalization
-status: active
+policy_name: approval_policy
+policy_type: approval_gate
+applies_to:
+  - ATP
+  - TDF
+mode: deferred
+rules:
+  - approval_gate stays deferred in M3

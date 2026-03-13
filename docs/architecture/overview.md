@@ -1,15 +1,26 @@
 # Overview
 
-ATP la platform repo dieu phoi ATP v0 theo mo hinh control-plane co artifact lifecycle ro rang.
+ATP la platform repo dieu phoi ATP v0 theo mo hinh control-plane, provider-agnostic, artifact-centric.
 
-Pham vi v0:
+Pham vi da seed den M3:
 
 - nhan request
-- normalize va classify
-- resolve ATP/TDF
-- package context
-- route theo capability
-- execute qua adapter
-- validate, approval, handoff, va finalization
+- normalize
+- classify
+- resolve `ATP` hoac `TDF` bang file-based registry/profile/policy
 
-ATP v0 la shape-correct MVP, khong phai full platform.
+Product Resolution trong M3 chi co muc tieu xac dinh:
+
+- product nao dang duoc yeu cau
+- repo boundary cua product do
+- profile metadata can ban
+- policy refs can theo
+
+Nhung phan sau van defer:
+
+- context packaging
+- routing
+- execution
+- validation/review
+- approval gate runtime
+- finalization

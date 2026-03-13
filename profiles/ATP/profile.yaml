@@ -1,4 +1,13 @@
-id: ATP
-role: platform
-repo_path: /Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP
-primary_registry: registry/products/ATP.yaml
+product: ATP
+description: ATP platform repository and control-plane seed profile.
+repo_boundary: SOURCE_DEV/platforms/ATP
+module_scope:
+  - cli
+  - core
+  - registry
+component_scope:
+  - request_intake
+  - product_resolution
+ownership_model: platform_first
+notes:
+  - ATP is the platform repo for ATP v0

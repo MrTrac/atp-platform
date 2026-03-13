@@ -1,6 +1,6 @@
 # Request Model
 
-Request la input control-plane cua ATP. Trong M1-M2, request model co muc tieu on dinh ten truong va cho phep load/normalize/classify som, chua enforce schema sau.
+Request la input control-plane cua ATP. Trong M3, request model tiep tuc giu field shape cua M1-M2 va them vai tro cho Product Resolution.
 
 Top-level fields toi thieu sau normalize:
 
@@ -11,23 +11,17 @@ Top-level fields toi thieu sau normalize:
 - `payload`
 - `metadata`
 
-Nguon vao co the chua cac truong seed khac nhu:
+Field lien quan den resolve:
 
-- `product_hint`
-- `input_text`
-- `provider`
-- `adapter`
-- `capability`
+- `product` la nguon uu tien cao nhat neu co
+- `product_hint` co the duoc normalizer map sang `product`
+- classification co the lap lai `product` de resolver dung khi can
 
-Normalization rules trong M1-M2:
+M3 Product Resolution se:
 
-- `product` co the lay tu `product` hoac `product_hint`
-- `payload` luon la object, co the chua `input_text`
-- `metadata` luon la object
-- field khong nhan dien van duoc giu lai de tranh mat thong tin
+- chon product tu request da normalize
+- load product registry entry
+- load product profile lien ket
+- load policy refs toi thieu
 
-M2 chua lam:
-
-- deep schema validation
-- request enrichment tu registry
-- product resolution
+M3 chua lam request enrichment sau resolution hay context packaging.

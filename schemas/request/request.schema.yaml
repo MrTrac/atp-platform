@@ -2,7 +2,6 @@ type: object
 title: ATP Request
 required:
   - request_id
-  - product
   - request_type
   - execution_intent
   - payload
@@ -11,6 +10,8 @@ properties:
   request_id:
     type: string
   product:
+    type: string
+  product_hint:
     type: string
   provider:
     type: string

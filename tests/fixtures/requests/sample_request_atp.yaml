@@ -1,0 +1,8 @@
+request_id: req-atp-m3-atp-0001
+product: ATP
+request_type: implementation
+execution_intent: preview
+payload:
+  input_text: Resolve ATP profile and policies
+metadata:
+  capability: shell_execution

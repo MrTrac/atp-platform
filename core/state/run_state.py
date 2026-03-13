@@ -1,4 +1,4 @@
-"""Run state definitions for ATP M1-M2."""
+"""Run state definitions for ATP M1-M3."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ class RunState:
     RECEIVED = "RECEIVED"
     NORMALIZED = "NORMALIZED"
     CLASSIFIED = "CLASSIFIED"
+    RESOLVED = "RESOLVED"
     FAILED = "FAILED"
 
 
@@ -39,7 +40,7 @@ class RunRecord:
 
 
 def build_run_record(run_id: str, request_id: str, state: str = RunState.RECEIVED) -> dict[str, str]:
-    """Create a minimal run record for M1-M2 previews."""
+    """Create a minimal run record for M1-M3 previews."""
 
     timestamp = utc_now()
     record = RunRecord(

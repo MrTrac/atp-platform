@@ -1,6 +1,6 @@
 # Run Model
 
-Run model dai dien cho mot lan ATP orchestration. Trong M1-M2, run model chi can du de bieu dien trang thai som cua flow.
+Run model dai dien cho mot lan ATP orchestration. Trong M3, run model du de the hien intake, classification, va product resolution.
 
 Run fields toi thieu:
 
@@ -11,20 +11,18 @@ Run fields toi thieu:
 - `created_at`
 - `updated_at`
 
-Transition record toi thieu:
+Run co the mang them thong tin seed:
 
-- `run_id`
-- `from_state`
-- `to_state`
-- `stage`
-- `detail`
-- `recorded_at`
+- `product`
+- `latest_transition`
+- `resolution`
 
-State duoc khoa cho early stages:
+State duoc khoa cho giai doan hien tai:
 
 - `RECEIVED`
 - `NORMALIZED`
 - `CLASSIFIED`
+- `RESOLVED`
 - `FAILED`
 
-M1-M2 khong co persistence, lock manager, queueing, retry, hay orchestration side effects.
+Transition record van giu nhe, khong persistence, khong queue, khong retry.

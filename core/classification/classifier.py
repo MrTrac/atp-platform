@@ -1,4 +1,4 @@
-"""Apply ATP M1-M2 rule-based request classification."""
+"""Apply ATP M1-M3 rule-based request classification."""
 
 from __future__ import annotations
 
@@ -22,6 +22,7 @@ def classify_request(normalized_request: dict[str, Any]) -> dict[str, Any]:
     )
 
     return {
+        "product": normalized_request.get("product", "unknown"),
         "domain": infer_domain(normalized_request),
         "product_type": infer_product_type(normalized_request),
         "request_type": request_type,

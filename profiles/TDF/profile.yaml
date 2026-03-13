@@ -1,4 +1,10 @@
-id: TDF
-role: product
-repo_path: /Users/nguyenthanhthu/SOURCE_DEV/products/TDF
-primary_registry: registry/products/TDF.yaml
+product: TDF
+description: TDF product seed profile resolved from ATP registry only.
+repo_boundary: SOURCE_DEV/products/TDF
+module_scope:
+  - product_surface
+component_scope:
+  - request_target
+ownership_model: product_owned
+notes:
+  - ATP resolves TDF metadata without reading the TDF repo

@@ -1,4 +1,8 @@
-id: escalation_policy
-trigger: validation_failure
-action: require_manual_review
-status: active
+policy_name: escalation_policy
+policy_type: escalation
+applies_to:
+  - ATP
+  - TDF
+mode: seed_only
+rules:
+  - escalate manually when resolution data is incomplete

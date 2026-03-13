@@ -1,4 +1,4 @@
-"""ATP M1-M2 validate CLI."""
+"""ATP M1-M3 validate CLI."""
 
 from __future__ import annotations
 
@@ -15,27 +15,29 @@ if str(ROOT_DIR) not in sys.path:
 from core.classification.classifier import classify_request
 from core.intake.loader import RequestLoadError, load_request
 from core.intake.normalizer import normalize_request
+from core.resolution.product_resolver import ProductResolutionError, resolve_product
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Validate an ATP M1-M2 request preview.")
+    parser = argparse.ArgumentParser(description="Validate an ATP M1-M3 request preview.")
     parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
     return parser
 
 
 def validate_request(request_file: str) -> dict[str, Any]:
-    """Load, normalize, and classify a request file."""
+    """Load, normalize, classify, and resolve a request file."""
 
     raw_request = load_request(request_file)
     normalized_request = normalize_request(raw_request)
     classification = classify_request(normalized_request)
+    resolution = resolve_product(normalized_request, classification)
     return {
         "request_file": request_file,
         "request_id": normalized_request["request_id"],
-        "product": normalized_request["product"],
-        "request_type": classification["request_type"],
-        "execution_intent": classification["execution_intent"],
-        "domain": classification["domain"],
+        "product": resolution["product"],
+        "repo_boundary": resolution["repo_boundary"],
+        "loaded_profile": resolution["profile_ref"],
+        "loaded_policy_names": [policy["policy_name"] for policy in resolution["policies"]],
     }
 
 
@@ -47,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         summary = validate_request(args.request_file)
-    except (RequestLoadError, ValueError) as exc:
+    except (RequestLoadError, ProductResolutionError, ValueError) as exc:
         print(
             json.dumps(
                 {"status": "error", "error": str(exc), "request_file": args.request_file},

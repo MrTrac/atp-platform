@@ -1,4 +1,8 @@
-id: routing_policy
-strategy: capability_based
-provider_mode: provider_agnostic
-status: active
+policy_name: routing_policy
+policy_type: routing
+applies_to:
+  - ATP
+  - TDF
+mode: seed_only
+rules:
+  - routing is not executed in M3

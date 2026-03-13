@@ -1,4 +1,4 @@
-"""Load ATP request files for the M1-M2 intake flow."""
+"""Load ATP request files for the M1-M3 intake flow."""
 
 from __future__ import annotations
 
@@ -26,6 +26,12 @@ def _parse_scalar(value: str) -> Any:
     except ValueError:
         pass
 
+    if value.startswith("[") and value.endswith("]"):
+        inner = value[1:-1].strip()
+        if not inner:
+            return []
+        return [_parse_scalar(item.strip()) for item in inner.split(",")]
+
     if (
         len(value) >= 2
         and value[0] == value[-1]
@@ -36,13 +42,22 @@ def _parse_scalar(value: str) -> Any:
     return value
 
 
+def _peek_next_content_line(lines: list[str], start_index: int) -> str | None:
+    for next_index in range(start_index, len(lines)):
+        stripped = lines[next_index].strip()
+        if stripped and not stripped.startswith("#"):
+            return stripped
+    return None
+
+
 def _parse_simple_yaml(text: str) -> dict[str, Any]:
-    """Parse a small YAML subset used by ATP seed fixtures."""
+    """Parse a small YAML subset used by ATP seed files."""
 
     root: dict[str, Any] = {}
     stack: list[tuple[int, Any]] = [(-1, root)]
+    lines = text.splitlines()
 
-    for line_number, raw_line in enumerate(text.splitlines(), start=1):
+    for index, raw_line in enumerate(lines, start=1):
         stripped = raw_line.strip()
         if not stripped or stripped.startswith("#"):
             continue
@@ -56,37 +71,34 @@ def _parse_simple_yaml(text: str) -> dict[str, Any]:
         if stripped.startswith("- "):
             if not isinstance(container, list):
                 raise RequestLoadError(
-                    f"Unsupported YAML structure near line {line_number}: list item without list parent."
+                    f"Unsupported YAML structure near line {index}: list item without list parent."
                 )
             container.append(_parse_scalar(stripped[2:].strip()))
             continue
 
         if ":" not in stripped:
             raise RequestLoadError(
-                f"Unsupported YAML structure near line {line_number}: expected key/value pair."
+                f"Unsupported YAML structure near line {index}: expected key/value pair."
             )
 
         key, raw_value = stripped.split(":", 1)
         key = key.strip()
         value = raw_value.strip()
 
+        if not isinstance(container, dict):
+            raise RequestLoadError(
+                f"Unsupported YAML structure near line {index}: cannot assign key inside list."
+            )
+
         if value:
-            parsed_value = _parse_scalar(value)
-            if isinstance(container, dict):
-                container[key] = parsed_value
-            else:
-                raise RequestLoadError(
-                    f"Unsupported YAML structure near line {line_number}: cannot assign key inside list."
-                )
+            container[key] = _parse_scalar(value)
             continue
 
-        next_container: Any = {}
-        if isinstance(container, dict):
-            container[key] = next_container
-        else:
-            raise RequestLoadError(
-                f"Unsupported YAML structure near line {line_number}: cannot nest key inside list."
-            )
+        next_line = _peek_next_content_line(lines, index)
+        next_container: Any = []
+        if next_line is None or not next_line.startswith("- "):
+            next_container = {}
+        container[key] = next_container
         stack.append((indent, next_container))
 
     return root

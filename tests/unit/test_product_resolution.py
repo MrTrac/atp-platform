@@ -1,25 +1,84 @@
-"""Placeholder unit tests for ATP product resolution beyond M2."""
+"""Unit tests for ATP M3 product resolution."""
 
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 from core.classification.classifier import classify_request
+from core.intake.loader import load_request
 from core.intake.normalizer import normalize_request
+from core.resolution.policy_loader import load_policies
+from core.resolution.product_resolver import ProductResolutionError, resolve_product
+
+
+FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "requests"
 
 
 class TestProductResolution(unittest.TestCase):
-    """Keep M3 resolution explicitly deferred while asserting current boundaries."""
+    """Cover the M3 file-based resolution flow."""
 
-    def test_m1_m2_stops_before_product_resolution(self) -> None:
+    def test_resolve_atp_from_explicit_product_field(self) -> None:
+        normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
+        resolution = resolve_product(normalized, classify_request(normalized))
+
+        self.assertEqual(resolution["product"], "ATP")
+        self.assertEqual(resolution["repo_boundary"], "SOURCE_DEV/platforms/ATP")
+
+    def test_resolve_tdf_from_explicit_product_field(self) -> None:
+        normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_tdf.yaml"))
+        resolution = resolve_product(normalized, classify_request(normalized))
+
+        self.assertEqual(resolution["product"], "TDF")
+        self.assertEqual(resolution["repo_boundary"], "SOURCE_DEV/products/TDF")
+
+    def test_policy_loader_returns_minimal_policy_set(self) -> None:
+        policies = load_policies(["approval_policy", "cost_policy"])
+
+        self.assertEqual([policy["policy_name"] for policy in policies], ["approval_policy", "cost_policy"])
+
+    def test_missing_product_raises_clear_error(self) -> None:
+        normalized = normalize_request({"request_id": "req-1"})
+
+        with self.assertRaisesRegex(ProductResolutionError, "Product could not be resolved"):
+            resolve_product(normalized, classify_request(normalized))
+
+    def test_bad_profile_ref_raises_clear_error(self) -> None:
         normalized = normalize_request({"request_id": "req-1", "product": "ATP"})
         classification = classify_request(normalized)
 
-        self.assertEqual(classification["product_type"], "platform")
+        with patch(
+            "core.resolution.product_resolver._load_registry_entry",
+            return_value={
+                "product": "ATP",
+                "product_type": "platform",
+                "repo_boundary": "SOURCE_DEV/platforms/ATP",
+                "profile_ref": "profiles/ATP/missing.yaml",
+                "policy_refs": ["approval_policy"],
+                "status": "active",
+            },
+        ):
+            with self.assertRaisesRegex(ProductResolutionError, "Profile ref not found"):
+                resolve_product(normalized, classification)
 
-    @unittest.skip("ATP M3 product resolution is intentionally out of scope in M1-M2.")
-    def test_product_resolution_registry_lookup_todo(self) -> None:
-        self.fail("TODO: enable when product resolution is implemented.")
+    def test_bad_policy_ref_raises_clear_error(self) -> None:
+        normalized = normalize_request({"request_id": "req-1", "product": "ATP"})
+        classification = classify_request(normalized)
+
+        with patch(
+            "core.resolution.product_resolver._load_registry_entry",
+            return_value={
+                "product": "ATP",
+                "product_type": "platform",
+                "repo_boundary": "SOURCE_DEV/platforms/ATP",
+                "profile_ref": "profiles/ATP/profile.yaml",
+                "policy_refs": ["missing_policy"],
+                "status": "active",
+            },
+        ):
+            with self.assertRaisesRegex(ProductResolutionError, "Policy ref not found"):
+                resolve_product(normalized, classification)
 
 
 if __name__ == "__main__":
