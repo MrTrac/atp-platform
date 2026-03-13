@@ -1,0 +1,4 @@
+id: escalation_policy
+trigger: validation_failure
+action: require_manual_review
+status: active

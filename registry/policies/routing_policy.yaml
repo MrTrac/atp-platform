@@ -1,0 +1,4 @@
+id: routing_policy
+strategy: capability_based
+provider_mode: provider_agnostic
+status: active

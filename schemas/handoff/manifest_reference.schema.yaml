@@ -1,0 +1,17 @@
+type: object
+title: Manifest Reference
+required:
+  - handoff_type
+  - artifact_id
+  - manifest_reference
+properties:
+  handoff_type:
+    type: string
+    enum: [manifest_reference]
+  artifact_id:
+    type: string
+  manifest_reference:
+    type: string
+  authoritative:
+    type: boolean
+additionalProperties: true

@@ -1,0 +1,5 @@
+id: approval_policy
+mode: human_gated
+required_for:
+  - finalization
+status: active

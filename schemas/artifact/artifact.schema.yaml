@@ -1,0 +1,29 @@
+type: object
+title: ATP Artifact
+required:
+  - artifact_id
+  - artifact_type
+  - run_id
+  - product
+  - artifact_freshness
+  - authoritative
+properties:
+  artifact_id:
+    type: string
+  artifact_type:
+    type: string
+  run_id:
+    type: string
+  product:
+    type: string
+  capability:
+    type: string
+  artifact_freshness:
+    type: string
+  authoritative:
+    type: boolean
+  manifest_reference:
+    type: string
+  metadata:
+    type: object
+additionalProperties: true

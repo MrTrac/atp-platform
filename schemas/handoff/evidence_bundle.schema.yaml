@@ -1,0 +1,14 @@
+type: object
+title: Evidence Bundle
+required:
+  - handoff_type
+  - artifacts
+properties:
+  handoff_type:
+    type: string
+    enum: [evidence_bundle]
+  artifacts:
+    type: array
+  authoritative:
+    type: boolean
+additionalProperties: true

@@ -1,0 +1,10 @@
+id: non_llm_execution
+provider_type: execution
+adapter: subprocess.local_exec_adapter
+capabilities:
+  - shell_execution
+  - git_operation
+  - build_operation
+  - test_operation
+  - lint_operation
+status: active

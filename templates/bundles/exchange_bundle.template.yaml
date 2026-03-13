@@ -1,0 +1,3 @@
+bundle_type: ExchangeBundle
+run_id: "{{ run_id }}"
+paths: []

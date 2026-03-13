@@ -1,0 +1,29 @@
+type: object
+title: ATP Request
+required:
+  - request_id
+  - product
+  - request_type
+  - execution_intent
+  - payload
+  - metadata
+properties:
+  request_id:
+    type: string
+  product:
+    type: string
+  provider:
+    type: string
+  adapter:
+    type: string
+  capability:
+    type: string
+  request_type:
+    type: string
+  execution_intent:
+    type: string
+  payload:
+    type: object
+  metadata:
+    type: object
+additionalProperties: true

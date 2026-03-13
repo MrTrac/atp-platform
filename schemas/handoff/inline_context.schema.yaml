@@ -1,0 +1,16 @@
+type: object
+title: Inline Context
+required:
+  - handoff_type
+  - summary
+properties:
+  handoff_type:
+    type: string
+    enum: [inline_context]
+  summary:
+    type: string
+  artifact_freshness:
+    type: string
+  authoritative:
+    type: boolean
+additionalProperties: true

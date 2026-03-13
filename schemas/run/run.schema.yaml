@@ -1,0 +1,29 @@
+type: object
+title: ATP Run
+required:
+  - run_id
+  - request_id
+  - state
+  - current_stage
+  - created_at
+  - updated_at
+properties:
+  run_id:
+    type: string
+  request_id:
+    type: string
+  state:
+    type: string
+  current_stage:
+    type: string
+  product:
+    type: string
+  approval_gate:
+    type: string
+  created_at:
+    type: string
+  updated_at:
+    type: string
+  latest_transition:
+    type: object
+additionalProperties: true

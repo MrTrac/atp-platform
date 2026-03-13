@@ -1,0 +1,10 @@
+request_id: req-atp-m1m2-0001
+product: ATP
+request_type: implementation
+execution_intent: preview
+payload:
+  input_text: Seed ATP v0 M1-M2 request intake and classification flow
+metadata:
+  provider: local
+  adapter: subprocess
+  capability: shell_execution

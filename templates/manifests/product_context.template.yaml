@@ -1,0 +1,4 @@
+manifest_type: product_context
+product: "{{ product }}"
+repo_path: "{{ repo_path }}"
+runtime_root: "{{ runtime_root }}"

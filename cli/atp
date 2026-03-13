@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+
+case "${1:-help}" in
+  help|-h|--help)
+    printf 'ATP v0 M1-M2 CLI\n'
+    printf 'Usage: %s <command> [args]\n' "$0"
+    printf 'Commands: run inspect validate\n'
+    ;;
+  run)
+    exec python3 "$ROOT_DIR/cli/run.py" "${@:2}"
+    ;;
+  inspect)
+    exec python3 "$ROOT_DIR/cli/inspect.py" "${@:2}"
+    ;;
+  validate)
+    exec python3 "$ROOT_DIR/cli/validate.py" "${@:2}"
+    ;;
+  *)
+    printf 'Unknown command: %s\n' "${1}" >&2
+    printf 'Run `%s help` for usage.\n' "$0" >&2
+    exit 2
+    ;;
+esac

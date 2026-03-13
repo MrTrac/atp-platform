@@ -1,0 +1,3 @@
+bundle_type: EvidenceBundle
+run_id: "{{ run_id }}"
+artifacts: []

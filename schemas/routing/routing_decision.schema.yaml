@@ -1,0 +1,13 @@
+type: object
+required:
+  - decision
+  - reason
+properties:
+  decision:
+    type: string
+  reason:
+    type: string
+  provider:
+    type: string
+  capability:
+    type: string

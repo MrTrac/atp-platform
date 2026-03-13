@@ -1,0 +1,5 @@
+id: local_mac
+node_type: workstation
+os: macos
+execution_mode: local_first
+status: active

@@ -1,0 +1,16 @@
+type: object
+title: Exchange Bundle
+required:
+  - handoff_type
+  - artifacts
+properties:
+  handoff_type:
+    type: string
+    enum: [exchange_bundle]
+  artifacts:
+    type: array
+  provider:
+    type: string
+  adapter:
+    type: string
+additionalProperties: true

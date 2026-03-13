@@ -1,0 +1,4 @@
+manifest_type: task_manifest
+run_id: "{{ run_id }}"
+request_id: "{{ request_id }}"
+product: "{{ product }}"

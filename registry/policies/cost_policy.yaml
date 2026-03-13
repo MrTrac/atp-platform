@@ -1,0 +1,4 @@
+id: cost_policy
+mode: minimal
+scope: local_first
+status: active
