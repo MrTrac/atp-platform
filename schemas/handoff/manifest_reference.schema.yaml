@@ -14,4 +14,6 @@ properties:
     type: string
   authoritative:
     type: boolean
+  product:
+    type: string
 additionalProperties: true

@@ -1,3 +1,14 @@
 product: ATP
-repo_path: /Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP
-runtime_root: /Users/nguyenthanhthu/SOURCE_DEV/workspace
+repo_boundary: SOURCE_DEV/platforms/ATP
+profile_ref: profiles/ATP/profile.yaml
+module_scope:
+  - cli
+  - core
+component_scope:
+  - request_intake
+  - product_resolution
+policy_refs:
+  - approval_policy
+  - cost_policy
+context_notes:
+  - Sample product context fixture for ATP M4 tests

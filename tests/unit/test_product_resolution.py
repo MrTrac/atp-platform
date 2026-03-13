@@ -1,4 +1,4 @@
-"""Unit tests for ATP M3 product resolution."""
+"""Unit tests for ATP M3-M4 product resolution and context guards."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.classification.classifier import classify_request
+from core.context.product_context import build_product_context
 from core.intake.loader import load_request
 from core.intake.normalizer import normalize_request
 from core.resolution.policy_loader import load_policies
@@ -17,7 +18,7 @@ FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "requests"
 
 
 class TestProductResolution(unittest.TestCase):
-    """Cover the M3 file-based resolution flow."""
+    """Cover the M3-M4 file-based resolution flow."""
 
     def test_resolve_atp_from_explicit_product_field(self) -> None:
         normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
@@ -43,6 +44,10 @@ class TestProductResolution(unittest.TestCase):
 
         with self.assertRaisesRegex(ProductResolutionError, "Product could not be resolved"):
             resolve_product(normalized, classify_request(normalized))
+
+    def test_missing_required_resolution_inputs_raise_clear_error(self) -> None:
+        with self.assertRaisesRegex(ValueError, "Missing required resolution inputs"):
+            build_product_context({"product": "ATP"})
 
     def test_bad_profile_ref_raises_clear_error(self) -> None:
         normalized = normalize_request({"request_id": "req-1", "product": "ATP"})

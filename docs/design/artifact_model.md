@@ -1,6 +1,6 @@
 # Artifact Model
 
-Artifact la don vi dau ra/dua vao chinh cua ATP. Trong M1-M2, artifact model moi chi dung de khoa naming cho cac phase sau, chua co materialization logic.
+Artifact la don vi dau ra/dua vao chinh cua ATP. Trong M4, artifact model bat dau co vai tro cu the hon cho Context Packaging.
 
 Artifact seed fields:
 
@@ -8,16 +8,24 @@ Artifact seed fields:
 - `artifact_type`
 - `run_id`
 - `product`
-- `capability`
 - `artifact_freshness`
 - `authoritative`
 - `manifest_reference`
 - `metadata`
 
-Quy uoc seed:
+Artifact types duoc dung trong M4:
 
-- `artifact_freshness` mo ta do moi cua artifact, vi du `current` hoac `stale`
-- `authoritative` danh dau artifact nao la nguon su that cua run hien tai
-- `manifest_reference` cho phep tro den manifest artifact ma khong can no data duplication
+- `request_raw`
+- `request_normalized`
+- `classification`
+- `resolution`
+- `task_manifest`
+- `product_context`
 
-M1-M2 chua co store, retention, version chain, hay bundle materialization.
+Evidence Selection v0:
+
+- chi chon artifact cot loi cho next-step continuity
+- uu tien artifact co `authoritative: true`
+- khong scan workspace hay repo ngoai ATP
+
+M4 van chua co artifact store, retention, version chain, hay exchange materialization.

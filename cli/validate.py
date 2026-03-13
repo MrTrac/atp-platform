@@ -1,4 +1,4 @@
-"""ATP M1-M3 validate CLI."""
+"""ATP M1-M4 validate CLI."""
 
 from __future__ import annotations
 
@@ -13,31 +13,109 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from core.classification.classifier import classify_request
+from core.context.bundle_materializer import materialize_bundle
+from core.context.evidence_selector import select_evidence
+from core.context.product_context import build_product_context
+from core.context.task_manifest import build_task_manifest
 from core.intake.loader import RequestLoadError, load_request
 from core.intake.normalizer import normalize_request
 from core.resolution.product_resolver import ProductResolutionError, resolve_product
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Validate an ATP M1-M3 request preview.")
+    parser = argparse.ArgumentParser(description="Validate an ATP M1-M4 request preview.")
     parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
     return parser
 
 
+def _build_core_artifacts(
+    request_id: str,
+    product: str,
+    task_manifest: dict[str, Any],
+) -> list[dict[str, Any]]:
+    manifest_reference = task_manifest["manifest_id"]
+    return [
+        {
+            "artifact_id": f"raw-request-{request_id}",
+            "artifact_type": "request_raw",
+            "artifact_freshness": "current",
+            "authoritative": False,
+            "manifest_reference": manifest_reference,
+            "product": product,
+        },
+        {
+            "artifact_id": f"normalized-request-{request_id}",
+            "artifact_type": "request_normalized",
+            "artifact_freshness": "current",
+            "authoritative": True,
+            "manifest_reference": manifest_reference,
+            "product": product,
+        },
+        {
+            "artifact_id": f"classification-{request_id}",
+            "artifact_type": "classification",
+            "artifact_freshness": "current",
+            "authoritative": True,
+            "manifest_reference": manifest_reference,
+            "product": product,
+        },
+        {
+            "artifact_id": f"resolution-{request_id}",
+            "artifact_type": "resolution",
+            "artifact_freshness": "current",
+            "authoritative": True,
+            "manifest_reference": manifest_reference,
+            "product": product,
+        },
+        {
+            "artifact_id": task_manifest["manifest_id"],
+            "artifact_type": "task_manifest",
+            "artifact_freshness": "current",
+            "authoritative": True,
+            "manifest_reference": manifest_reference,
+            "product": product,
+        },
+        {
+            "artifact_id": f"product-context-{request_id}",
+            "artifact_type": "product_context",
+            "artifact_freshness": "current",
+            "authoritative": True,
+            "manifest_reference": manifest_reference,
+            "product": product,
+        },
+    ]
+
+
 def validate_request(request_file: str) -> dict[str, Any]:
-    """Load, normalize, classify, and resolve a request file."""
+    """Load, normalize, classify, resolve, and package a request."""
 
     raw_request = load_request(request_file)
     normalized_request = normalize_request(raw_request)
     classification = classify_request(normalized_request)
     resolution = resolve_product(normalized_request, classification)
+    task_manifest = build_task_manifest(normalized_request, classification, resolution)
+    product_context = build_product_context(resolution)
+    evidence_selection = select_evidence(
+        _build_core_artifacts(normalized_request["request_id"], resolution["product"], task_manifest)
+    )
+    evidence_bundle = materialize_bundle(
+        request_id=normalized_request["request_id"],
+        product=resolution["product"],
+        evidence_selection=evidence_selection,
+        manifest_reference=task_manifest["manifest_id"],
+    )
+
     return {
         "request_file": request_file,
         "request_id": normalized_request["request_id"],
         "product": resolution["product"],
         "repo_boundary": resolution["repo_boundary"],
-        "loaded_profile": resolution["profile_ref"],
-        "loaded_policy_names": [policy["policy_name"] for policy in resolution["policies"]],
+        "manifest_id": task_manifest["manifest_id"],
+        "selected_evidence_artifacts": [
+            artifact["artifact_type"] for artifact in evidence_selection["selected_artifacts"]
+        ],
+        "product_context_profile": product_context["profile_ref"],
+        "evidence_bundle_id": evidence_bundle["bundle_id"],
     }
 
 

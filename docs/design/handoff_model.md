@@ -1,21 +1,29 @@
 # Handoff Model
 
-ATP v0 giu 4 handoff model co dinh cho cac milestone sau:
+ATP v0 giu 4 handoff model co dinh:
 
 - `inline_context`
 - `evidence_bundle`
 - `exchange_bundle`
 - `manifest_reference`
 
-Muc tieu cua M1-M2:
+Trong M4, `evidence_bundle` va `manifest_reference` bat dau co vai tro thuc te cho Context Packaging.
 
-- dong bo vocabulary giua docs, schema, va core code
-- khoa shape toi thieu cho interface giua context packaging va execution/human gate
-- giu duoc thong tin `authoritative`, `artifact_freshness`, `provider`, `adapter` khi can
+Evidence Bundle v0 chua:
 
-M1-M2 chi can dataclass nhe hoac dict-builder. Chua co:
+- `bundle_id`
+- `request_id`
+- `product`
+- `selected_artifacts`
+- `authoritative_refs`
+- `manifest_reference`
+- `notes`
 
-- artifact copy
-- exchange packaging
+Manifest Reference v0 duoc dung de tro tu evidence bundle ve task manifest hien tai.
+
+Deferred cho M5+:
+
+- exchange bundle packaging
 - remote transport
 - cross-node synchronization
+- execution-facing handoff materialization

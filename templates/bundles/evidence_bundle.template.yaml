@@ -1,3 +1,7 @@
-bundle_type: EvidenceBundle
-run_id: "{{ run_id }}"
-artifacts: []
+bundle_id: "{{ bundle_id }}"
+request_id: "{{ request_id }}"
+product: "{{ product }}"
+selected_artifacts: []
+authoritative_refs: []
+manifest_reference: "{{ manifest_reference }}"
+notes: []

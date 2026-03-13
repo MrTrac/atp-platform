@@ -1,4 +1,11 @@
-manifest_type: task_manifest
-run_id: "{{ run_id }}"
+manifest_id: "{{ manifest_id }}"
 request_id: "{{ request_id }}"
 product: "{{ product }}"
+request_type: "{{ request_type }}"
+execution_intent: "{{ execution_intent }}"
+required_capabilities: []
+target_scope:
+  module_scope: []
+  component_scope: []
+input_artifacts: []
+notes: []

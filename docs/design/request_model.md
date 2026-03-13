@@ -1,6 +1,6 @@
 # Request Model
 
-Request la input control-plane cua ATP. Trong M3, request model tiep tuc giu field shape cua M1-M2 va them vai tro cho Product Resolution.
+Request la input control-plane cua ATP. Trong M4, request model van giu field shape cua M1-M3 va tro thanh dau vao cho Context Packaging.
 
 Top-level fields toi thieu sau normalize:
 
@@ -11,17 +11,22 @@ Top-level fields toi thieu sau normalize:
 - `payload`
 - `metadata`
 
-Field lien quan den resolve:
+M4 su dung request da normalize de:
 
-- `product` la nguon uu tien cao nhat neu co
-- `product_hint` co the duoc normalizer map sang `product`
-- classification co the lap lai `product` de resolver dung khi can
+- tao `task_manifest`
+- gan `request_id` va `product` cho artifact context
+- ghi nhan artifact refs dau vao cho continuity cua buoc tiep theo
 
-M3 Product Resolution se:
+Task Manifest v0 chua:
 
-- chon product tu request da normalize
-- load product registry entry
-- load product profile lien ket
-- load policy refs toi thieu
+- `manifest_id`
+- `request_id`
+- `product`
+- `request_type`
+- `execution_intent`
+- `required_capabilities`
+- `target_scope`
+- `input_artifacts`
+- `notes`
 
-M3 chua lam request enrichment sau resolution hay context packaging.
+M4 chua lam request enrichment sau context packaging, routing, hay execution decisions.
