@@ -35,8 +35,21 @@ class TestHappyPath(unittest.TestCase):
             )
             self.assertEqual(preview["close_or_continue"], "close")
             self.assertEqual(preview["run"]["current_stage"], "CLOSED")
-            self.assertTrue(Path(preview["materialization"]["run_root"]).is_dir())
-            self.assertFalse((Path(preview["materialization"]["run_root"]) / "handoff").exists())
+            run_root = Path(preview["materialization"]["run_root"])
+            self.assertTrue(run_root.is_dir())
+            self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
+            self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
+            self.assertTrue((run_root / "handoff" / "manifest-reference.json").is_file())
+            projection = preview["materialization"]["authoritative_projection"]
+            self.assertEqual(projection["projected_count"], 1)
+            projection_root = Path(projection["items"][0]["projection_root"])
+            self.assertTrue((projection_root / "artifact.json").is_file())
+            self.assertTrue((projection_root / "projection-metadata.json").is_file())
+            self.assertEqual(preview["materialization"]["retention"]["cleanup_mode"], "manual_review_only")
+            self.assertEqual(preview["materialization"]["retention"]["cleanup_actions"], [])
+            self.assertTrue((run_root / "final" / "retention-summary.json").is_file())
+            self.assertTrue((run_root / "logs" / "cleanup.log").is_file())
+            self.assertFalse((run_root / "exchange").exists())
 
 
 if __name__ == "__main__":

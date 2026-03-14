@@ -13,6 +13,7 @@ from adapters.filesystem.artifact_store import (
     mark_selected,
 )
 from adapters.filesystem.workspace_writer import (
+    RUN_TREE_ZONES,
     repo_local_serialization_path,
     resolve_run_root,
     workspace_path,
@@ -171,6 +172,7 @@ class TestArtifactModel(unittest.TestCase):
 
     def test_workspace_path_helpers_preserve_repo_vs_runtime_boundary(self) -> None:
         self.assertEqual(workspace_path("run-1", "logs"), "SOURCE_DEV/workspace/atp-runs/run-1/logs")
+        self.assertIn("handoff", RUN_TREE_ZONES)
         self.assertEqual(
             resolve_run_root("run-1", workspace_root=Path("/tmp") / "SOURCE_DEV" / "workspace"),
             (Path("/tmp") / "SOURCE_DEV" / "workspace" / "atp-runs" / "run-1").resolve(),

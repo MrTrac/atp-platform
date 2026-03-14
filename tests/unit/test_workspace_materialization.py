@@ -1,15 +1,17 @@
-"""Unit tests for ATP v0.2 Slice 1 runtime materialization."""
+"""Unit tests for ATP v0.2 Slice 1-4 runtime materialization baseline."""
 
 from __future__ import annotations
 
 import tempfile
 import unittest
 from pathlib import Path
+import json
 
 from adapters.filesystem.workspace_writer import (
-    SLICE1_RUN_ZONES,
+    RUN_TREE_ZONES,
     materialize_run_outputs,
     materialize_run_tree,
+    resolve_artifact_projection_root,
     resolve_workspace_root,
 )
 
@@ -34,24 +36,57 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
         "routing_result": {"route_id": "route-req-1", "status": "selected"},
         "execution_result": {
             "execution_id": "execution-req-1",
+            "request_id": "req-1",
+            "product": "ATP",
             "command": ["echo", "hello"],
             "exit_code": 0,
             "status": "succeeded",
             "stdout": "hello\n",
             "stderr": "",
         },
-        "artifacts": {"items": [], "summary": {"artifact_ids": []}},
+        "artifacts": {
+            "items": [
+                {
+                    "artifact_id": "artifact-selected-req-1",
+                    "artifact_type": "execution_output",
+                    "artifact_state": "selected",
+                    "source_stage": "execution",
+                    "source_ref": "artifact-filtered-req-1",
+                    "artifact_freshness": "current",
+                    "authoritative": False,
+                },
+                {
+                    "artifact_id": "artifact-authoritative-req-1",
+                    "artifact_type": "execution_output",
+                    "artifact_state": "authoritative",
+                    "source_stage": "execution",
+                    "source_ref": "artifact-selected-req-1",
+                    "artifact_freshness": "current",
+                    "authoritative": True,
+                },
+            ],
+            "summary": {"artifact_ids": ["artifact-selected-req-1", "artifact-authoritative-req-1"]},
+        },
         "validation_summary": {"validation_status": "passed"},
         "review_decision": {"review_status": "accept"},
         "approval_result": {"approval_status": "approved"},
         "close_or_continue": {"run_id": run_id, "decision": "close"},
         "decision_state": {"decision_status": "finalized"},
+        "handoff_outputs": {
+            "inline_context": {"handoff_type": "inline_context", "summary": "done", "authoritative": True},
+            "evidence_bundle": {"handoff_type": "evidence_bundle", "bundle_id": "handoff-evidence-req-1"},
+            "manifest_reference": {
+                "handoff_type": "manifest_reference",
+                "manifest_reference": "task-manifest-req-1",
+                "authoritative": True,
+            },
+        },
         "finalization_summary": {"final_status": "completed"},
     }
 
 
 class TestWorkspaceMaterialization(unittest.TestCase):
-    """Cover runtime root resolution and Slice 1 run tree creation."""
+    """Cover runtime root resolution and Slice 1-4 materialization semantics."""
 
     def test_workspace_root_resolves_from_repo_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -66,14 +101,14 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             with self.assertRaises(ValueError):
                 resolve_workspace_root(invalid_repo_root)
 
-    def test_materialize_run_tree_creates_only_slice1_zones(self) -> None:
+    def test_materialize_run_tree_creates_only_approved_run_tree_zones(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             repo_root = _build_fake_repo_root(Path(temp_dir))
             tree = materialize_run_tree("run-slice1-1", repo_root=repo_root)
 
-            self.assertEqual(set(tree["run_root"].iterdir()), {tree[zone] for zone in SLICE1_RUN_ZONES})
+            self.assertEqual(set(tree["run_root"].iterdir()), {tree[zone] for zone in RUN_TREE_ZONES})
             self.assertFalse((tree["run_root"] / "planning").exists())
-            self.assertFalse((tree["run_root"] / "handoff").exists())
+            self.assertFalse((tree["run_root"] / "exchange").exists())
 
     def test_materialize_run_outputs_writes_only_under_workspace(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -82,12 +117,94 @@ class TestWorkspaceMaterialization(unittest.TestCase):
 
             run_root = Path(summary["run_root"])
             self.assertTrue(run_root.is_dir())
-            self.assertEqual(set(Path(path).name for path in run_root.iterdir()), set(SLICE1_RUN_ZONES))
+            self.assertEqual(set(Path(path).name for path in run_root.iterdir()), set(RUN_TREE_ZONES))
             self.assertTrue((run_root / "request" / "request.raw.json").is_file())
             self.assertTrue((run_root / "manifests" / "manifest-reference.json").is_file())
+            self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
+            self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
+            self.assertTrue((run_root / "handoff" / "manifest-reference.json").is_file())
             self.assertTrue((run_root / "logs" / "materialization.log").is_file())
+            self.assertTrue((run_root / "logs" / "cleanup.log").is_file())
+            self.assertTrue((run_root / "final" / "retention-summary.json").is_file())
+            self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
+            projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
+            self.assertTrue((projection_root / "artifact.json").is_file())
+            self.assertTrue((projection_root / "projection-metadata.json").is_file())
+            self.assertEqual(summary["retention"]["cleanup_mode"], "manual_review_only")
+            self.assertEqual(summary["retention"]["cleanup_actions"], [])
+            self.assertFalse((run_root / "exchange").exists())
             self.assertFalse((repo_root / "atp-runs").exists())
             self.assertFalse((repo_root / "request").exists())
+            self.assertFalse((repo_root / "atp-artifacts").exists())
+
+    def test_authoritative_projection_keeps_traceability_to_run_and_source_stage(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = _build_fake_repo_root(Path(temp_dir))
+            summary = materialize_run_outputs("run-slice3-1", _sample_payloads("run-slice3-1"), repo_root=repo_root)
+
+            projection_root = resolve_artifact_projection_root(
+                "artifact-authoritative-req-1",
+                repo_root=repo_root,
+            )
+            metadata = json.loads((projection_root / "projection-metadata.json").read_text(encoding="utf-8"))
+
+            self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
+            self.assertEqual(metadata["run_id"], "run-slice3-1")
+            self.assertEqual(metadata["source_stage"], "execution")
+            self.assertEqual(metadata["projection_scope"], "authoritative")
+            self.assertFalse((projection_root.parent / "artifact-selected-req-1").exists())
+
+    def test_retention_summary_marks_deprecated_artifacts_cleanup_eligible_after_close(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = _build_fake_repo_root(Path(temp_dir))
+            payloads = _sample_payloads("run-slice4-1")
+            payloads["artifacts"]["items"].append(
+                {
+                    "artifact_id": "artifact-deprecated-req-1",
+                    "artifact_type": "execution_output",
+                    "artifact_state": "deprecated",
+                    "source_stage": "execution",
+                    "source_ref": "artifact-authoritative-req-1",
+                    "artifact_freshness": "current",
+                    "authoritative": False,
+                }
+            )
+            payloads["close_or_continue"]["decision"] = "close_rejected"
+
+            summary = materialize_run_outputs("run-slice4-1", payloads, repo_root=repo_root)
+
+            self.assertEqual(summary["retention"]["close_or_continue"], "close_rejected")
+            self.assertEqual(len(summary["retention"]["cleanup_eligible_artifacts"]), 1)
+            self.assertEqual(
+                summary["retention"]["cleanup_eligible_artifacts"][0]["artifact_id"],
+                "artifact-deprecated-req-1",
+            )
+            self.assertEqual(summary["retention"]["cleanup_actions"], [])
+            projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
+            self.assertTrue(projection_root.is_dir())
+
+    def test_continue_pending_retains_deprecated_artifacts_without_cleanup_eligibility(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = _build_fake_repo_root(Path(temp_dir))
+            payloads = _sample_payloads("run-slice4-2")
+            payloads["artifacts"]["items"].append(
+                {
+                    "artifact_id": "artifact-deprecated-req-1",
+                    "artifact_type": "execution_output",
+                    "artifact_state": "deprecated",
+                    "source_stage": "execution",
+                    "source_ref": "artifact-authoritative-req-1",
+                    "artifact_freshness": "current",
+                    "authoritative": False,
+                }
+            )
+            payloads["close_or_continue"]["decision"] = "continue_pending"
+
+            summary = materialize_run_outputs("run-slice4-2", payloads, repo_root=repo_root)
+
+            self.assertEqual(summary["retention"]["retention_mode"], "retain_for_continuation")
+            self.assertEqual(summary["retention"]["cleanup_eligible_artifacts"], [])
+            self.assertEqual(summary["retention"]["cleanup_actions"], [])
 
 
 if __name__ == "__main__":

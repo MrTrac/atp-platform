@@ -22,7 +22,7 @@
 
 1. `artifact_model.md` — nền cho execution output và continuity
 2. `handoff_model.md` — cơ chế handoff giữa các bước
-3. `ATP_Runtime_Materialization_Model.md` — planning package cho phase v0.2 khi cần runtime workspace model
+3. `ATP_Runtime_Materialization_Model.md` — baseline design/planning cho runtime workspace model của v0.2
 
 ## Tài liệu liên quan
 

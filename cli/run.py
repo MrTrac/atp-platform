@@ -248,6 +248,11 @@ def preview_run(
                 "decision": close_decision,
             },
             "decision_state": decision_state,
+            "handoff_outputs": {
+                "inline_context": handoff_outputs["inline_context"],
+                "evidence_bundle": handoff_outputs["evidence_bundle"],
+                "manifest_reference": handoff_outputs["manifest_reference"],
+            },
             "finalization_summary": finalization_summary,
         },
     )
