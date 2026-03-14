@@ -23,6 +23,12 @@ ATP được duy trì như:
 - composable capabilities
 - và controlled evolutionary governance
 
+ATP cũng phải được hiểu qua operating axis:
+
+`requested user ⇄ ATP ⇄ products`
+
+ATP không mở rộng chỉ để tăng internal mechanisms. ATP mở rộng khi việc đó giúp ATP mediate tốt hơn giữa requested user và product execution surfaces.
+
 ## Boundary chính
 
 - `SOURCE_DEV/` là `logical workspace root`
@@ -36,7 +42,7 @@ Runtime artifacts không được lưu trong repo này. Runs, output, exchange b
 
 - phát triển ATP CLI, control-plane modules, adapters, registry, schema, profiles, và templates thuộc ATP
 - duy trì tài liệu kiến trúc, thiết kế, vận hành, và governance của ATP
-- hardening, refinement, và normalization trong phạm vi ATP v0 đã freeze
+- hardening, refinement, normalization, và planning có governance trong phạm vi current ATP `v0` major family và các frozen baselines đã có
 
 ## Repo này không dùng để làm gì
 
@@ -63,6 +69,10 @@ Nếu cần roadmap continuity:
 
 - `docs/roadmap/README.md`
 - `docs/roadmap/ATP_Product_Roadmap.md`
+
+Nếu cần operational development rules:
+
+- `docs/governance/ATP_Development_Ruleset.md`
 
 ## Local bootstrap
 

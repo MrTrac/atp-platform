@@ -23,6 +23,8 @@ Reference artifacts là tài liệu hỗ trợ ổn định, không phải luồ
 5. các freeze close-out reports trong `docs/archive/reports/` khi cần historical release closure
 6. `docs/roadmap/` khi cần doctrine continuity giữa architecture, freeze history, và roadmap inheritance
 
+Architecture doctrine active cũng là nơi neo trục vận hành `requested user ⇄ ATP ⇄ products` của ATP trước khi đi xuống roadmap hay implementation planning.
+
 ## Tài liệu liên quan
 
 - `design/` — model thiết kế (artifact, handoff, registry, request, run)

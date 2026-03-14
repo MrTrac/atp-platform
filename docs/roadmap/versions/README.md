@@ -8,8 +8,13 @@
 
 Mỗi version roadmap phải mô tả tối thiểu:
 
+- roadmap position của version đó trong current major family
 - version goal
 - inheritance từ previous frozen version
+- capability gap mà version đó cần address
+- điều version đó cần unlock cho major family
+- execution horizon mà version đó đang đảm nhiệm
+- version đó cải thiện trục `requested user ⇄ ATP ⇄ products` như thế nào
 - must-have direction
 - good-to-have direction nếu còn capacity
 - deferred areas

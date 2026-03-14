@@ -8,10 +8,12 @@
 
 Major-roadmap docs mô tả:
 
-- major family đó có ý nghĩa gì trong lịch sử ATP
+- purpose forward-looking của major family đó
 - capability horizon của major family đó là gì
-- family đó giải quyết điều gì và chưa giải quyết điều gì
+- family đó còn phải unlock điều gì
 - điều kiện nào đủ mạnh để justify chuyển sang major family tiếp theo
+- major family đó đang ở strategic horizon nào trong ATP product evolution
+- major family đó làm mạnh hơn trục `requested user ⇄ ATP ⇄ products` theo cách nào
 
 ## Major roadmap không dùng để làm gì
 

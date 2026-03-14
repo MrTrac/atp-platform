@@ -2,80 +2,136 @@
 
 ## 1. Vai trò của product roadmap
 
-Product roadmap mô tả ATP sẽ evolve như thế nào trong dài hạn mà không phá kiến trúc đã freeze theo từng phase.
+Product roadmap mô tả ATP đang hướng tới capability horizons nào trong dài hạn, bằng logic nào, và theo điều kiện chuyển tiếp nào.
 
-ATP không phát triển bằng arbitrary feature growth. ATP phát triển qua:
+Tài liệu này là strategic roadmap của ATP. Nó không tồn tại để tóm tắt retrospective release history. Lịch sử frozen chỉ được dùng như evidence để định hướng future development.
 
-- stable core
-- modular boundaries
-- explicit extension seams
-- composable capabilities
-- controlled evolutionary governance
+## 2. ATP đang hướng tới điều gì theo thời gian
 
-## 2. Doctrine nền
+ATP hướng tới một control-plane architecture đủ trưởng thành để:
+
+- giữ stable core trong khi capability surface tăng dần
+- mở rộng qua modular boundaries và explicit extension seams thay vì feature accretion tùy hứng
+- tăng composable capabilities theo từng maturity horizon
+- hấp thụ better modern patterns từ market mà không phá architecture doctrine
+- làm mạnh hơn trục vận hành `requested user ⇄ ATP ⇄ products`
+
+Nói ngắn gọn, ATP hướng tới một platform architecture có thể evolve lâu dài, nhưng chỉ qua governance-backed change.
+
+Product roadmap vì vậy phải trả lời được bốn câu hỏi:
+
+- ATP đang đi tới capability horizon nào
+- horizon đó khác horizon hiện tại ở điểm nào
+- cần maturity evidence nào để chuyển horizon
+- đâu là phần còn mở theo thị trường nhưng chưa đủ căn cứ để commit
+
+Ở cấp product, ATP không tối ưu cho internal mechanism growth đơn thuần. ATP tối ưu cho việc request từ requested user được ATP biến thành product-facing execution/control flow rõ hơn, an toàn hơn, và dễ kế thừa hơn.
+
+## 3. Doctrine chi phối product roadmap
 
 ATP là architecture-first, nhưng market-aware.
 
 Điều này có nghĩa:
 
-- ATP dựa trên một architecture baseline đã được tổng hợp và review cẩn thận
-- ATP có thể hấp thụ better modern patterns và market practices
-- nhưng chỉ qua controlled review, planning, verification, consolidation, freeze, close-out, và roadmap inheritance
+- architecture specification vẫn là north star chính
+- roadmap phải phục vụ architecture, không dẫn architecture theo implementation convenience
+- ATP có thể hấp thụ better market patterns
+- nhưng chỉ khi các pattern đó đi qua controlled review, planning, verification, consolidation, freeze, close-out, và roadmap inheritance
 
-Open evolution trong ATP không có nghĩa là arbitrary expansion. Modularization là điều kiện cần, nhưng không đủ. Sự “open” của ATP phải là:
+Open evolution trong ATP không có nghĩa là arbitrary expansion. “Open” chỉ hợp lệ khi:
 
 - contract-driven
 - composable
 - governance-controlled
 
-## 3. Tầng major generations
+Điều này cũng có nghĩa ATP có thể học từ những platform builders hiện đại ở các pattern như:
 
-Trong ATP:
+- capability bundling
+- stable core với expandable surfaces
+- composable capability growth
 
-- **minor versions** mở rộng current major capability horizon
-- **major versions** đánh dấu một capability horizon mới
+Nhưng ATP không sao chép consumer AI builder narratives, không đi theo UI-first framing, và không tự định nghĩa như no-code builder. ATP giữ vai trò request-driven, product-oriented orchestration platform.
 
-Ví dụ:
+## 4. Các capability horizons cấp product
 
-- `v0` là major family shape-correct, architecture-disciplined, tập trung vào baseline coherence, runtime boundary completion, và operational traceability tối thiểu
-- `v1` chỉ nên xuất hiện khi `v0` đã đạt một coherent maturity boundary đủ rõ để chuyển sang capability horizon mới
-- `v2` và các major sau cũng phải được justified theo logic tương tự, không theo numbering pressure
+### v0 family
 
-## 4. Evolution model của ATP
+`v0` là foundational major family.
 
-ATP evolve qua các capability horizons có kiểm soát:
+Vai trò của `v0` là:
 
-1. xác nhận current baseline và historical inheritance
-2. đánh giá candidate scope dựa trên evidence và maturity hiện tại
-3. chốt version planning baseline
-4. chia thành slices nhỏ, testable, traceable
-5. implementation + verification
-6. integration review / consolidation
-7. freeze + tag
-8. freeze close-out
-9. roadmap inheritance sang version tiếp theo
+- chứng minh stable core
+- hoàn thiện boundary discipline
+- làm rõ runtime traceability và operational seams tối thiểu
+- chứng minh ATP có thể evolve bằng versioned slices và freeze discipline
+- chứng minh rằng ATP có thể mediate đúng trục `requested user ⇄ ATP ⇄ products` ở mức nền tảng
 
-## 5. Điều ATP không làm ở tầng roadmap
+`v0` vì vậy là baseline-forming family, không phải throwaway MVP line.
 
-Roadmap của ATP không phải:
+### v1 family
 
-- backlog tính năng ad hoc
-- lời hứa market-facing không có evidence
-- cách để lách governance hoặc bypass freeze discipline
+`v1` là major horizon tiếp theo sau `v0`, nhưng vẫn còn provisional.
 
-Roadmap chỉ hợp lệ khi bám đúng:
+Ở mức định hướng, `v1` chỉ nên xuất hiện khi ATP cần một capability horizon mới vượt quá hardening của current `v0` seams. Nếu điều đó xảy ra, `v1` nhiều khả năng sẽ là giai đoạn:
 
-- frozen facts
-- current doctrine
-- evidence-based change
-- versioned slice planning
+- nâng từ operationally coherent sang production-capable contracts
+- mở rộng một số seams hiện có thành maturity-grade capability layers
+- vẫn giữ architecture-first discipline
+- làm cho mediation giữa requested user, ATP, và products trở nên production-grade thay vì chỉ coherent ở mức nền
 
-## 6. Quan hệ với v0 family hiện tại
+`v1` hiện chưa phải implementation commitment. Nó chỉ là strategic horizon tiếp theo nếu `v0` thực sự chạm maturity boundary của mình.
 
-Từ evidence hiện có trong repo:
+### v2 family và các major sau
 
-- `v0.2.0` khép baseline runtime materialization
-- `v0.3.0` khép external boundary / continuation / reference layer
-- `v0.4.0` khép current-task persistence / recovery-entry / pointer / inspect hardening ở mức tối thiểu
+`v2+` hiện chỉ nên được hiểu ở mức horizon khái quát:
 
-Điều này cho thấy ATP đang evolve đúng theo hướng: stable core trước, rồi controlled operational extension sau.
+- các major sau sẽ chỉ hợp lệ khi ATP tiếp tục vượt qua những maturity boundaries mới
+- không nên gán promise chi tiết cho các major này trước khi evidence đủ mạnh
+
+## 5. Logic chuyển tiếp giữa major families
+
+Minor versions mở rộng current major capability horizon.
+
+Major transition chỉ nên xảy ra khi có evidence rằng:
+
+- current major family đã đạt coherent maturity boundary
+- seams hiện tại không còn là hardening seams mà bắt đầu đòi hỏi capability horizon mới
+- bước tiếp theo không còn là refinement tự nhiên của current major
+- trục `requested user ⇄ ATP ⇄ products` cần một lớp capability mới chứ không chỉ một refinement cục bộ
+
+Với ATP hiện tại, evidence mới chỉ đủ để tiếp tục trong `v0`. Product roadmap chưa có căn cứ để coi `v1` là ready-to-open implementation family.
+
+Điều này giúp ATP giữ visible future direction mà không biến roadmap thành lời hứa triển khai cho những horizon còn chưa được quyết định.
+
+## 6. Cách ATP giữ doctrine trong khi vẫn market-aware
+
+ATP vẫn mở với market, nhưng openness không được đo bằng số lượng feature ideas có thể nhận vào. Openness được đo bằng khả năng:
+
+- nhận diện pattern nào thực sự tốt hơn
+- kiểm tra pattern đó có khớp stable core và modular boundaries hay không
+- hấp thụ pattern đó qua versioned planning và verification
+- chứng minh pattern mới không làm đứt historical continuity hoặc freeze discipline
+
+ATP vì vậy có thể học từ modern platform/AI patterns, nhưng chỉ như framing influence. ATP không sao chép literal market roadmaps và không dùng market motion để bypass architecture doctrine.
+
+Các bài học được giữ lại cho ATP là:
+
+- tổ chức capability theo bundles/horizons thay vì feature pile
+- dùng platform surface có seams rõ thay vì expansion tùy hứng
+- giữ product orientation thay vì xây cơ chế nội bộ không gắn với requested user flow
+
+## 7. Điều product roadmap không làm
+
+Product roadmap không phải:
+
+- backlog implementation
+- retrospective changelog
+- market promise document
+- cách bypass architecture doctrine hoặc release governance
+
+Product roadmap chỉ nên phát biểu:
+
+- future capability horizons
+- transition logic
+- doctrine-constrained direction
+- các điều kiện maturity để future horizons trở nên hợp lệ hơn

@@ -1,28 +1,62 @@
 # ATP v0 Major Roadmap
 
-## 1. Ý nghĩa của v0 family
+## 1. Mục tiêu của v0 family
 
-`v0` là major family shape-correct của ATP.
+`v0` là foundational major family của ATP.
 
-Mục tiêu của `v0` không phải mở rộng breadth tối đa, mà là thiết lập một control-plane baseline coherent, architecture-faithful, và có thể evolve có kiểm soát.
+Vai trò của `v0` là thiết lập và chứng minh:
 
-## 2. v0.x đã giải quyết gì
+- stable core của ATP control-plane
+- boundary discipline giữa repo, workspace, handoff, exchange, projection, và runtime state
+- extension seams đủ rõ để ATP có thể evolve theo versioned slices
+- governance-backed evolution model có thể hoạt động trong thực tế
+- trục vận hành `requested user ⇄ ATP ⇄ products` có thể được ATP mediate một cách coherent ở mức nền
 
-Từ evidence đã freeze trong repo:
+`v0` không nhằm tối đa hóa feature breadth. `v0` nhằm tạo một nền đủ coherent để các horizon sau có thể xuất hiện hợp lệ.
 
-- `v0.1.0` — hardening baseline cho docs, consistency, và repo-local flow
-- `v0.2.0` — runtime materialization baseline consolidation
-- `v0.3.0` — external boundary / continuation / reference completion
-- `v0.4.0` — current-task persistence / recovery-entry / pointer / inspect hardening
+## 2. Evidence hiện có từ v0.x
 
-Nhìn chung, v0 family đã xây được:
+Từ frozen evidence trong repo:
 
-- stable core cho ATP control-plane
-- runtime boundary rõ giữa repo và workspace
-- exchange/current-task traceability tối thiểu
-- versioned evolution discipline đã được chứng minh trong thực tế
+- `v0.2.0` đã khóa runtime materialization baseline
+- `v0.3.0` đã khóa external boundary / continuation / reference completion
+- `v0.4.0` đã khóa current-task persistence / recovery-entry / pointer / inspect hardening
 
-## 3. v0 vẫn chưa bao gồm gì
+Điều này xác nhận rằng `v0` đã thiết lập được:
+
+- stable core cho control-plane
+- runtime boundary rõ giữa source repo và workspace
+- operational traceability tối thiểu cho current-task family
+- release discipline gồm planning -> slices -> consolidation -> freeze -> close-out
+
+Các frozen facts này là inheritance evidence cho roadmap của `v0`, không phải narrative chính của major roadmap.
+
+## 3. v0 còn phải hoàn tất điều gì
+
+Để `v0` tiến gần hơn tới coherent maturity boundary, major family này vẫn cần:
+
+- doctrine, roadmap, và release inheritance được làm rõ hơn như một phần active governance
+- next capability horizon của `v0` được xác định bằng planning evidence, không bằng ad hoc expansion
+- các seams hiện có được đánh giá xem còn là hardening seams hay đã tiến sát một new major horizon
+- execution guidance cho các version tiếp theo phải nói rõ mỗi version unlock gì cho `v0`, thay vì chỉ nối thêm runtime detail
+- các improvements phải tiếp tục chứng minh rằng ATP đang mạnh hơn trong việc nối requested user với products, không chỉ giàu internal state hơn
+
+Nói cách khác, phần còn lại của `v0` không phải chỉ là “thêm feature”, mà là hoàn tất major family này như một disciplined capability horizon.
+
+## 4. v0.5 cần unlock điều gì cho v0 family
+
+`v0.5` nên unlock ít nhất ba việc cho `v0`:
+
+- củng cố doctrine continuity giữa architecture, roadmap, governance, và release chain
+- xác định rõ next capability gap nào thực sự còn thuộc `v0`
+- chuẩn bị baseline planning đủ mạnh để các version sau của `v0` không drift khỏi stable core
+- làm rõ hơn cách các bước tiếp theo của `v0` phục vụ trục `requested user ⇄ ATP ⇄ products`
+
+Ở mức major-family logic, điều quan trọng không phải chỉ là thêm tài liệu mới, mà là biến `v0` thành một family có forward guidance đủ rõ để minor versions tiếp theo vẫn nằm trong cùng capability horizon.
+
+Nếu `v0.5` không unlock được ba việc này, `v0` sẽ dễ bị kéo về lại mô hình retrospective release chain thay vì major family có forward guidance rõ.
+
+## 5. v0 vẫn chưa bao gồm gì
 
 `v0` vẫn chưa bao gồm:
 
@@ -33,41 +67,32 @@ Nhìn chung, v0 family đã xây được:
 - generalized registry/catalog/search subsystem
 - broad lifecycle automation
 
-Những phần này không bị “cấm vĩnh viễn”, nhưng chưa thuộc coherent maturity boundary của v0 hiện tại.
+Những phần này không bị loại bỏ vĩnh viễn, nhưng hiện vẫn nằm ngoài maturity boundary của `v0`.
 
-## 4. Cách hiểu đúng về v0
-
-`v0` không phải phase “throwaway MVP”.
-
-`v0` nên được hiểu là:
-
-- stable core establishment
-- boundary completion
-- operational traceability hardening
-- governance-backed evolution proof
-
-Điểm quan trọng là v0 đã chứng minh ATP có thể evolve có kiểm soát mà không rơi vào ad hoc expansion.
-
-## 5. Điều gì có thể justify chuyển sang major family tiếp theo
+## 6. Điều gì có thể justify kết thúc v0 và chuyển sang v1
 
 Chuyển từ `v0` sang major family tiếp theo chỉ nên xảy ra khi có evidence rằng:
 
-- v0 family đã đạt coherent maturity boundary
-- các seams hiện có không còn chỉ là hardening seams, mà bắt đầu đòi hỏi một capability horizon mới
-- roadmap tiếp theo cần đổi tầng khái niệm, không chỉ thêm một minor extension
+- `v0` đã đạt coherent maturity boundary như một foundational family
+- seams còn lại không còn là hardening của current `v0` contracts
+- bước tiếp theo đòi hỏi một capability horizon mới, không chỉ một minor extension nữa
 
-Ví dụ về dấu hiệu có thể justify major transition trong tương lai:
+Ví dụ về dấu hiệu có thể justify transition:
 
-- ATP cần production-grade persistence model mới, không còn là hardening của current-task semantics
-- ATP cần orchestration horizon mới với control contracts rộng hơn major v0
-- ATP cần operator/runtime model mới vượt quá phạm vi current v0 discipline
+- ATP cần production-grade persistence model mới thay vì hardening trên current-task semantics
+- ATP cần orchestration horizon mới với control contracts rộng hơn major `v0`
+- ATP cần operator/runtime model mới vượt quá phạm vi current `v0` discipline
+- ATP cần capability bundles mới để mediate requested user tới products ở một maturity horizon khác, không còn chỉ là hardening trên baseline `v0`
 
-Nếu chưa có bằng chứng kiểu này, ATP nên tiếp tục ở minor versions trong `v0`.
+Nếu chưa có evidence kiểu này, ATP nên tiếp tục ở minor versions trong `v0`.
 
-## 6. Quan hệ giữa v0 và v0.5
+Nói ngược lại, chỉ việc có thêm ý tưởng implementation chưa đủ để mở `v1`. `v1` chỉ hợp lệ khi next step đòi hỏi một horizon mới thay vì tiếp tục hardening trên current `v0` seams.
+
+## 7. Quan hệ giữa v0 và v0.5
 
 `v0.5` vì vậy phải được hiểu là:
 
+- một guided step trong việc hoàn tất `v0`
 - minor extension của current `v0` capability horizon
 - kế thừa từ `v0.4.0` freeze + close-out + consolidation baseline
-- không phải major reset hay architecture rewrite
+- không phải major reset và không phải architecture rewrite
