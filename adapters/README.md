@@ -6,11 +6,14 @@
 - shape artifact và handoff payload
 - materialize runtime state dưới `SOURCE_DEV/workspace` theo baseline đã freeze
 
+Cây này cũng là một extension-seam layer của ATP: modular boundaries ở đây cho phép ATP hấp thụ execution/runtime patterns tốt hơn từ market, nhưng chỉ qua contract-driven change và governance-controlled evolution.
+
 Phạm vi hiện hành:
 
 - execution adapters tối thiểu cho local path và placeholders có chủ đích cho remote/UI/API bridges
 - contract layer nhẹ giữa core và adapter
 - filesystem materialization cho baseline v0.2-v0.3
+- filesystem/runtime traceability hardening cho baseline v0.4
 
 Không thuộc scope của cây này:
 

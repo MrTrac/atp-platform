@@ -14,8 +14,9 @@ Decision artifact authoritative hiện nằm dưới `docs/architecture/`, khôn
 |------|------|---------|
 | **Baseline freeze** | `architecture/ATP_MVP_v0_Freeze_Decision_Record.md` | Freeze MVP v0; baseline kiến trúc |
 | **Hardening snapshot** | `architecture/ATP_v0_1_hardening_snapshot_docs/ATP_v0_1_Hardening_Freeze_Decision_Record.md` | Freeze v0.1 hardening; không mở rộng scope |
-| **Freeze close-out** | `archive/reports/ATP_v0_2_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_3_0_Freeze_Closeout.md` | Historical close-out cho các version đã freeze và integrate |
+| **Freeze close-out** | `archive/reports/ATP_v0_2_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_3_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_4_0_Freeze_Closeout.md` | Historical close-out cho các version đã freeze và integrate |
 | **Implementation plan** | `architecture/ATP_v0_final_snapshot_docs/`, `ATP_v0_1_hardening_snapshot_docs/` | Plan và runbook trong snapshot bundle |
+| **Roadmap continuity** | `roadmap/README.md`, `roadmap/majors/`, `roadmap/versions/` | Roadmap inheritance và version continuity là governance artifact active |
 
 ## Thêm decision record mới
 

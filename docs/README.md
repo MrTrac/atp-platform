@@ -13,6 +13,7 @@
 | `operators/` | Bootstrap, runbook, workspace layout | Active |
 | `decisions/` | Chỉ mục decision records; authority path tới freeze artifact | Active |
 | `governance/` | Framework, Git, documentation, coding, release, AI collaboration | Active |
+| `roadmap/` | Product roadmap, major roadmap, version roadmap, và inheritance rules | Active |
 | `archive/` | Tài liệu lịch sử; seed bundle; bản sao cũ không còn authority | Archived (không phải source of truth) |
 
 ## Đọc gì trước
@@ -22,12 +23,14 @@
 3. **Governance:** `governance/README.md` → `governance/framework/Contextual_Project_Governance_Framework.md` → `governance/ATP_3_Role_Workflow.md` khi phase dùng workflow Multi-AI
 4. **Freeze / baseline:** `architecture/ATP_MVP_v0_Freeze_Decision_Record.md` và snapshot bundles trong `architecture/`
 5. **Historical close-out:** các freeze close-out reports trong `archive/reports/`
+6. **Roadmap continuity:** `roadmap/README.md` và các roadmap documents theo product/major/version
 
 ## Tài liệu liên quan
 
 - `AGENTS.md` — hướng dẫn AI agents cho repo
 - Snapshot bundles: `architecture/ATP_v0_final_snapshot_docs/`, `architecture/ATP_v0_1_hardening_snapshot_docs/` (Frozen)
-- Freeze close-out reports: `archive/reports/ATP_v0_2_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_3_0_Freeze_Closeout.md`
+- Freeze close-out reports: `archive/reports/ATP_v0_2_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_3_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_4_0_Freeze_Closeout.md`
+- Roadmap layer: `roadmap/ATP_Product_Roadmap.md`, `roadmap/majors/`, `roadmap/versions/`
 
 ---
 
@@ -38,6 +41,7 @@
 - `operators/` — bootstrap, runbook, hướng dẫn vận hành repo-local
 - `decisions/` — chỉ mục cho decision records ngoài các mốc freeze chính
 - `governance/` — governance framework và các bundle đang có hiệu lực
+- `roadmap/` — roadmap layer cho product, major family, và version planning/inheritance
 - `archive/` — tài liệu lịch sử hoặc bản sao cũ đã bị thay thế về authority path (không phải nguồn chuẩn hiện hành)
 
 ## Quy tắc authority và placement

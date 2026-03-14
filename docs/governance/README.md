@@ -1,7 +1,7 @@
 # Governance ATP
 
 - **Mục đích:** Authority path cho governance; quy tắc vận hành cho hoạt động lặp lại, rủi ro cao, đa tác nhân.
-- **Phạm vi:** Git, documentation, coding, release, AI collaboration; framework và reference.
+- **Phạm vi:** Git, documentation, coding, release, roadmap continuity, AI collaboration; framework và reference.
 - **Trạng thái:** Active.
 - **Version:** v1.0
 - **Date:** 2026-03-14
@@ -27,6 +27,7 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 - `documentation/` - governance cho biên soạn, review, promotion, và authority path của tài liệu
 - `coding/` - governance cho triển khai và chỉnh sửa code
 - `release/` - governance cho release, freeze, tag, và merge-to-main
+- roadmap continuity và freeze close-out discipline áp dụng xuyên suốt release governance
 - `ai-collaboration/` - quy tắc cộng tác với AI assistants
 - `reference/` - tài liệu reference dùng chung, bao gồm shorthand và bootstrap template
 
@@ -44,6 +45,14 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 ## Quy tắc áp dụng
 
 Mọi phase, process, module, hay workflow mang tính lặp lại, rủi ro, đa tác nhân, hoặc cần approval rõ ràng phải được điều phối bằng governance bundle thuộc đúng domain.
+
+Trong ATP, roadmap cũng là governance artifact bắt buộc:
+
+- product roadmap
+- major roadmap
+- version roadmap
+
+Mỗi version mới phải kế thừa từ previous frozen version và close-out/consolidation evidence của version trước đó.
 
 Các governance artifact trong cây này áp dụng cho:
 

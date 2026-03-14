@@ -1,7 +1,7 @@
 # Kiến trúc ATP
 
 - **Mục đích:** Tài liệu kiến trúc, overview, flow, ranh giới; freeze records và snapshot bundles.
-- **Phạm vi:** Kiến trúc ATP; baseline v0; hardening v0.1; tài liệu tham chiếu freeze và active architecture orientation.
+- **Phạm vi:** Kiến trúc ATP; doctrine active; baseline v0; hardening v0.1; tài liệu tham chiếu freeze và active architecture orientation.
 - **Trạng thái:** Active (tài liệu nền); Frozen (snapshot bundles).
 
 ## Active vs Frozen vs Reference
@@ -21,9 +21,11 @@ Reference artifacts là tài liệu hỗ trợ ổn định, không phải luồ
 3. `orchestration_flow.md` — flow điều phối 14 bước
 4. `repo_boundary.md` — ranh giới repo và workspace
 5. các freeze close-out reports trong `docs/archive/reports/` khi cần historical release closure
+6. `docs/roadmap/` khi cần doctrine continuity giữa architecture, freeze history, và roadmap inheritance
 
 ## Tài liệu liên quan
 
 - `design/` — model thiết kế (artifact, handoff, registry, request, run)
 - `operators/` — runbook, bootstrap, workspace layout
 - `docs/decisions/` — chỉ mục tới freeze record
+- `docs/roadmap/` — roadmap layer cho product, major, và version evolution
