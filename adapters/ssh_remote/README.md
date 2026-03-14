@@ -1,11 +1,11 @@
 # SSH Remote
 
-`adapters/ssh_remote` trong M6 chi giu contract-backed placeholder.
+`adapters/ssh_remote` hiện chỉ giữ contract-backed placeholder.
 
-Pham vi:
+Phạm vi:
 
-- xac nhan remote execution path ton tai trong architecture
-- tra ket qua `deferred` ro rang cho node/provider remote
+- xác nhận remote execution path tồn tại trong architecture
+- trả kết quả `deferred` rõ ràng cho node/provider remote
 
 Deferred:
 

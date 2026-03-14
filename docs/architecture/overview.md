@@ -63,7 +63,7 @@ ATP v0 chưa mở rộng sang:
 - multi-provider arbitration engine
 - persistence layer ở mức production
 
-## Trạng thái runtime materialization v0.2-v0.3
+## Trạng thái runtime materialization v0.2-v0.4
 
 ATP v0.2 đã thiết lập baseline runtime materialization tối thiểu, bám đúng boundary `SOURCE_DEV/workspace`, gồm:
 
@@ -79,7 +79,14 @@ ATP v0.3 đã nối tiếp baseline đó bằng:
 - continue-pending operational continuity state
 - minimal file-based reference/index support cho exchange, continuation, và authoritative refs
 
-Baseline hiện tại nhằm làm rõ runtime model và boundary traceability, không phải triển khai full runtime subsystem hay production lifecycle automation.
+ATP v0.4 đã nối tiếp baseline đó bằng:
+
+- minimal current-task persistence contract
+- minimal continue-pending recovery contract
+- active/supersede pointer traceability tối thiểu
+- read-only inspect surface hẹp cho current-task state và traceability
+
+Baseline hiện tại nhằm làm rõ runtime model, operational traceability, và recovery-entry clarity ở mức tối thiểu; không phải triển khai full runtime subsystem, production persistence, hay lifecycle automation rộng.
 
 ## Quan hệ với snapshot và governance
 

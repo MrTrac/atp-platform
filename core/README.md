@@ -13,13 +13,15 @@ Phạm vi hiện hành:
 - execution orchestration
 - validation, review, approval, handoff, finalization
 - run state transitions cho preview flow
+- exchange boundary, continuation, và traceability semantics tối thiểu đã được thêm ở baseline v0.3
 
 Phần vẫn deferred có chủ đích:
 
-- production workspace materialization
+- production persistence hoặc current-task persistence contract rộng hơn
 - approval UI
 - remote orchestration plane đầy đủ
-- production persistence và artifact lifecycle engine hoàn chỉnh
+- scheduling / queueing
+- production artifact lifecycle engine hoàn chỉnh
 
 Nguyên tắc:
 

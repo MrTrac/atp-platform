@@ -37,10 +37,20 @@ class TestContinuePendingPath(unittest.TestCase):
             self.assertTrue(preview["exchange_boundary"]["requires_exchange_boundary"])
             self.assertEqual(preview["exchange_boundary"]["exchange_materialization_status"], "materialized_current_task")
             self.assertTrue(preview["materialization"]["exchange"]["materialized"])
+            self.assertTrue(preview["current_task_persistence"]["persisted"])
+            self.assertEqual(preview["current_task_persistence"]["persistence_scope"], "workspace_exchange_current_task")
+            self.assertTrue(preview["recovery_contract"]["recovery_ready"])
+            self.assertEqual(preview["recovery_contract"]["recovery_scope"], "continue_pending_current_task")
+            self.assertTrue(preview["current_task_pointer"]["active_pointer_written"])
+            self.assertFalse(preview["current_task_pointer"]["superseded_previous"])
             self.assertTrue(preview["continuation"]["continuation_required"])
             self.assertEqual(preview["continuation"]["continuity_status"], "continuation_pending")
             self.assertEqual(preview["continuation"]["current_source"], "exchange_current_task")
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["materialized"])
+            self.assertTrue(preview["reference_index"]["exchange_current_task"]["persistence_state_path"].endswith("current-task-state.json"))
+            self.assertTrue(preview["reference_index"]["exchange_current_task"]["active_pointer_path"].endswith("active-pointer.json"))
+            self.assertEqual(preview["reference_index"]["exchange_current_task"]["supersede_trace_path"], "")
+            self.assertTrue(preview["reference_index"]["continuation"]["recovery_contract_path"].endswith("continue-pending-recovery.json"))
             self.assertEqual(preview["reference_index"]["continuation"]["current_source"], "exchange_current_task")
 
             run_root = Path(preview["materialization"]["run_root"])
@@ -50,6 +60,9 @@ class TestContinuePendingPath(unittest.TestCase):
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())
             self.assertTrue((exchange_root / "exchange-metadata.json").is_file())
             self.assertTrue((exchange_root / "current.json").is_file())
+            self.assertTrue((exchange_root / "current-task-state.json").is_file())
+            self.assertTrue((exchange_root / "continue-pending-recovery.json").is_file())
+            self.assertTrue((exchange_root.parent / "active-pointer.json").is_file())
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Workspace materialization helpers for ATP v0.2 runtime slices."""
+"""Workspace materialization helpers for ATP v0.2-v0.4 runtime slices."""
 
 from __future__ import annotations
 
@@ -360,13 +360,183 @@ def materialize_current_exchange_reference(
     }
 
 
+def materialize_current_task_persistence_contract(
+    run_id: str,
+    request_id: str,
+    close_decision: str,
+    exchange_boundary_decision: dict[str, Any],
+    exchange_summary: dict[str, Any],
+    continuation_state: dict[str, Any],
+    continuation_state_path: Path,
+    reference_index_path: Path,
+    manifest_reference: dict[str, Any],
+) -> dict[str, Any]:
+    """Write the minimal file-based current-task persistence contract for Slice A."""
+
+    if not exchange_summary.get("materialized"):
+        return {
+            "persisted": False,
+            "persistence_scope": "not_applicable",
+            "persistence_state_path": "",
+            "current_task_id": "",
+        }
+
+    persistence_state_path = Path(str(exchange_summary["exchange_root"])) / "current-task-state.json"
+    payload = {
+        "current_task_id": f"current-task-{run_id}",
+        "run_id": run_id,
+        "request_id": request_id,
+        "close_or_continue": close_decision,
+        "persistence_mode": "file_based",
+        "persistence_scope": "workspace_exchange_current_task",
+        "exchange_boundary_decision_id": exchange_boundary_decision.get("decision_id", ""),
+        "exchange_boundary_mode": exchange_boundary_decision.get("boundary_mode", ""),
+        "exchange_materialization_status": exchange_boundary_decision.get("exchange_materialization_status", ""),
+        "current_task_root": exchange_summary.get("exchange_root", ""),
+        "current_reference_path": exchange_summary.get("current_reference_path", ""),
+        "exchange_bundle_path": exchange_summary.get("bundle_path", ""),
+        "exchange_metadata_path": exchange_summary.get("metadata_path", ""),
+        "continuation_required": continuation_state.get("continuation_required", False),
+        "continuation_state_path": str(continuation_state_path),
+        "reference_index_path": str(reference_index_path),
+        "manifest_reference": manifest_reference.get("manifest_reference", ""),
+        "notes": [
+            "Slice A persists only the current-task contract for the originating run.",
+            "This is not a recovery engine, scheduler, or generalized persistence subsystem.",
+        ],
+    }
+    _write_json(persistence_state_path, payload)
+    return {
+        "persisted": True,
+        "persistence_mode": payload["persistence_mode"],
+        "persistence_scope": payload["persistence_scope"],
+        "persistence_state_path": str(persistence_state_path),
+        "current_task_id": payload["current_task_id"],
+    }
+
+
+def materialize_continue_pending_recovery_contract(
+    run_id: str,
+    request_id: str,
+    close_decision: str,
+    exchange_boundary_decision: dict[str, Any],
+    exchange_summary: dict[str, Any],
+    continuation_state: dict[str, Any],
+    current_task_persistence: dict[str, Any],
+    continuation_state_path: Path,
+    reference_index_path: Path,
+) -> dict[str, Any]:
+    """Write the minimal file-based recovery contract for continue_pending."""
+
+    if close_decision != "continue_pending" or not current_task_persistence.get("persisted"):
+        return {
+            "recovery_ready": False,
+            "recovery_contract_path": "",
+            "recovery_entry_mode": "not_applicable",
+        }
+
+    recovery_contract_path = Path(str(exchange_summary["exchange_root"])) / "continue-pending-recovery.json"
+    payload = {
+        "recovery_contract_id": f"continue-pending-recovery-{run_id}",
+        "run_id": run_id,
+        "request_id": request_id,
+        "close_or_continue": close_decision,
+        "recovery_entry_mode": "manual_file_based",
+        "recovery_scope": "continue_pending_current_task",
+        "current_task_id": current_task_persistence.get("current_task_id", ""),
+        "current_task_persistence_state_path": current_task_persistence.get("persistence_state_path", ""),
+        "continuation_id": continuation_state.get("continuation_id", ""),
+        "continuation_state_path": str(continuation_state_path),
+        "continuity_status": continuation_state.get("continuity_status", ""),
+        "exchange_boundary_decision_id": exchange_boundary_decision.get("decision_id", ""),
+        "exchange_boundary_mode": exchange_boundary_decision.get("boundary_mode", ""),
+        "exchange_root": exchange_summary.get("exchange_root", ""),
+        "exchange_bundle_path": exchange_summary.get("bundle_path", ""),
+        "exchange_metadata_path": exchange_summary.get("metadata_path", ""),
+        "current_reference_path": exchange_summary.get("current_reference_path", ""),
+        "reference_index_path": str(reference_index_path),
+        "notes": [
+            "Slice B defines only the recovery entry contract for continue_pending.",
+            "No resume execution, scheduler, queue, or generalized recovery engine is introduced.",
+        ],
+    }
+    _write_json(recovery_contract_path, payload)
+    return {
+        "recovery_ready": True,
+        "recovery_entry_mode": payload["recovery_entry_mode"],
+        "recovery_scope": payload["recovery_scope"],
+        "recovery_contract_path": str(recovery_contract_path),
+        "recovery_contract_id": payload["recovery_contract_id"],
+    }
+
+
+def materialize_current_task_pointer_traceability(
+    run_id: str,
+    exchange_summary: dict[str, Any],
+    current_task_persistence: dict[str, Any],
+    recovery_contract: dict[str, Any],
+) -> dict[str, Any]:
+    """Write the minimal active pointer and supersede traceability artifacts for Slice C."""
+
+    if not current_task_persistence.get("persisted"):
+        return {
+            "active_pointer_written": False,
+            "active_pointer_path": "",
+            "superseded_previous": False,
+            "supersede_trace_path": "",
+        }
+
+    exchange_root = Path(str(exchange_summary["exchange_root"]))
+    current_task_root = exchange_root.parent
+    active_pointer_path = current_task_root / "active-pointer.json"
+    previous_pointer: dict[str, Any] = {}
+    if active_pointer_path.exists():
+        previous_pointer = json.loads(active_pointer_path.read_text(encoding="utf-8"))
+
+    superseded_previous = bool(previous_pointer) and previous_pointer.get("run_id") != run_id
+    supersede_trace_path = exchange_root / "supersede-trace.json"
+    if superseded_previous:
+        supersede_payload = {
+            "run_id": run_id,
+            "supersede_mode": "replace_active_pointer",
+            "active_pointer_path": str(active_pointer_path),
+            "previous_run_id": previous_pointer.get("run_id", ""),
+            "previous_current_task_id": previous_pointer.get("current_task_id", ""),
+            "previous_current_task_state_path": previous_pointer.get("current_task_persistence_state_path", ""),
+            "previous_recovery_contract_path": previous_pointer.get("recovery_contract_path", ""),
+            "previous_current_reference_path": previous_pointer.get("current_reference_path", ""),
+            "previous_exchange_root": previous_pointer.get("exchange_root", ""),
+        }
+        _write_json(supersede_trace_path, supersede_payload)
+
+    active_pointer_payload = {
+        "pointer_id": "current-task-active-pointer",
+        "pointer_mode": "active_current_task",
+        "run_id": run_id,
+        "exchange_root": str(exchange_root),
+        "current_task_id": current_task_persistence.get("current_task_id", ""),
+        "current_task_persistence_state_path": current_task_persistence.get("persistence_state_path", ""),
+        "recovery_contract_path": recovery_contract.get("recovery_contract_path", ""),
+        "current_reference_path": exchange_summary.get("current_reference_path", ""),
+        "superseded_previous": superseded_previous,
+        "supersede_trace_path": str(supersede_trace_path) if superseded_previous else "",
+    }
+    _write_json(active_pointer_path, active_pointer_payload)
+    return {
+        "active_pointer_written": True,
+        "active_pointer_path": str(active_pointer_path),
+        "superseded_previous": superseded_previous,
+        "supersede_trace_path": str(supersede_trace_path) if superseded_previous else "",
+    }
+
+
 def materialize_run_outputs(
     run_id: str,
     payloads: dict[str, Any],
     repo_root: Path | None = None,
     workspace_root: Path | None = None,
 ) -> dict[str, Any]:
-    """Materialize the approved ATP v0.2 run tree outputs."""
+    """Materialize the approved ATP v0.2-v0.4 run outputs."""
 
     zone_paths = materialize_run_tree(run_id, repo_root=repo_root, workspace_root=workspace_root)
     exchange_summary = materialize_exchange_boundary(
@@ -508,6 +678,47 @@ def materialize_run_outputs(
         manifest_reference=payloads["handoff_outputs"]["manifest_reference"],
         projections=projections,
     )
+    current_task_persistence = materialize_current_task_persistence_contract(
+        run_id=run_id,
+        request_id=request_id,
+        close_decision=str(payloads["close_or_continue"]["decision"]),
+        exchange_boundary_decision=exchange_boundary_decision,
+        exchange_summary=exchange_summary,
+        continuation_state=continuation_state,
+        continuation_state_path=continuation_state_path,
+        reference_index_path=reference_index_path,
+        manifest_reference=payloads["handoff_outputs"]["manifest_reference"],
+    )
+    exchange_summary["current_task_persistence"] = current_task_persistence
+    reference_index["exchange_current_task"]["persistence_state_path"] = current_task_persistence.get(
+        "persistence_state_path",
+        "",
+    )
+    recovery_contract = materialize_continue_pending_recovery_contract(
+        run_id=run_id,
+        request_id=request_id,
+        close_decision=str(payloads["close_or_continue"]["decision"]),
+        exchange_boundary_decision=exchange_boundary_decision,
+        exchange_summary=exchange_summary,
+        continuation_state=continuation_state,
+        current_task_persistence=current_task_persistence,
+        continuation_state_path=continuation_state_path,
+        reference_index_path=reference_index_path,
+    )
+    exchange_summary["recovery_contract"] = recovery_contract
+    current_task_pointer = materialize_current_task_pointer_traceability(
+        run_id=run_id,
+        exchange_summary=exchange_summary,
+        current_task_persistence=current_task_persistence,
+        recovery_contract=recovery_contract,
+    )
+    exchange_summary["current_task_pointer"] = current_task_pointer
+    reference_index["continuation"]["recovery_contract_path"] = recovery_contract.get("recovery_contract_path", "")
+    reference_index["exchange_current_task"]["active_pointer_path"] = current_task_pointer.get("active_pointer_path", "")
+    reference_index["exchange_current_task"]["supersede_trace_path"] = current_task_pointer.get(
+        "supersede_trace_path",
+        "",
+    )
     created_files["final"].append(_write_json(reference_index_path, reference_index))
     created_files["logs"].append(
         _write_log(
@@ -532,6 +743,14 @@ def materialize_run_outputs(
             materialization_lines.append(f"exchange-file={path}")
     if current_exchange_reference["materialized"]:
         materialization_lines.append(f"exchange-current-reference={current_exchange_reference['current_reference_path']}")
+    if current_task_persistence["persisted"]:
+        materialization_lines.append(f"current-task-state={current_task_persistence['persistence_state_path']}")
+    if recovery_contract["recovery_ready"]:
+        materialization_lines.append(f"continue-pending-recovery={recovery_contract['recovery_contract_path']}")
+    if current_task_pointer["active_pointer_written"]:
+        materialization_lines.append(f"active-pointer={current_task_pointer['active_pointer_path']}")
+    if current_task_pointer["superseded_previous"]:
+        materialization_lines.append(f"supersede-trace={current_task_pointer['supersede_trace_path']}")
     materialization_lines.append(
         f"retention-summary={zone_paths['final'] / 'retention-summary.json'}"
     )
@@ -549,6 +768,9 @@ def materialize_run_outputs(
         "files": {zone: [str(path) for path in files] for zone, files in created_files.items()},
         "exchange_boundary": exchange_boundary_decision,
         "exchange": exchange_summary,
+        "current_task_persistence": current_task_persistence,
+        "recovery_contract": recovery_contract,
+        "current_task_pointer": current_task_pointer,
         "continuation": continuation_state,
         "reference_index": reference_index,
         "authoritative_projection": projections,

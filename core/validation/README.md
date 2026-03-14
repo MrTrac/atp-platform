@@ -1,14 +1,14 @@
 # Validation
 
-`core/validation` chua implementation M7 cho validation summary va minimal review input.
+`core/validation` chứa implementation M7 cho validation summary và minimal review input.
 
-M7 validation co nghia:
+Validation hiện hành có nghĩa:
 
-- kiem tra execution result co du field toi thieu
-- danh dau `passed`, `failed`, hoac `incomplete`
-- tao summary nhe de phuc vu review decision
+- kiểm tra execution result có đủ field tối thiểu
+- đánh dấu `passed`, `failed`, hoặc `incomplete`
+- tạo summary nhẹ để phục vụ review decision
 
-M7 chua lam:
+Không thuộc scope:
 
 - semantic validation sau execution
 - human review UI

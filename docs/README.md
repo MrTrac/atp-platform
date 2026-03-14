@@ -21,11 +21,13 @@
 2. **Vận hành:** `operators/runbook_atp_v0.md` → `operators/workspace_layout.md`
 3. **Governance:** `governance/README.md` → `governance/framework/Contextual_Project_Governance_Framework.md` → `governance/ATP_3_Role_Workflow.md` khi phase dùng workflow Multi-AI
 4. **Freeze / baseline:** `architecture/ATP_MVP_v0_Freeze_Decision_Record.md` và snapshot bundles trong `architecture/`
+5. **Historical close-out:** các freeze close-out reports trong `archive/reports/`
 
 ## Tài liệu liên quan
 
 - `AGENTS.md` — hướng dẫn AI agents cho repo
 - Snapshot bundles: `architecture/ATP_v0_final_snapshot_docs/`, `architecture/ATP_v0_1_hardening_snapshot_docs/` (Frozen)
+- Freeze close-out reports: `archive/reports/ATP_v0_2_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_3_0_Freeze_Closeout.md`
 
 ---
 
