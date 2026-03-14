@@ -1,4 +1,4 @@
-"""Build ATP M5 routing result payloads."""
+"""Build ATP M5-M6 routing result payloads."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ def build_routing_result(
     selected_node: str,
     reason_codes: list[str],
     cost_summary: dict[str, Any],
+    execution_path: str = "deferred",
 ) -> dict[str, Any]:
     """Build a stable routing result structure."""
 
@@ -29,5 +30,6 @@ def build_routing_result(
         "selected_node": selected_node,
         "reason_codes": list(reason_codes),
         "cost_summary": dict(cost_summary),
+        "execution_path": execution_path,
         "status": "selected",
     }

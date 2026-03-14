@@ -1,4 +1,4 @@
-"""Unit tests for ATP M4-M5 artifact, evidence, routing, and state seed models."""
+"""Unit tests for ATP M4-M6 artifact, evidence, routing, execution, and state seed models."""
 
 from __future__ import annotations
 
@@ -65,18 +65,20 @@ class TestArtifactModel(unittest.TestCase):
             selected_node="local_mac",
             reason_codes=["capability_supported"],
             cost_summary={"policy_mode": "local_first"},
+            execution_path="local_subprocess",
         )
 
         self.assertEqual(routing_result["route_id"], "route-req-1")
+        self.assertEqual(routing_result["execution_path"], "local_subprocess")
         self.assertEqual(routing_result["status"], "selected")
 
     def test_state_transition_helper_returns_expected_structure(self) -> None:
         run_record = build_run_record(run_id="run-1", request_id="req-1")
-        updated = advance_run_state(run_record, RunState.ROUTED, "route selected")
-        transition = build_transition_record("run-1", RunState.CONTEXT_PACKAGED, RunState.ROUTED, RunState.ROUTED)
+        updated = advance_run_state(run_record, RunState.EXECUTED, "execution completed")
+        transition = build_transition_record("run-1", RunState.ROUTED, RunState.EXECUTED, RunState.EXECUTED)
 
-        self.assertEqual(updated["state"], RunState.ROUTED)
-        self.assertEqual(updated["latest_transition"]["detail"], "route selected")
+        self.assertEqual(updated["state"], RunState.EXECUTED)
+        self.assertEqual(updated["latest_transition"]["detail"], "execution completed")
         self.assertEqual(
             set(transition.keys()),
             {"run_id", "from_state", "to_state", "stage", "detail", "recorded_at"},

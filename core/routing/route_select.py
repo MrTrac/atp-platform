@@ -1,4 +1,4 @@
-"""Select ATP M5 routes using deterministic capability-based rules."""
+"""Select ATP M5-M6 routes using deterministic capability-based rules."""
 
 from __future__ import annotations
 
@@ -53,13 +53,18 @@ def select_route(prepared_route: dict[str, Any]) -> dict[str, Any]:
     nodes = list(prepared_route.get("candidate_nodes", []))
 
     matching_providers = [
-        provider for provider in providers if provider.get("status") == "active" and _provider_supports(provider, required_capabilities)
+        provider
+        for provider in providers
+        if provider.get("status") == "active" and _provider_supports(provider, required_capabilities)
     ]
     if not matching_providers:
         capability_label = ",".join(required_capabilities) or "unknown"
         raise RouteSelectionError(f"No provider supports capability: {capability_label}")
 
-    selected_provider = sorted(matching_providers, key=lambda provider: _score_provider(provider, required_capabilities))[0]
+    selected_provider = sorted(
+        matching_providers,
+        key=lambda provider: _score_provider(provider, required_capabilities),
+    )[0]
     compatible_nodes = _compatible_nodes(selected_provider, nodes)
     if not compatible_nodes:
         raise RouteSelectionError(
@@ -74,6 +79,11 @@ def select_route(prepared_route: dict[str, Any]) -> dict[str, Any]:
     ]
     if selected_provider.get("provider") == "non_llm_execution":
         reason_codes.append("provider_non_llm_preferred")
+
+    execution_path = "local_subprocess" if (
+        selected_provider.get("provider") == "non_llm_execution"
+        and selected_node.get("node") == "local_mac"
+    ) else "deferred"
 
     cost_summary = {
         "policy_mode": "local_first",
@@ -91,4 +101,5 @@ def select_route(prepared_route: dict[str, Any]) -> dict[str, Any]:
         selected_node=str(selected_node.get("node", "")),
         reason_codes=reason_codes,
         cost_summary=cost_summary,
+        execution_path=execution_path,
     )

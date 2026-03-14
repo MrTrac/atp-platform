@@ -25,6 +25,11 @@ properties:
     type: string
   payload:
     type: object
+    properties:
+      command_argv:
+        type: array
+      command:
+        type: string
   metadata:
     type: object
 additionalProperties: true

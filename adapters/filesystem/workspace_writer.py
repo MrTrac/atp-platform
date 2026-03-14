@@ -1,7 +1,9 @@
-"""Workspace writer skeleton for ATP v0."""
+"""Workspace writer placeholder for ATP M6."""
+
+from __future__ import annotations
 
 
 def workspace_path(run_id: str, area: str) -> str:
-    """Return a relative workspace path hint."""
-    # TODO: resolve runtime workspace path outside the repo.
-    return f"workspace/{area}/{run_id}"
+    """Return a repo-local placeholder path hint only."""
+
+    return f"deferred-workspace/{area}/{run_id}"

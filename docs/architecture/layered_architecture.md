@@ -16,10 +16,11 @@ Boundary:
 - Product repo target toi thieu: `products/TDF`
 - Runtime workspace: `workspace`
 
-M5 giu routing o lop core + registry:
+M6 them execution theo lop ro rang:
 
-- `core/context` tao input cho routing
-- `core/routing` doc capability/provider/node registry va chon route
-- registry cung cap rule input, khong thuc thi side effect
+- `core/routing` chon provider + node
+- `core/execution/executor` map route sang adapter
+- `adapters/subprocess` thuc thi local command ho tro
+- `core/execution/orchestrator` normalize ket qua cho ATP
 
-Routing van provider-agnostic, capability-based, local-first, va chua buoc sang execution.
+Remote execution van chi la placeholder contract-backed, chua co runtime behavior thuc te.

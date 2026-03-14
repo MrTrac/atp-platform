@@ -1,8 +1,11 @@
-request_id: req-atp-m5-atp-0001
+request_id: req-atp-m6-atp-0001
 product: ATP
 request_type: implementation
 execution_intent: preview
 payload:
-  input_text: Build ATP route preparation and route selection preview
+  input_text: Build ATP execution preview
+  command_argv:
+    - echo
+    - atp-route
 metadata:
   capability: shell_execution

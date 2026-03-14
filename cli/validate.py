@@ -1,4 +1,4 @@
-"""ATP M1-M5 validate CLI."""
+"""ATP M1-M6 validate CLI."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from core.routing.route_select import RouteSelectionError, select_route
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Validate an ATP M1-M5 request preview.")
+    parser = argparse.ArgumentParser(description="Validate an ATP M1-M6 request preview.")
     parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
     return parser
 
@@ -81,6 +81,7 @@ def validate_request(request_file: str) -> dict[str, Any]:
         "required_capabilities": routing_result["required_capabilities"],
         "selected_provider": routing_result["selected_provider"],
         "selected_node": routing_result["selected_node"],
+        "execution_path": routing_result["execution_path"],
         "reason_codes": routing_result["reason_codes"],
     }
 

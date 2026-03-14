@@ -1,4 +1,4 @@
-"""ATP M1-M5 run preview CLI."""
+"""ATP M1-M6 run preview CLI."""
 
 from __future__ import annotations
 
@@ -17,6 +17,8 @@ from core.context.bundle_materializer import materialize_bundle
 from core.context.evidence_selector import select_evidence
 from core.context.product_context import build_product_context
 from core.context.task_manifest import build_task_manifest
+from core.execution.executor import ExecutionError
+from core.execution.orchestrator import execute_run
 from core.intake.loader import RequestLoadError, load_request
 from core.intake.normalizer import normalize_request
 from core.resolution.product_resolver import ProductResolutionError, resolve_product
@@ -28,7 +30,7 @@ from core.state.transitions import advance_run_state
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Preview the ATP M1-M5 run flow.")
+    parser = argparse.ArgumentParser(description="Preview the ATP M1-M6 run flow.")
     parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
     parser.add_argument("--run-id", default="run-preview-0001", help="Optional preview run identifier.")
     return parser
@@ -50,8 +52,13 @@ def _build_core_artifacts(
     ]
 
 
+def _short_text(value: str, limit: int = 120) -> str:
+    compact = value.replace("\n", "\\n")
+    return compact[:limit]
+
+
 def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
-    """Load, normalize, classify, resolve, package context, and select a route."""
+    """Load, normalize, classify, resolve, package context, route, and execute."""
 
     raw_request = load_request(request_file)
     normalized_request = normalize_request(raw_request)
@@ -77,6 +84,14 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
         evidence_bundle,
     )
     routing_result = select_route(prepared_route)
+    execution_result = execute_run(
+        normalized_request=normalized_request,
+        resolution=resolution,
+        task_manifest=task_manifest,
+        product_context=product_context,
+        evidence_bundle=evidence_bundle,
+        routing_result=routing_result,
+    )
 
     run_record = build_run_record(run_id=run_id, request_id=normalized_request["request_id"])
     run_record = advance_run_state(run_record, RunState.NORMALIZED, "request normalized")
@@ -84,6 +99,7 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
     run_record = advance_run_state(run_record, RunState.RESOLVED, "product resolved")
     run_record = advance_run_state(run_record, RunState.CONTEXT_PACKAGED, "context packaged")
     run_record = advance_run_state(run_record, RunState.ROUTED, "route selected")
+    run_record = advance_run_state(run_record, RunState.EXECUTED, "execution completed")
     run_record["product"] = resolution["product"]
     run_record["resolution"] = {
         "repo_boundary": resolution["repo_boundary"],
@@ -101,6 +117,12 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
         "selected_provider": routing_result["selected_provider"],
         "selected_node": routing_result["selected_node"],
         "reason_codes": routing_result["reason_codes"],
+    }
+    run_record["execution"] = {
+        "execution_id": execution_result["execution_id"],
+        "command": execution_result["command"],
+        "exit_code": execution_result["exit_code"],
+        "status": execution_result["status"],
     }
 
     return {
@@ -127,14 +149,24 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
             "prepared_route": prepared_route,
             "routing_result": routing_result,
         },
+        "execution": {
+            "execution_id": execution_result["execution_id"],
+            "selected_provider": execution_result["selected_provider"],
+            "selected_node": execution_result["selected_node"],
+            "command": execution_result["command"],
+            "exit_code": execution_result["exit_code"],
+            "stdout_preview": _short_text(execution_result["stdout"]),
+            "stderr_preview": _short_text(execution_result["stderr"]),
+            "status": execution_result["status"],
+        },
         "run": run_record,
         "decision_state": initial_decision_state(),
-        "message": "Execution is intentionally not implemented in ATP M1-M5.",
+        "message": "Validation, review, approval, and finalization are intentionally not implemented in ATP M1-M6.",
     }
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the ATP M1-M5 preview flow."""
+    """Run the ATP M1-M6 preview flow."""
 
     parser = _build_parser()
     args = parser.parse_args(argv)
@@ -146,6 +178,7 @@ def main(argv: list[str] | None = None) -> int:
         ProductResolutionError,
         RoutePreparationError,
         RouteSelectionError,
+        ExecutionError,
         ValueError,
     ) as exc:
         print(

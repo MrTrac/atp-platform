@@ -35,4 +35,6 @@ properties:
     type: object
   status:
     type: string
+  execution_path:
+    type: string
 additionalProperties: true

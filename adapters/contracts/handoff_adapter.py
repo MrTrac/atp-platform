@@ -1,9 +1,13 @@
-"""Handoff adapter contract skeleton for ATP v0."""
+"""Minimal handoff adapter contract for ATP M6."""
+
+from __future__ import annotations
+
+from typing import Any, Protocol
 
 
-class HandoffAdapter:
-    """Minimal handoff adapter contract."""
+class HandoffAdapter(Protocol):
+    """Handoff adapters accept ATP-native bundle payloads."""
 
-    # TODO: formalize handoff adapter interface.
-    def handoff(self, payload: dict) -> dict:
-        return {"payload": payload, "status": "not_implemented"}
+    def handoff(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Hand off a prepared ATP payload."""
+

@@ -1,13 +1,11 @@
-request_id: req-atp-m6-0001
+request_id: req-atp-m6-exec-echo-0001
 product: ATP
 request_type: implementation
 execution_intent: preview
 payload:
-  input_text: Build ATP M6 execution preview
+  input_text: Execute a safe echo command
   command_argv:
     - echo
-    - atp-m6
+    - hello
 metadata:
-  provider: local
-  adapter: subprocess
   capability: shell_execution

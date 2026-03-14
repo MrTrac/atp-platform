@@ -1,9 +1,13 @@
-"""Execution adapter contract skeleton for ATP v0."""
+"""Minimal execution adapter contract for ATP M6."""
+
+from __future__ import annotations
+
+from typing import Any, Protocol
 
 
-class ExecutionAdapter:
-    """Minimal execution adapter contract."""
+class ExecutionAdapter(Protocol):
+    """Execution adapters accept ATP-native dict inputs and return raw dict outputs."""
 
-    # TODO: formalize adapter interface.
-    def execute(self, command: str) -> dict:
-        return {"command": command, "status": "not_implemented"}
+    def execute(self, execution_request: dict[str, Any]) -> dict[str, Any]:
+        """Execute a prepared ATP request payload."""
+
