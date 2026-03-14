@@ -1,240 +1,173 @@
 # ATP v1.0 Roadmap
 
-## 1. Version
-- Version target: `v1.0.0`
-- Planning branch: `v1.0-planning`
+## 1. Roadmap position
 
----
+`v1.0` là version roadmap đầu tiên trong major family `v1`.
 
-## 2. Strategic intent
+`v1.0` không phải major reset. Nó là major continuation đầu tiên sau `v0.7.0`, với vai trò:
 
-`ATP v1.0` là mốc đầu tiên đưa ATP từ trạng thái nền tảng đang được hình thành sang trạng thái **baseline platform có thể quản trị, kiểm thử, freeze, và phát triển tiếp một cách kỷ luật**.
+- operational maturity baseline
+- post-`v0` foundational completion continuation
+- controlled operationalization
+- khởi đầu cho major-transition đã được qualification qua `v0.7.0`
 
-Mục tiêu của `v1.0` không phải là mở rộng breadth lớn, cũng không phải là thêm quá nhiều capability mới ngoài kiểm soát.  
-Mục tiêu chính là:
+## 2. Inherited direction từ `v0.7.0`
 
-- chốt **platform baseline**
-- chốt **governance baseline**
-- chốt **documentation baseline**
-- chốt **testing / validation baseline**
-- chốt **version lifecycle baseline**
+`v1.0` phải kế thừa từ:
 
-`v1.0` phải tạo ra một trạng thái mà từ đó các version sau có thể phát triển theo nhịp ổn định, có luật, có tài liệu, có tiêu chuẩn freeze/close-out rõ ràng.
+- `v0.7.0` freeze baseline
+- `ATP_v0_7_Integration_Review.md`
+- `ATP_v0_7_Consolidation_Decision.md`
+- `ATP_v0_7_Freeze_Readiness_Assessment.md`
+- `ATP_v0_7_Freeze_Decision.md`
+- `ATP_v0_7_0_Freeze_Closeout.md`
+- product roadmap, `v0` major roadmap, và `v1` major roadmap active
 
----
+Điểm kế thừa cốt lõi là:
 
-## 3. Positioning of v1.0
+- `v0.5.0` đã harden foundational request-to-product execution chain
+- `v0.6.0` đã harden foundational closure chain
+- `v0.7.0` đã harden finalization / closure record seam cuối của `v0`
+- bước tiếp theo phải bắt đầu operational maturity trên stable core, không kéo dài thêm `v0.x`
 
-### 3.1 What v1.0 is
-`v1.0` là version:
+## 3. Version goal
 
-- xác lập baseline chính thức đầu tiên cho ATP
-- làm rõ doctrine/rules thành cơ chế vận hành cụ thể
-- chuẩn hóa lifecycle của một version từ planning đến freeze/close-out
-- củng cố docs system để đủ khả năng scale tiếp
-- yêu cầu test/validation như điều kiện bắt buộc trước khi coi phase hoặc version là done
+Mục tiêu của `v1.0` là mở major family `v1` như operational maturity baseline đầu tiên của ATP, bằng cách contract hóa một review / approval gate layer bounded trên nền lifecycle chain đã hoàn tất ở `v0`.
 
-### 3.2 What v1.0 is not
-`v1.0` không phải là version để:
+`v1.0` vì vậy là version của controlled operationalization, không phải breadth expansion.
 
-- mở rộng kiến trúc theo chiều rộng quá lớn
-- đẩy ATP sang plugin ecosystem hoàn chỉnh
-- thêm UI / visual layer nặng
-- triển khai automation phức tạp vượt quá mức testable hiện tại
-- thay đổi doctrine nền tảng một cách đột ngột
+## 4. Vì sao `v1.0` tồn tại
 
----
+Sau `v0.7.0`, ATP đã có một foundational lifecycle chain đủ coherent từ request tới finalization / closure record. Điều còn thiếu không còn là seam nền tảng của `v0`, mà là một operational gate layer rõ cho câu hỏi:
 
-## 4. Core objectives
+- ATP ghi explicit review / approval gate nào
+- gate đó nằm ở đâu sau finalization / lifecycle continuity hiện có
+- gate đó khác gì với approval UI, recovery engine, hay orchestration rộng
 
-### Objective 1 — Governance baseline
-Chuẩn hóa ATP governance thành rule vận hành thực thi được, không chỉ còn là mô tả mức định hướng.
+Gap này đủ để justify một major horizon mới vì nó chuyển trọng tâm từ foundational seam hardening sang operational maturity contracts.
 
-Kết quả mong muốn:
+## 5. Vì sao `v0.x` nên dừng ở `v0.7.0`
 
-- rule set rõ ràng cho planning / execution / freeze / close-out
-- definition of done rõ ở level phase và level version
-- rule cập nhật `README.md` khi có thay đổi ở bất kỳ location nào
-- rule branch / freeze / close-out được áp dụng thống nhất
+`v0.x` nên dừng ở `v0.7.0` vì:
 
-### Objective 2 — Documentation baseline
-Chuẩn hóa hệ thống tài liệu ATP thành một bộ docs có cấu trúc ổn định, dễ mở rộng, dễ kiểm tra tính nhất quán.
+- foundational request-to-product execution chain đã được chốt
+- foundational closure chain đã được chốt
+- foundational finalization / closure record seam đã được chốt
+- bước tiếp theo không còn chỉ là “thêm một contract để hoàn tất lifecycle nền tảng”
 
-Kết quả mong muốn:
+Nếu tiếp tục kéo dài `v0.x`, ATP sẽ làm mờ boundary giữa foundational family và operational maturity family.
 
-- docs tree ổn định hơn
-- naming convention rõ ràng
-- milestone templates và version documents được dùng nhất quán
-- active docs, archive docs, roadmap docs liên kết mạch lạc
+## 6. Maturity boundary đã đổi như thế nào giữa `v0` và `v1`
 
-### Objective 3 — Runtime / orchestration baseline
-Làm rõ contract và boundary cho flow orchestration cốt lõi của ATP ở mức đủ dùng cho baseline platform.
+Khác biệt chính là:
 
-Kết quả mong muốn:
+- `v0` tập trung vào shape correctness, boundary discipline, artifact lifecycle, và foundational chain completion
+- `v1` bắt đầu tập trung vào operational contracts dùng để kiểm soát và đánh giá lifecycle đã hoàn tất ở mức nền
 
-- core flow được mô tả rõ
-- boundary giữa doctrine / orchestration / execution artifacts không mơ hồ
-- các thành phần cốt lõi có contract rõ để test và mở rộng về sau
+Nói ngắn gọn:
 
-### Objective 4 — Testing / validation baseline
-Biến test/validation thành điều kiện bắt buộc của mọi phase hoàn tất và của version close-out.
+- `v0` trả lời “ATP có một lifecycle chain nền tảng coherent hay chưa”
+- `v1` bắt đầu trả lời “ATP có operational gate đủ rõ để vận hành chain đó một cách đáng tin hơn hay chưa”
 
-Kết quả mong muốn:
+## 7. Capability gap mà `v1.0` cần address
 
-- có checklist hoặc test evidence tối thiểu cho các flow chính
-- có cách chứng minh baseline hoạt động đúng ở mức version
-- mọi deliverable chính đều có self-review / validation trước freeze
+Capability gap của `v1.0` là thiếu một `review / approval gate` layer rõ, bounded, file-based, và traceable sau finalization / closure record.
 
-### Objective 5 — Release lifecycle baseline
-Chuẩn hóa vòng đời một version ATP thành chain tài liệu và hành động rõ ràng.
+Gap này nằm ở vùng semantics giữa:
 
-Kết quả mong muốn:
+- finalization / closure record đã có
+- review / approval gate ATP cần ghi nhận
+- operational decision boundary cần tồn tại trước khi nghĩ tới approval UI hay orchestration rộng hơn
 
-- proposal → execution plan → implementation → freeze decision → close-out
-- có tính truy vết giữa planning docs và freeze/close-out docs
-- tạo được mẫu lặp cho các version sau
+Gap này không phải:
 
----
+- approval UI gap
+- provider routing gap
+- recovery execution gap
+- distributed control gap
+- portfolio orchestration gap
 
-## 5. In-scope items
+## 8. `v1.0` phải unlock điều gì cho `v1` major roadmap
 
-Các nội dung nên nằm trong scope `v1.0`:
+`v1.0` phải unlock:
 
-### 5.1 Version lifecycle standardization
-- chuẩn hóa chuỗi tài liệu của version
-- chuẩn hóa điều kiện chuyển phase
-- chuẩn hóa freeze gate và close-out gate
+- một operational gate boundary rõ hơn sau finalization layer
+- một review / approval gate contract đủ bounded để nối lifecycle continuity với operational gate semantics
+- cơ sở rõ hơn để harden operational maturity mà không mở breadth mới
+- evidence rằng `v1` có thể tăng độ tin cậy vận hành trên stable core của `v0`
 
-### 5.2 Definition of done
-- định nghĩa done cho task / phase / version
-- bắt buộc hóa test/validation trước khi coi là completed
+## 9. Must-have
 
-### 5.3 Documentation normalization
-- chuẩn hóa docs structure
-- chuẩn hóa tham chiếu giữa các tài liệu
-- giảm drift giữa roadmap, governance, archive, README
-
-### 5.4 Governance operationalization
-- biến doctrine/rules thành quy tắc thao tác cụ thể
-- làm rõ rule áp dụng cho branch strategy, freeze, close-out, README update
-
-### 5.5 Baseline orchestration contract
-- xác định rõ mô hình flow cốt lõi của ATP
-- mô tả boundary giữa các lớp logic/tài liệu/thực thi
-- chuẩn bị nền cho expansion sau `v1.0`
+- planning baseline rõ cho operational maturity của `v1`
+- explicit framing rằng `v1.0` không phải architecture reset
+- Slice A `Review / Approval Gate Contract`
+- boundary semantics rõ giữa review / approval gate với approval UI, recovery engine, routing, và broader orchestration
+- freeze/integration criteria vẫn bám controlled operationalization, không drift thành v2-style breadth
 
-### 5.6 Validation evidence
-- tạo baseline evidence cho tính đúng đắn của core flow và docs/governance chain
-- bảo đảm version có thể freeze trên cơ sở đã được kiểm chứng
+## 10. Good-to-have
 
----
+Nếu còn capacity, `v1.0` có thể mở thêm:
 
-## 6. Out-of-scope items
+- wording cleanup nhỏ giữa finalization semantics của `v0` và operational gate semantics của `v1`
+- traceability alignment tốt hơn giữa `v0.7` finalization record và review / approval gate
+- clarification tốt hơn cho threshold phân biệt `v1` operational maturity với `v2` orchestration breadth
 
-Các nội dung sau không nên đưa vào `v1.0` trừ khi thật sự bắt buộc để giữ integrity của baseline:
+## 11. Deferred areas
 
-- mở rộng kiến trúc breadth lớn ngoài core baseline
-- pluginization sâu hoặc generalization quá sớm
-- UI / dashboard / visual management layer lớn
-- automation liên nền tảng quá nặng khi test harness chưa đủ
-- các cải tiến “nice-to-have” không trực tiếp phục vụ baseline readiness
-- refactor lớn không gắn trực tiếp với governance/docs/runtime baseline
+Vẫn defer beyond `v1.0` nếu chưa có evidence đủ mạnh:
 
----
+- provider arbitration engine
+- cost-aware routing expansion
+- topology-aware orchestration
+- approval UI hoặc broad operator surface
+- recovery execution
+- distributed control
+- generalized orchestration engine hoặc portfolio orchestration
+- broad `v2` functionality chưa có operational maturity evidence đủ mạnh
 
-## 7. Planned execution shape
+## 12. Slice structure
 
-`v1.0` nên được triển khai theo các nhóm công việc sau:
+`v1.0` mở với một first slice rõ ràng:
 
-### Slice A — Governance and version-control baseline
-Tập trung vào:
-- branch/freeze/close-out rules
-- definition of done
-- README update rule
-- governance operational rules
+1. Slice A: Review / Approval Gate Contract
 
-### Slice B — Documentation system baseline
-Tập trung vào:
-- docs tree normalization
-- version/milestone templates usage
-- reference/link consistency
-- archive vs active docs coherence
+Các slices tiếp theo, nếu có, chỉ nên được mở sau khi Slice A được implement và review, và chỉ khi chúng vẫn chứng minh được là controlled operationalization của `v1`, không phải breadth expansion.
 
-### Slice C — Runtime / orchestration baseline
-Tập trung vào:
-- core orchestration contract
-- boundary clarification
-- baseline implementation logic / structure nếu cần
+## 13. Slice A — Review / Approval Gate Contract
 
-### Slice D — Testing / validation baseline
-Tập trung vào:
-- test checklist / validation criteria
-- evidence collection
-- pre-freeze review gates
-- close-out proof set
+Slice A của `v1.0` phải trả lời:
 
----
+- ATP đang ghi explicit review / approval gate nào
+- gate đó nằm ở đâu tương đối với `finalization / closure record` của `v0.7`
+- gate đó nối thế nào với lifecycle continuity đã có
+- gate đó traceable thế nào tới finalization chain của `v0`
 
-## 8. Mandatory constraints
+Slice này phải giữ rõ separation với:
 
-Trong toàn bộ `v1.0`, các ràng buộc sau là bắt buộc:
+- approval UI
+- recovery engine
+- routing
+- provider selection
+- broader orchestration
 
-1. Không hy sinh governance clarity để đổi lấy tốc độ.
-2. Không mở rộng scope khi chưa chốt xong baseline hiện tại.
-3. Mọi phase hoàn thành đều phải có test/validation step.
-4. Mọi tài liệu giao ra phải được self-review ít nhất hai lượt trước khi freeze.
-5. Mọi thay đổi ảnh hưởng đến ATP structure/rules phải cập nhật `README.md` đúng vị trí liên quan.
-6. Không merge `main` khi chưa hoàn tất freeze evidence cần thiết.
-7. Không để active docs và archive docs mâu thuẫn nhau tại thời điểm freeze.
+Nó chỉ nên harden một `review / approval gate contract`, không biến ATP thành operator UI hay workflow engine mới.
 
----
+## 14. Freeze criteria
 
-## 9. Deliverables
+`v1.0` chỉ nên được coi là freeze-ready nếu:
 
-Các deliverable tối thiểu cho `v1.0`:
+- scope thực tế vẫn nằm trong operational maturity horizon của current `v1`
+- `Review / Approval Gate Contract` đủ bounded, explicit, và file-based
+- docs và implementation vẫn bám stable core + controlled evolutionary governance doctrine
+- có integration review / consolidation pass rõ ràng
+- có consolidation decision rõ ràng
+- README alignment được xử lý ở đúng level đã thay đổi
 
-- `ATP_v1_0_Roadmap.md`
-- `ATP_v1_0_Milestone_Proposal.md`
-- `ATP_v1_0_Execution_Plan.md`
-- các tài liệu thực thi / cập nhật liên quan trong docs tree
-- `ATP_v1_0_Freeze_Decision_Record`
-- `ATP_v1_0_Closeout`
-- test / validation evidence bundle tương ứng
+## 15. Integration criteria
 
----
+`v1.0` chỉ nên integrate vào `main` nếu:
 
-## 10. Exit criteria
-
-`v1.0` chỉ được coi là hoàn tất khi:
-
-- scope baseline đã hoàn thành đúng boundary
-- governance rules đủ rõ và được hiện thực thành tài liệu vận hành
-- docs structure và references không còn drift nghiêm trọng
-- core orchestration baseline đã được mô tả / hiện thực ở mức đủ dùng
-- test/validation evidence đạt ngưỡng chấp nhận
-- freeze decision có cơ sở rõ ràng
-- close-out document chốt được trạng thái version một cách nhất quán
-- branch có thể merge sạch vào `main`
-- version có thể tag chính thức là `v1.0.0`
-
----
-
-## 11. Success definition
-
-`ATP v1.0` thành công nếu sau khi freeze:
-
-- ATP có một baseline vận hành rõ ràng
-- việc phát triển `v1.x` và các version sau không còn phụ thuộc vào “ngầm hiểu”
-- governance, docs, test, và version lifecycle đã trở thành hệ thống có thể lặp lại
-- `main` phản ánh đúng trạng thái integrated, stable, reviewable của platform
-
----
-
-## 12. Immediate next step
-
-Sau khi roadmap này được tạo, bước kế tiếp là tạo:
-
-1. `ATP_v1_0_Milestone_Proposal.md`
-2. `ATP_v1_0_Execution_Plan.md`
-
-rồi phân rã `v1.0` thành các slice thực thi có thứ tự ưu tiên rõ ràng.
+- evidence cho controlled operationalization scope là đủ
+- active docs, roadmap docs, và close-out chain không mâu thuẫn nhau
+- không có blocker về boundary correctness hoặc governance continuity
+- narrative của `v1.0` vẫn là operational maturity baseline, không drift thành uncontrolled breadth expansion
