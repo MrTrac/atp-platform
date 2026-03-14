@@ -25,73 +25,71 @@ Nó không phải “the next thing to build” theo nghĩa ad hoc. Nó là mộ
 
 ## 3. Version goal
 
-Mục tiêu của `v0.5` là biến roadmap/doctrine/release inheritance của ATP thành development guidance đủ rõ để các implementation bước sâu hơn vẫn bám đúng `v0` major horizon.
+Mục tiêu của `v0.5` là harden một foundational request-to-product execution chain có contract rõ, file-based, và traceable, nhưng vẫn nằm gọn trong current `v0` major horizon.
 
-Vì vậy `v0.5` là execution horizon cho một planning-governance capability gap, không phải một broad feature horizon mới.
-
-Ở góc nhìn operating purpose, `v0.5` phải giúp ATP giải thích rõ hơn các bước phát triển tiếp theo sẽ cải thiện mediation giữa requested user và products như thế nào.
+`v0.5` không mở broad runtime subsystem mới. Nó chỉ làm rõ các bước trung gian giữa request intent và bounded execution result, để ATP nối `requested user ⇄ ATP ⇄ products` mạch lạc hơn ở mức nền.
 
 ## 4. Capability gap mà v0.5 cần address
 
-Capability gap của `v0.5` không phải một missing runtime subsystem cụ thể, mà là một planning-governance gap:
+Capability gap của `v0.5` là thiếu một contract chain rõ giữa:
 
-- ATP cần một forward-looking roadmap layer đủ mạnh
-- ATP cần logic major/minor transition rõ hơn
-- ATP cần version inheritance và freeze continuity được đặt thành active discipline, không chỉ là practice ngầm
-- ATP cần bộ lọc rõ hơn để chỉ giữ lại các capability directions thực sự làm mạnh hơn trục `requested user ⇄ ATP ⇄ products`
+- request intent đã được resolve về product/capability
+- bounded handoff intent mà ATP chuẩn bị
+- execution preparation package trước routing/provider selection
+- bounded execution result được ghi lại sau bước execution
 
-Nếu gap này không được address, các version sau của `v0` sẽ dễ drift thành chuỗi release retrospective thay vì một major family có development map rõ.
-
-Đây là lý do `v0.5` vẫn là guided development step thực sự: nó giảm rủi ro architectural drift cho các implementation slices về sau.
+Nếu gap này không được address, ATP sẽ tiếp tục dựa quá nhiều vào legacy payloads rời rạc giữa resolution, handoff, execution preparation, và execution result; như vậy trục `requested user ⇄ ATP ⇄ products` vẫn chưa đủ explicit ở mức contract chain.
 
 ## 5. v0.5 phải unlock điều gì cho v0 major roadmap
 
 `v0.5` phải unlock:
 
-- một development map rõ hơn cho phần còn lại của `v0`
-- tiêu chí rõ hơn để phân biệt đâu là minor extension hợp lệ trong `v0`
-- cơ sở tốt hơn để đánh giá khi nào `v0` đã gần đủ maturity boundary để cân nhắc `v1`
-- logic rõ hơn để đánh giá capability bundle nào thực sự phục vụ requested user flow qua ATP vào products
+- một request-to-product execution chain rõ và có traceability theo từng contract bước
+- boundary semantics rõ hơn giữa resolution, handoff intent, execution preparation, và execution result
+- runtime artifacts rõ hơn dưới `SOURCE_DEV/workspace`, không mờ với repo-local state
+- cơ sở tốt hơn để đánh giá phần hardening nào còn thuộc `v0` và phần nào thực sự đòi hỏi horizon mới
 
 ## 6. Must-have
 
-- doctrine alignment giữa architecture, governance, roadmap, và release inheritance
-- roadmap reframing từ retrospective summary sang forward-looking development map
-- freeze close-out continuity được backfill đủ tới `v0.4.0`
-- version planning baseline đủ rõ để bước implementation sâu hơn không drift khỏi stable core
-- strategic horizon và execution horizon được tách rõ trong roadmap layer
-- request-driven, product-oriented operating axis được phản ánh rõ trong doctrine và roadmap docs
+- explicit Slice A `request-to-product resolution` contract
+- explicit Slice B `resolution-to-handoff intent` contract
+- explicit Slice C `product execution preparation` contract
+- explicit Slice D `product execution result` contract
+- file-based runtime materialization của cả chain dưới `SOURCE_DEV/workspace`
+- traceability links rõ giữa các contracts
+- test coverage đủ để chứng minh shape, separation, artifact existence, và no hidden broader scope
+- README/doc alignment đủ để scope thực tế không drift khỏi active roadmap
 
 ## 7. Good-to-have
 
 Nếu còn capacity, `v0.5` có thể mở thêm:
 
-- hardening nhỏ cho planning/consolidation discipline
-- roadmap/report navigation clarity
-- evidence alignment tốt hơn giữa active docs và release track history
-- cách diễn đạt rõ hơn cho tiêu chí nào còn thuộc `v0` và tiêu chí nào bắt đầu chạm ngưỡng `v1`
+- consolidation wording cleanup nhỏ giữa roadmap, code-local READMEs, và release-track reports
+- report navigation clarity tốt hơn cho release chain `v0.4 -> v0.5`
+- test assertions giàu hơn cho content-level traceability nếu thật sự có gap nhỏ còn sót
 
 ## 8. Deferred areas
 
 Vẫn defer beyond `v0.5` nếu chưa có evidence đủ mạnh:
 
-- production persistence redesign
-- scheduler / queue behavior
-- remote orchestration
+- provider arbitration engine
+- cost-aware routing engine expansion
+- topology-aware orchestration
 - approval UI hoặc broad operator surface
-- generalized index/search/catalog subsystem
-- broad subsystem expansion không bám slice planning
+- recovery execution
+- distributed control
+- generalized orchestration engine hoặc portfolio orchestration
 
 ## 9. Slice structure
 
-`v0.5` nên chia thành các slices nhỏ, mỗi slice unlock một phần của planning-governance maturity:
+`v0.5` được chia thành bốn slices runtime nhỏ, mỗi slice harden một contract step trong cùng chain:
 
-1. doctrine alignment và roadmap foundation
-2. roadmap reframing và inheritance hardening
-3. candidate next-scope selection dựa trên inherited evidence
-4. chỉ sau đó mới mở deeper implementation track nếu planning baseline đã đủ rõ
+1. Slice A: request-to-product resolution contract
+2. Slice B: resolution-to-handoff intent contract
+3. Slice C: product execution preparation contract
+4. Slice D: product execution result contract
 
-Các slice này không nên bị hiểu là pseudo-implementation backlog. Chúng chỉ là execution structure để hoàn tất planning-governance horizon của `v0.5`.
+Các slice này không tạo orchestration engine mới. Chúng chỉ harden một foundational request-to-product execution chain ở mức contract, artifact, và traceability.
 
 Mỗi slice cũng phải trả lời được: nó giúp ATP mạnh hơn ở đoạn nào trong trục `requested user ⇄ ATP ⇄ products`.
 

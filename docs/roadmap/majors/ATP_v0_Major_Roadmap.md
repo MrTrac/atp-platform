@@ -47,14 +47,14 @@ Nói cách khác, phần còn lại của `v0` không phải chỉ là “thêm 
 
 `v0.5` nên unlock ít nhất ba việc cho `v0`:
 
-- củng cố doctrine continuity giữa architecture, roadmap, governance, và release chain
-- xác định rõ next capability gap nào thực sự còn thuộc `v0`
-- chuẩn bị baseline planning đủ mạnh để các version sau của `v0` không drift khỏi stable core
-- làm rõ hơn cách các bước tiếp theo của `v0` phục vụ trục `requested user ⇄ ATP ⇄ products`
+- harden một request-to-product execution chain có contract rõ từ resolution tới bounded execution result
+- làm rõ boundary semantics giữa resolution, handoff intent, execution preparation, và execution result mà không mở subsystem rộng hơn
+- tăng traceability của ATP trên trục `requested user ⇄ ATP ⇄ products` ở mức contract chain dưới `SOURCE_DEV/workspace`
+- giữ coherence giữa active doctrine/roadmap/governance baseline và runtime hardening thực tế của `v0`
 
-Ở mức major-family logic, điều quan trọng không phải chỉ là thêm tài liệu mới, mà là biến `v0` thành một family có forward guidance đủ rõ để minor versions tiếp theo vẫn nằm trong cùng capability horizon.
+Ở mức major-family logic, điều quan trọng không phải chỉ là thêm runtime detail, mà là harden đúng seams còn thuộc `v0` để minor versions tiếp theo vẫn nằm trong cùng capability horizon.
 
-Nếu `v0.5` không unlock được ba việc này, `v0` sẽ dễ bị kéo về lại mô hình retrospective release chain thay vì major family có forward guidance rõ.
+Nếu `v0.5` không unlock được chuỗi contract nền tảng này một cách coherent, `v0` sẽ tiếp tục có gap giữa resolution semantics và execution/result traceability, làm yếu operating axis của ATP ở mức nền.
 
 ## 5. v0 vẫn chưa bao gồm gì
 
