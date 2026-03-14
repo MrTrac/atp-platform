@@ -13,12 +13,13 @@ Phạm vi hiện hành:
 - ghi retention / cleanup semantics tối thiểu mà không auto-delete runtime artifacts
 - materialize `exchange/current-task/` tối thiểu chỉ khi exchange boundary decision yêu cầu
 - persist current-task state tối thiểu ở mức file-based khi exchange current-task được materialize
+- ghi continue-pending recovery contract tối thiểu khi current-task ở trạng thái `continue_pending`
 - ghi continuation state tối thiểu cho `continue_pending` mà không thêm queue/scheduler subsystem
 - ghi reference/index artifacts tối thiểu để trỏ current exchange, continuation, và authoritative refs
 
 Deferred có chủ đích:
 
-- continue-pending recovery contract rộng hơn
+- recovery / resume execution thật
 - current-task supersede / active pointer model rộng hơn
 - artifact persistence thực tế ở mức production
 - đầy đủ artifact lifecycle engine

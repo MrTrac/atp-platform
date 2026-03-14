@@ -415,6 +415,61 @@ def materialize_current_task_persistence_contract(
     }
 
 
+def materialize_continue_pending_recovery_contract(
+    run_id: str,
+    request_id: str,
+    close_decision: str,
+    exchange_boundary_decision: dict[str, Any],
+    exchange_summary: dict[str, Any],
+    continuation_state: dict[str, Any],
+    current_task_persistence: dict[str, Any],
+    continuation_state_path: Path,
+    reference_index_path: Path,
+) -> dict[str, Any]:
+    """Write the minimal file-based recovery contract for continue_pending."""
+
+    if close_decision != "continue_pending" or not current_task_persistence.get("persisted"):
+        return {
+            "recovery_ready": False,
+            "recovery_contract_path": "",
+            "recovery_entry_mode": "not_applicable",
+        }
+
+    recovery_contract_path = Path(str(exchange_summary["exchange_root"])) / "continue-pending-recovery.json"
+    payload = {
+        "recovery_contract_id": f"continue-pending-recovery-{run_id}",
+        "run_id": run_id,
+        "request_id": request_id,
+        "close_or_continue": close_decision,
+        "recovery_entry_mode": "manual_file_based",
+        "recovery_scope": "continue_pending_current_task",
+        "current_task_id": current_task_persistence.get("current_task_id", ""),
+        "current_task_persistence_state_path": current_task_persistence.get("persistence_state_path", ""),
+        "continuation_id": continuation_state.get("continuation_id", ""),
+        "continuation_state_path": str(continuation_state_path),
+        "continuity_status": continuation_state.get("continuity_status", ""),
+        "exchange_boundary_decision_id": exchange_boundary_decision.get("decision_id", ""),
+        "exchange_boundary_mode": exchange_boundary_decision.get("boundary_mode", ""),
+        "exchange_root": exchange_summary.get("exchange_root", ""),
+        "exchange_bundle_path": exchange_summary.get("bundle_path", ""),
+        "exchange_metadata_path": exchange_summary.get("metadata_path", ""),
+        "current_reference_path": exchange_summary.get("current_reference_path", ""),
+        "reference_index_path": str(reference_index_path),
+        "notes": [
+            "Slice B defines only the recovery entry contract for continue_pending.",
+            "No resume execution, scheduler, queue, or generalized recovery engine is introduced.",
+        ],
+    }
+    _write_json(recovery_contract_path, payload)
+    return {
+        "recovery_ready": True,
+        "recovery_entry_mode": payload["recovery_entry_mode"],
+        "recovery_scope": payload["recovery_scope"],
+        "recovery_contract_path": str(recovery_contract_path),
+        "recovery_contract_id": payload["recovery_contract_id"],
+    }
+
+
 def materialize_run_outputs(
     run_id: str,
     payloads: dict[str, Any],
@@ -579,6 +634,19 @@ def materialize_run_outputs(
         "persistence_state_path",
         "",
     )
+    recovery_contract = materialize_continue_pending_recovery_contract(
+        run_id=run_id,
+        request_id=request_id,
+        close_decision=str(payloads["close_or_continue"]["decision"]),
+        exchange_boundary_decision=exchange_boundary_decision,
+        exchange_summary=exchange_summary,
+        continuation_state=continuation_state,
+        current_task_persistence=current_task_persistence,
+        continuation_state_path=continuation_state_path,
+        reference_index_path=reference_index_path,
+    )
+    exchange_summary["recovery_contract"] = recovery_contract
+    reference_index["continuation"]["recovery_contract_path"] = recovery_contract.get("recovery_contract_path", "")
     created_files["final"].append(_write_json(reference_index_path, reference_index))
     created_files["logs"].append(
         _write_log(
@@ -605,6 +673,8 @@ def materialize_run_outputs(
         materialization_lines.append(f"exchange-current-reference={current_exchange_reference['current_reference_path']}")
     if current_task_persistence["persisted"]:
         materialization_lines.append(f"current-task-state={current_task_persistence['persistence_state_path']}")
+    if recovery_contract["recovery_ready"]:
+        materialization_lines.append(f"continue-pending-recovery={recovery_contract['recovery_contract_path']}")
     materialization_lines.append(
         f"retention-summary={zone_paths['final'] / 'retention-summary.json'}"
     )
@@ -623,6 +693,7 @@ def materialize_run_outputs(
         "exchange_boundary": exchange_boundary_decision,
         "exchange": exchange_summary,
         "current_task_persistence": current_task_persistence,
+        "recovery_contract": recovery_contract,
         "continuation": continuation_state,
         "reference_index": reference_index,
         "authoritative_projection": projections,
