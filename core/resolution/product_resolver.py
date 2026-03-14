@@ -1,4 +1,4 @@
-"""Resolve ATP products and build the v0.5-v0.6 foundational contract chain."""
+"""Resolve ATP products and build the v0.5-v0.7 foundational contract chain."""
 
 from __future__ import annotations
 
@@ -742,6 +742,120 @@ def build_closure_continuation_state_contract(
         },
         "notes": [
             "This contract records a bounded closure or continuation state only.",
+            "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
+        ],
+    }
+
+
+def build_finalization_closure_record_contract(
+    run_id: str,
+    normalized_request: dict[str, Any],
+    execution_result_contract: dict[str, Any],
+    post_execution_decision_contract: dict[str, Any],
+    decision_to_handoff_contract: dict[str, Any],
+    closure_continuation_state_contract: dict[str, Any],
+    finalization_summary: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the explicit v0.7 Slice A finalization/closure record contract."""
+
+    request_id = str(normalized_request.get("request_id", "")).strip()
+    if not request_id:
+        raise ValueError("request_id is required for the finalization/closure record contract.")
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for the finalization/closure record contract.")
+
+    execution_result_contract_id = str(execution_result_contract.get("contract_id", "")).strip()
+    post_execution_decision_contract_id = str(post_execution_decision_contract.get("contract_id", "")).strip()
+    decision_to_handoff_contract_id = str(decision_to_handoff_contract.get("contract_id", "")).strip()
+    closure_continuation_state_contract_id = str(closure_continuation_state_contract.get("contract_id", "")).strip()
+    if (
+        not execution_result_contract_id
+        or not post_execution_decision_contract_id
+        or not decision_to_handoff_contract_id
+        or not closure_continuation_state_contract_id
+    ):
+        raise ValueError("v0.5 Slice D and v0.6 Slice A-C contracts are required for the finalization/closure record contract.")
+
+    bounded_path = str(
+        closure_continuation_state_contract.get("closure_or_continuation_state", {}).get("bounded_path", "")
+    ).strip()
+    state_status = str(
+        closure_continuation_state_contract.get("closure_or_continuation_state", {}).get("state_status", "unknown")
+    ).strip() or "unknown"
+    continuation_required = bool(
+        closure_continuation_state_contract.get("closure_or_continuation_state", {}).get("continuation_required", False)
+    )
+    final_status = str(finalization_summary.get("final_status", "unknown")).strip() or "unknown"
+    finalization_id = str(finalization_summary.get("finalization_id", "")).strip()
+    if not bounded_path or not finalization_id:
+        raise ValueError("bounded closure state and finalization summary are required for the finalization/closure record contract.")
+
+    record_status_map = {
+        "close": "closure_record_finalized",
+        "close_rejected": "rejected_closure_record_finalized",
+        "continue_pending": "continuation_record_finalized",
+    }
+    record_status = record_status_map.get(bounded_path, "undetermined")
+
+    return {
+        "contract_id": f"finalization-closure-record-{request_id}",
+        "contract_version": "v0.7-slice-a",
+        "request_id": request_id,
+        "run_id": run_id,
+        "record_scope": "finalization_closure_record_only",
+        "product_execution_result_ref": {
+            "contract_id": execution_result_contract_id,
+            "execution_id": str(execution_result_contract.get("execution_result", {}).get("execution_id", "")),
+            "execution_status": str(execution_result_contract.get("execution_result", {}).get("status", "")),
+        },
+        "post_execution_decision_ref": {
+            "contract_id": post_execution_decision_contract_id,
+            "bounded_outcome": str(
+                post_execution_decision_contract.get("post_execution_decision", {}).get("bounded_outcome", "")
+            ),
+        },
+        "decision_to_closure_continuation_handoff_ref": {
+            "contract_id": decision_to_handoff_contract_id,
+            "bounded_next_path": str(
+                decision_to_handoff_contract.get("closure_or_continuation_handoff", {}).get("bounded_next_path", "")
+            ),
+        },
+        "closure_continuation_state_ref": {
+            "contract_id": closure_continuation_state_contract_id,
+            "state_scope": str(closure_continuation_state_contract.get("state_scope", "")),
+            "bounded_path": bounded_path,
+            "state_status": state_status,
+        },
+        "finalization_or_closure_record": {
+            "record_stage": "finalization_closure",
+            "bounded_path": bounded_path,
+            "record_status": record_status,
+            "final_status": final_status,
+            "continuation_required": continuation_required,
+        },
+        "record_rationale": {
+            "finalization_id": finalization_id,
+            "validation_status": str(finalization_summary.get("validation_status", "unknown")),
+            "review_status": str(finalization_summary.get("review_status", "unknown")),
+            "approval_status": str(finalization_summary.get("approval_status", "unknown")),
+            "rationale_codes": [
+                "finalization_closure_record_contract",
+                "bounded_finalization_record_only",
+                "record_derived_from_closure_state_and_finalization_summary",
+            ],
+            "summary": "ATP is recording a bounded finalization or closure record only.",
+        },
+        "traceability": {
+            "finalization_id": finalization_id,
+            "closure_continuation_state_contract_id": closure_continuation_state_contract_id,
+            "decision_to_closure_continuation_handoff_contract_id": decision_to_handoff_contract_id,
+            "post_execution_decision_contract_id": post_execution_decision_contract_id,
+            "product_execution_result_contract_id": execution_result_contract_id,
+            "close_or_continue": bounded_path,
+        },
+        "notes": [
+            "This contract records a bounded finalization or closure record only.",
             "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
         ],
     }

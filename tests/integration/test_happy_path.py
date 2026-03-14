@@ -1,4 +1,4 @@
-"""Integration tests for ATP M8 happy path plus the v0.5-v0.6 foundational contract chain."""
+"""Integration tests for ATP M8 happy path plus the v0.5-v0.7 foundational contract chain."""
 
 from __future__ import annotations
 
@@ -136,6 +136,22 @@ class TestHappyPath(unittest.TestCase):
                 preview["closure_continuation_state"]["closure_or_continuation_state"]["state_status"],
                 "closed",
             )
+            self.assertEqual(
+                preview["finalization_closure_record"]["record_scope"],
+                "finalization_closure_record_only",
+            )
+            self.assertEqual(
+                preview["finalization_closure_record"]["closure_continuation_state_ref"]["contract_id"],
+                preview["closure_continuation_state"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["finalization_closure_record"]["finalization_or_closure_record"]["bounded_path"],
+                "close",
+            )
+            self.assertEqual(
+                preview["finalization_closure_record"]["finalization_or_closure_record"]["record_status"],
+                "closure_record_finalized",
+            )
             run_root = Path(preview["materialization"]["run_root"])
             workspace_root = Path(preview["materialization"]["workspace_root"])
             self.assertTrue(run_root.is_dir())
@@ -148,6 +164,7 @@ class TestHappyPath(unittest.TestCase):
                 (run_root / "manifests" / "decision-to-closure-continuation-handoff-contract.json").is_file()
             )
             self.assertTrue((run_root / "manifests" / "closure-continuation-state-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "finalization-closure-record-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
