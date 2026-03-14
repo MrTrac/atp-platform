@@ -62,6 +62,49 @@ class TestInspectCurrentTask(unittest.TestCase):
             self.assertFalse(summary["supersede_trace"]["present"])
             self.assertTrue(summary["current_task_persistence_state_path"].endswith("current-task-state.json"))
 
+    def test_inspect_current_task_surfaces_supersede_trace_for_latest_active_pointer(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace_root = Path(temp_dir) / "SOURCE_DEV" / "workspace"
+            with patch(
+                "cli.run.validate_artifacts",
+                return_value={
+                    "request_id": "req-atp-m7-exec-echo-0001",
+                    "validation_status": "incomplete",
+                    "artifact_ids": ["artifact-authoritative-req-atp-m7-exec-echo-0001"],
+                },
+            ):
+                preview_run(
+                    str(FIXTURE_PATH),
+                    "run-inspect-prev",
+                    workspace_root=workspace_root,
+                )
+                preview_run(
+                    str(FIXTURE_PATH),
+                    "run-inspect-next",
+                    workspace_root=workspace_root,
+                )
+
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = inspect_main(
+                    [
+                        "--workspace-root",
+                        str(workspace_root),
+                        "--run-id",
+                        "run-inspect-next",
+                    ]
+                )
+
+            self.assertEqual(exit_code, 0)
+            payload = json.loads(stdout.getvalue())
+            summary = payload["summary"]
+            self.assertEqual(summary["active_pointer"]["run_id"], "run-inspect-next")
+            self.assertTrue(summary["active_pointer"]["superseded_previous"])
+            self.assertTrue(summary["supersede_trace"]["present"])
+            self.assertEqual(summary["supersede_trace"]["previous_run_id"], "run-inspect-prev")
+            self.assertEqual(summary["supersede_trace"]["previous_current_task_id"], "current-task-run-inspect-prev")
+
+
 
 if __name__ == "__main__":
     unittest.main()
