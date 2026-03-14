@@ -12,6 +12,7 @@ Phạm vi hiện hành:
 - build explicit v0.5 Slice D `product execution result` contract
 - build explicit v0.6 Slice A `post-execution decision` contract
 - build explicit v0.6 Slice B `decision-to-closure / continuation handoff` contract
+- build explicit v0.6 Slice C `closure / continuation state` contract
 
 Resolution boundary này phải giữ rõ separation với:
 
@@ -74,6 +75,17 @@ Kết quả hiện hành gồm hai lớp:
   - `closure_or_continuation_handoff`
   - `handoff_rationale`
   - `handoff_scope`
+  - `traceability`
+- closure / continuation state contract với:
+  - `request_to_product_resolution_ref`
+  - `resolution_to_handoff_intent_ref`
+  - `product_execution_preparation_ref`
+  - `product_execution_result_ref`
+  - `post_execution_decision_ref`
+  - `decision_to_closure_continuation_handoff_ref`
+  - `closure_or_continuation_state`
+  - `state_rationale`
+  - `state_scope`
   - `traceability`
 
 Deferred rõ ràng:

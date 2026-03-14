@@ -120,6 +120,22 @@ class TestHappyPath(unittest.TestCase):
                 ],
                 "none",
             )
+            self.assertEqual(
+                preview["closure_continuation_state"]["state_scope"],
+                "closure_continuation_state_only",
+            )
+            self.assertEqual(
+                preview["closure_continuation_state"]["decision_to_closure_continuation_handoff_ref"]["contract_id"],
+                preview["decision_to_closure_continuation_handoff"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["closure_continuation_state"]["closure_or_continuation_state"]["bounded_path"],
+                "close",
+            )
+            self.assertEqual(
+                preview["closure_continuation_state"]["closure_or_continuation_state"]["state_status"],
+                "closed",
+            )
             run_root = Path(preview["materialization"]["run_root"])
             workspace_root = Path(preview["materialization"]["workspace_root"])
             self.assertTrue(run_root.is_dir())
@@ -131,6 +147,7 @@ class TestHappyPath(unittest.TestCase):
             self.assertTrue(
                 (run_root / "manifests" / "decision-to-closure-continuation-handoff-contract.json").is_file()
             )
+            self.assertTrue((run_root / "manifests" / "closure-continuation-state-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())

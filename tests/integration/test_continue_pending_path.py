@@ -130,6 +130,25 @@ class TestContinuePendingPath(unittest.TestCase):
                 ],
                 "escalate_review",
             )
+            self.assertEqual(
+                preview["closure_continuation_state"]["state_scope"],
+                "closure_continuation_state_only",
+            )
+            self.assertEqual(
+                preview["closure_continuation_state"]["decision_to_closure_continuation_handoff_ref"]["contract_id"],
+                preview["decision_to_closure_continuation_handoff"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["closure_continuation_state"]["closure_or_continuation_state"]["bounded_path"],
+                "continue_pending",
+            )
+            self.assertEqual(
+                preview["closure_continuation_state"]["closure_or_continuation_state"]["state_status"],
+                "continuation_pending",
+            )
+            self.assertTrue(
+                preview["closure_continuation_state"]["closure_or_continuation_state"]["continuation_required"]
+            )
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["materialized"])
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["persistence_state_path"].endswith("current-task-state.json"))
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["active_pointer_path"].endswith("active-pointer.json"))
@@ -147,6 +166,7 @@ class TestContinuePendingPath(unittest.TestCase):
             self.assertTrue(
                 (run_root / "manifests" / "decision-to-closure-continuation-handoff-contract.json").is_file()
             )
+            self.assertTrue((run_root / "manifests" / "closure-continuation-state-contract.json").is_file())
             self.assertTrue((run_root / "final" / "continuation-state.json").is_file())
             self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())
