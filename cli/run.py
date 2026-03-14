@@ -268,6 +268,7 @@ def preview_run(
     exchange_boundary_decision = dict(materialization["exchange_boundary"])
     current_task_persistence = dict(materialization["current_task_persistence"])
     recovery_contract = dict(materialization["recovery_contract"])
+    current_task_pointer = dict(materialization["current_task_pointer"])
     continuation_state = dict(materialization["continuation"])
 
     return {
@@ -315,6 +316,7 @@ def preview_run(
         "exchange_boundary": exchange_boundary_decision,
         "current_task_persistence": current_task_persistence,
         "recovery_contract": recovery_contract,
+        "current_task_pointer": current_task_pointer,
         "continuation": continuation_state,
         "reference_index": dict(materialization["reference_index"]),
         "finalization": finalization_summary,

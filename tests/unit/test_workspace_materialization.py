@@ -1,4 +1,4 @@
-"""Unit tests for ATP v0.4 Slice A-B plus earlier runtime materialization baseline."""
+"""Unit tests for ATP v0.4 Slice A-C plus earlier runtime materialization baseline."""
 
 from __future__ import annotations
 
@@ -106,7 +106,7 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
 
 
 class TestWorkspaceMaterialization(unittest.TestCase):
-    """Cover runtime root resolution plus v0.3-v0.4 traceability, persistence, and recovery semantics."""
+    """Cover runtime root resolution plus v0.3-v0.4 traceability, persistence, recovery, and pointer semantics."""
 
     def test_workspace_root_resolves_from_repo_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -154,6 +154,7 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertFalse(summary["exchange"]["materialized"])
             self.assertFalse(summary["current_task_persistence"]["persisted"])
             self.assertFalse(summary["recovery_contract"]["recovery_ready"])
+            self.assertFalse(summary["current_task_pointer"]["active_pointer_written"])
             self.assertFalse(summary["continuation"]["continuation_required"])
             self.assertFalse(summary["reference_index"]["exchange_current_task"]["materialized"])
             self.assertEqual(summary["reference_index"]["continuation"]["current_source"], "none")
@@ -210,6 +211,9 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             recovery_contract = json.loads(
                 (exchange_root / "continue-pending-recovery.json").read_text(encoding="utf-8")
             )
+            active_pointer = json.loads(
+                (exchange_root.parent / "active-pointer.json").read_text(encoding="utf-8")
+            )
 
             self.assertEqual(reference_index["run_id"], "run-sliceD-1")
             self.assertTrue(reference_index["exchange_current_task"]["materialized"])
@@ -242,6 +246,64 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertEqual(recovery_contract["continuation_state_path"], str(run_root / "final" / "continuation-state.json"))
             self.assertEqual(recovery_contract["current_reference_path"], str(exchange_root / "current.json"))
             self.assertEqual(recovery_contract["recovery_scope"], "continue_pending_current_task")
+            self.assertTrue(summary["current_task_pointer"]["active_pointer_written"])
+            self.assertFalse(summary["current_task_pointer"]["superseded_previous"])
+            self.assertEqual(
+                reference_index["exchange_current_task"]["active_pointer_path"],
+                str(exchange_root.parent / "active-pointer.json"),
+            )
+            self.assertEqual(reference_index["exchange_current_task"]["supersede_trace_path"], "")
+            self.assertEqual(active_pointer["run_id"], "run-sliceD-1")
+            self.assertEqual(active_pointer["current_task_persistence_state_path"], str(exchange_root / "current-task-state.json"))
+            self.assertEqual(active_pointer["recovery_contract_path"], str(exchange_root / "continue-pending-recovery.json"))
+            self.assertFalse(active_pointer["superseded_previous"])
+
+    def test_active_pointer_supersede_trace_links_to_previous_current_task(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = _build_fake_repo_root(Path(temp_dir))
+
+            first_payloads = _sample_payloads("run-sliceC-1")
+            first_payloads["close_or_continue"]["decision"] = "continue_pending"
+            first_payloads["exchange_boundary_decision"]["close_or_continue"] = "continue_pending"
+            first_payloads["exchange_boundary_decision"]["boundary_mode"] = "external_exchange_candidate"
+            first_payloads["exchange_boundary_decision"]["requires_exchange_boundary"] = True
+            first_payloads["exchange_boundary_decision"]["reason_codes"] = [
+                "continue_pending_requires_external_handoff_boundary"
+            ]
+            first_summary = materialize_run_outputs("run-sliceC-1", first_payloads, repo_root=repo_root)
+
+            second_payloads = _sample_payloads("run-sliceC-2")
+            second_payloads["close_or_continue"]["decision"] = "continue_pending"
+            second_payloads["exchange_boundary_decision"]["close_or_continue"] = "continue_pending"
+            second_payloads["exchange_boundary_decision"]["boundary_mode"] = "external_exchange_candidate"
+            second_payloads["exchange_boundary_decision"]["requires_exchange_boundary"] = True
+            second_payloads["exchange_boundary_decision"]["reason_codes"] = [
+                "continue_pending_requires_external_handoff_boundary"
+            ]
+            second_summary = materialize_run_outputs("run-sliceC-2", second_payloads, repo_root=repo_root)
+
+            second_exchange_root = Path(second_summary["exchange"]["exchange_root"])
+            active_pointer = json.loads((second_exchange_root.parent / "active-pointer.json").read_text(encoding="utf-8"))
+            supersede_trace = json.loads((second_exchange_root / "supersede-trace.json").read_text(encoding="utf-8"))
+
+            self.assertTrue(second_summary["current_task_pointer"]["active_pointer_written"])
+            self.assertTrue(second_summary["current_task_pointer"]["superseded_previous"])
+            self.assertEqual(active_pointer["run_id"], "run-sliceC-2")
+            self.assertTrue(active_pointer["superseded_previous"])
+            self.assertEqual(active_pointer["supersede_trace_path"], str(second_exchange_root / "supersede-trace.json"))
+            self.assertEqual(supersede_trace["previous_run_id"], "run-sliceC-1")
+            self.assertEqual(
+                supersede_trace["previous_current_task_state_path"],
+                first_summary["current_task_persistence"]["persistence_state_path"],
+            )
+            self.assertEqual(
+                supersede_trace["previous_recovery_contract_path"],
+                first_summary["recovery_contract"]["recovery_contract_path"],
+            )
+            self.assertEqual(
+                second_summary["reference_index"]["exchange_current_task"]["supersede_trace_path"],
+                str(second_exchange_root / "supersede-trace.json"),
+            )
 
     def test_retention_summary_marks_deprecated_artifacts_cleanup_eligible_after_close(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -317,6 +379,7 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertTrue((exchange_root / "current.json").is_file())
             self.assertTrue((exchange_root / "current-task-state.json").is_file())
             self.assertTrue((exchange_root / "continue-pending-recovery.json").is_file())
+            self.assertTrue((exchange_root.parent / "active-pointer.json").is_file())
             self.assertFalse((repo_root / "exchange").exists())
 
 
