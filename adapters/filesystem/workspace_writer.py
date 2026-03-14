@@ -1,4 +1,4 @@
-"""Workspace materialization helpers for ATP v0.2-v0.7 foundational runtime slices."""
+"""Workspace materialization helpers for ATP v0.2-v1.0 runtime contract slices."""
 
 from __future__ import annotations
 
@@ -264,6 +264,26 @@ def summarize_finalization_closure_record_contract(
         "final_status": str(contract.get("finalization_or_closure_record", {}).get("final_status", "")),
         "closure_continuation_state_contract_id": str(
             contract.get("closure_continuation_state_ref", {}).get("contract_id", "")
+        ),
+        "traceability": dict(contract.get("traceability", {})),
+    }
+
+
+def summarize_review_approval_gate_contract(
+    contract: dict[str, Any],
+    contract_path: Path,
+) -> dict[str, Any]:
+    """Summarize the explicit v1.0 Slice A review/approval gate contract."""
+
+    return {
+        "contract_id": str(contract.get("contract_id", "")),
+        "contract_path": str(contract_path),
+        "gate_scope": str(contract.get("gate_scope", "")),
+        "gate_decision": str(contract.get("review_or_approval_gate", {}).get("gate_decision", "")),
+        "gate_status": str(contract.get("review_or_approval_gate", {}).get("gate_status", "")),
+        "resulting_direction": str(contract.get("review_or_approval_gate", {}).get("resulting_direction", "")),
+        "finalization_closure_record_contract_id": str(
+            contract.get("finalization_closure_record_ref", {}).get("contract_id", "")
         ),
         "traceability": dict(contract.get("traceability", {})),
     }
@@ -722,6 +742,9 @@ def materialize_run_outputs(
     finalization_closure_record_contract_path = (
         zone_paths["manifests"] / "finalization-closure-record-contract.json"
     )
+    review_approval_gate_contract_path = (
+        zone_paths["manifests"] / "review-approval-gate-contract.json"
+    )
     created_files = {
         "request": [
             _write_json(zone_paths["request"] / "request.raw.json", payloads["raw_request"]),
@@ -746,6 +769,10 @@ def materialize_run_outputs(
             _write_json(
                 finalization_closure_record_contract_path,
                 payloads["finalization_closure_record"],
+            ),
+            _write_json(
+                review_approval_gate_contract_path,
+                payloads["review_approval_gate"],
             ),
             _write_json(zone_paths["manifests"] / "task-manifest.json", payloads["task_manifest"]),
             _write_json(zone_paths["manifests"] / "product-context.json", payloads["product_context"]),
@@ -968,6 +995,10 @@ def materialize_run_outputs(
         payloads["finalization_closure_record"],
         finalization_closure_record_contract_path,
     )
+    review_approval_gate_summary = summarize_review_approval_gate_contract(
+        payloads["review_approval_gate"],
+        review_approval_gate_contract_path,
+    )
 
     return {
         "workspace_root": str(zone_paths["workspace_root"]),
@@ -988,6 +1019,7 @@ def materialize_run_outputs(
         "decision_to_closure_continuation_handoff": decision_to_closure_continuation_handoff_summary,
         "closure_continuation_state": closure_continuation_state_summary,
         "finalization_closure_record": finalization_closure_record_summary,
+        "review_approval_gate": review_approval_gate_summary,
         "reference_index": reference_index,
         "authoritative_projection": projections,
         "retention": retention_summary,

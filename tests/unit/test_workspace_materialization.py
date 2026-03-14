@@ -1,4 +1,4 @@
-"""Unit tests for ATP v0.4 runtime slices plus the v0.5-v0.7 foundational contract chain."""
+"""Unit tests for ATP v0.4 runtime slices plus the v0.5-v1.0 contract chain."""
 
 from __future__ import annotations
 
@@ -437,6 +437,70 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
                 "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
             ],
         },
+        "review_approval_gate": {
+            "contract_id": "review-approval-gate-req-1",
+            "contract_version": "v1.0-slice-a",
+            "request_id": "req-1",
+            "run_id": run_id,
+            "gate_scope": "review_approval_gate_only",
+            "product_execution_result_ref": {
+                "contract_id": "product-execution-result-req-1",
+                "execution_id": "execution-req-1",
+                "execution_status": "succeeded",
+            },
+            "post_execution_decision_ref": {
+                "contract_id": "post-execution-decision-req-1",
+                "bounded_outcome": "close",
+            },
+            "decision_to_closure_continuation_handoff_ref": {
+                "contract_id": "decision-to-closure-continuation-handoff-req-1",
+                "bounded_next_path": "close",
+            },
+            "closure_continuation_state_ref": {
+                "contract_id": "closure-continuation-state-req-1",
+                "bounded_path": "close",
+                "state_status": "closed",
+            },
+            "finalization_closure_record_ref": {
+                "contract_id": "finalization-closure-record-req-1",
+                "record_scope": "finalization_closure_record_only",
+                "bounded_path": "close",
+                "record_status": "closure_record_finalized",
+                "final_status": "completed",
+            },
+            "review_or_approval_gate": {
+                "gate_stage": "post_finalization_review_gate",
+                "gate_subject": "finalization_closure_record",
+                "gate_decision": "approved",
+                "gate_status": "passed",
+                "resulting_direction": "ready_for_approved_continuation",
+            },
+            "gate_rationale": {
+                "validation_status": "passed",
+                "review_status": "accept",
+                "approval_status": "approved",
+                "rationale_codes": [
+                    "review_approval_gate_contract",
+                    "bounded_operational_gate_only",
+                    "gate_derived_from_finalization_record_and_review_approval_state",
+                ],
+                "summary": "ATP is recording a bounded review or approval gate only.",
+            },
+            "traceability": {
+                "finalization_closure_record_contract_id": "finalization-closure-record-req-1",
+                "closure_continuation_state_contract_id": "closure-continuation-state-req-1",
+                "decision_to_closure_continuation_handoff_contract_id": "decision-to-closure-continuation-handoff-req-1",
+                "post_execution_decision_contract_id": "post-execution-decision-req-1",
+                "product_execution_result_contract_id": "product-execution-result-req-1",
+                "review_decision_id": "review-req-1",
+                "approval_id": "approval-req-1",
+                "close_or_continue": "close",
+            },
+            "notes": [
+                "This contract records a bounded review or approval gate only.",
+                "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
+            ],
+        },
         "task_manifest": {"manifest_id": "task-manifest-req-1", "request_id": "req-1"},
         "product_context": {"product": "ATP", "profile_ref": "profiles/ATP/profile.yaml"},
         "manifest_reference": {"handoff_type": "manifest_reference", "manifest_reference": "task-manifest-req-1"},
@@ -673,6 +737,18 @@ class TestWorkspaceMaterialization(unittest.TestCase):
                 summary["finalization_closure_record"]["closure_continuation_state_contract_id"],
                 "closure-continuation-state-req-1",
             )
+            self.assertEqual(
+                summary["review_approval_gate"]["gate_scope"],
+                "review_approval_gate_only",
+            )
+            self.assertEqual(
+                summary["review_approval_gate"]["gate_decision"],
+                "approved",
+            )
+            self.assertEqual(
+                summary["review_approval_gate"]["finalization_closure_record_contract_id"],
+                "finalization-closure-record-req-1",
+            )
             self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
             projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
             self.assertTrue((projection_root / "artifact.json").is_file())
@@ -868,6 +944,31 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertNotIn("selected_node", finalization_closure_record_contract)
             self.assertNotIn("recovery_scope", finalization_closure_record_contract)
             self.assertNotIn("approval_mode", finalization_closure_record_contract)
+            review_approval_gate_contract = json.loads(
+                (run_root / "manifests" / "review-approval-gate-contract.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(review_approval_gate_contract["request_id"], "req-1")
+            self.assertEqual(review_approval_gate_contract["run_id"], "run-slice1-2")
+            self.assertEqual(
+                review_approval_gate_contract["gate_scope"],
+                "review_approval_gate_only",
+            )
+            self.assertEqual(
+                review_approval_gate_contract["finalization_closure_record_ref"]["contract_id"],
+                "finalization-closure-record-req-1",
+            )
+            self.assertEqual(
+                review_approval_gate_contract["review_or_approval_gate"]["gate_decision"],
+                "approved",
+            )
+            self.assertEqual(
+                review_approval_gate_contract["review_or_approval_gate"]["gate_status"],
+                "passed",
+            )
+            self.assertNotIn("selected_provider", review_approval_gate_contract)
+            self.assertNotIn("selected_node", review_approval_gate_contract)
+            self.assertNotIn("recovery_scope", review_approval_gate_contract)
+            self.assertNotIn("approval_mode", review_approval_gate_contract)
 
     def test_authoritative_projection_keeps_traceability_to_run_and_source_stage(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -1,4 +1,4 @@
-"""Integration tests for ATP M8 reject path plus the v0.5-v0.7 foundational contract chain."""
+"""Integration tests for ATP M8 reject path plus the v0.5-v1.0 contract chain."""
 
 from __future__ import annotations
 
@@ -128,6 +128,18 @@ class TestRejectPath(unittest.TestCase):
                 preview["finalization_closure_record"]["finalization_or_closure_record"]["record_status"],
                 "rejected_closure_record_finalized",
             )
+            self.assertEqual(
+                preview["review_approval_gate"]["gate_scope"],
+                "review_approval_gate_only",
+            )
+            self.assertEqual(
+                preview["review_approval_gate"]["finalization_closure_record_ref"]["contract_id"],
+                preview["finalization_closure_record"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["review_approval_gate"]["review_or_approval_gate"]["gate_decision"],
+                "rejected",
+            )
             run_root = Path(preview["materialization"]["run_root"])
             workspace_root = Path(preview["materialization"]["workspace_root"])
             self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
@@ -140,6 +152,7 @@ class TestRejectPath(unittest.TestCase):
             )
             self.assertTrue((run_root / "manifests" / "closure-continuation-state-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "finalization-closure-record-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "review-approval-gate-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
