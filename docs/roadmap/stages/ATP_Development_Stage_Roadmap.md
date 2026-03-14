@@ -105,6 +105,7 @@ ATP chỉ nên rời `v0` khi có evidence rằng:
 - current `v0` seams đã được harden tới mức coherent maturity boundary
 - `v0.5` đã harden foundational request-to-product execution chain
 - `v0.6` đã đóng nốt post-execution closure semantics ở mức foundational contract nếu seam đó vẫn còn thuộc `v0`
+- `v0.7` đã đóng nốt finalization / closure record seam ở mức foundational contract nếu seam đó vẫn còn thuộc `v0`
 - bước tiếp theo đòi hỏi capability horizon mới, không chỉ refinement thêm trong `v0`
 - stage tiếp theo có thể được mô tả như nâng chất lượng mediation giữa requested user, ATP, và products lên mức vận hành cao hơn
 
