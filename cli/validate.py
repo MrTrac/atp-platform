@@ -1,4 +1,4 @@
-"""ATP M1-M7 validate CLI."""
+"""ATP M1-M8 validate CLI."""
 
 from __future__ import annotations
 
@@ -12,12 +12,14 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from core.approvals.approval_gate import require_approval
 from core.approvals.decision_model import build_decision
 from core.classification.classifier import classify_request
 from core.context.bundle_materializer import materialize_bundle
 from core.context.evidence_selector import select_evidence
 from core.context.product_context import build_product_context
 from core.context.task_manifest import build_task_manifest
+from core.finalization.close_or_continue import close_or_continue
 from core.intake.loader import RequestLoadError, load_request
 from core.intake.normalizer import normalize_request
 from core.resolution.product_resolver import ProductResolutionError, resolve_product
@@ -27,7 +29,7 @@ from core.validation.validation_result import build_validation_result
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Validate an ATP M1-M7 request preview.")
+    parser = argparse.ArgumentParser(description="Validate an ATP M1-M8 request preview.")
     parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
     return parser
 
@@ -49,7 +51,7 @@ def _build_core_artifacts(
 
 
 def validate_request(request_file: str) -> dict[str, Any]:
-    """Load, normalize, classify, resolve, package context, and preview review state."""
+    """Load, normalize, classify, resolve, package context, route, and preview approval readiness."""
 
     raw_request = load_request(request_file)
     normalized_request = normalize_request(raw_request)
@@ -87,6 +89,7 @@ def validate_request(request_file: str) -> dict[str, Any]:
         notes=["Execution is not performed during validate."],
     )
     review_preview = build_decision(validation_preview)
+    approval_preview = require_approval(validation_preview, review_preview, {"artifact_ids": []})
 
     return {
         "request_file": request_file,
@@ -98,6 +101,8 @@ def validate_request(request_file: str) -> dict[str, Any]:
         "execution_path": routing_result["execution_path"],
         "validation_status": validation_preview["validation_status"],
         "review_status": review_preview["review_status"],
+        "approval_status": approval_preview["approval_status"],
+        "close_or_continue": close_or_continue(approval_preview),
         "reason_codes": routing_result["reason_codes"],
     }
 

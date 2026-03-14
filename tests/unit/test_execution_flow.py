@@ -1,4 +1,4 @@
-"""Unit tests for ATP M6-M7 execution flow."""
+"""Unit tests for ATP M6-M8 execution flow."""
 
 from __future__ import annotations
 

@@ -7,23 +7,11 @@ ATP v0 giu 4 handoff model co dinh:
 - `exchange_bundle`
 - `manifest_reference`
 
-Trong M4, `evidence_bundle` va `manifest_reference` bat dau co vai tro thuc te cho Context Packaging.
+Trong M8, 4 handoff co vai tro thuc te cho final summary:
 
-Evidence Bundle v0 chua:
+- Inline Context: tom tat continuity fields quan trong nhat
+- Evidence Bundle: tap artifact duoc chon va authoritative refs
+- Exchange Bundle: summary co the dua cho step tiep theo
+- Manifest Reference: tro den manifest/final artifact co tham chieu on dinh
 
-- `bundle_id`
-- `request_id`
-- `product`
-- `selected_artifacts`
-- `authoritative_refs`
-- `manifest_reference`
-- `notes`
-
-Manifest Reference v0 duoc dung de tro tu evidence bundle ve task manifest hien tai.
-
-Deferred cho M5+:
-
-- exchange bundle packaging
-- remote transport
-- cross-node synchronization
-- execution-facing handoff materialization
+ATP v0 chi ho tro dict-based handoff summaries, khong co production workspace handoff engine.

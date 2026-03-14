@@ -5,11 +5,15 @@ ATP tach source va runtime:
 - source code o `platforms/ATP`
 - runtime artifacts o `SOURCE_DEV/workspace`
 
-Artifact handoff v0 ho tro 4 co che:
+ATP v0 ho tro 4 co che handoff:
 
 - Inline Context
 - Evidence Bundle
 - Exchange Bundle
 - Manifest Reference
 
-ATP chi handoff artifact da duoc chon loc; khong cap toan bo runtime zone cho executor.
+Trong M8:
+
+- handoff duoc tao o dang summary dict-based
+- finalization chi tro ra handoff refs
+- khong co production workspace materialization hay external transport

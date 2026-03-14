@@ -1,6 +1,6 @@
 # Run Model
 
-Run model dai dien cho mot lan ATP orchestration. Trong M7, run model du de the hien intake, routing, execution, artifact capture, validation, va review.
+Run model dai dien cho mot lan ATP orchestration. Trong M8, run model du de the hien full ATP v0 flow.
 
 Run fields toi thieu:
 
@@ -21,9 +21,12 @@ Run co the mang them thong tin seed:
 - `artifacts`
 - `validation`
 - `review`
+- `approval`
+- `finalization`
+- `close_or_continue`
 - `latest_transition`
 
-State duoc khoa cho giai doan hien tai:
+State duoc khoa cho ATP v0:
 
 - `RECEIVED`
 - `NORMALIZED`
@@ -34,6 +37,14 @@ State duoc khoa cho giai doan hien tai:
 - `EXECUTED`
 - `VALIDATED`
 - `REVIEWED`
+- `APPROVED`
+- `FINALIZED`
+- `CLOSED`
+- `CONTINUE_PENDING`
 - `FAILED`
 
-Validation summary trong M7 chi la rule-based summary nhe. Review decision trong M7 chi la pre-approval preview, chua la approval workflow.
+`close_or_continue` trong M8 phan biet:
+
+- `close`
+- `continue_pending`
+- `close_rejected`

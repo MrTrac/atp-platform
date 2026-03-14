@@ -1,6 +1,6 @@
 # Orchestration Flow
 
-Flow ATP v0 van giu day du theo architecture da khoa, nhung implementation hien tai chi bao phu den M7.
+Flow ATP v0 van giu day du theo architecture da khoa, nhung implementation hien tai bao phu den M8.
 
 Flow chuan:
 
@@ -21,13 +21,13 @@ Flow chuan:
 
 Trang thai implementation hien tai:
 
-- Implemented shallow: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-- Stub only: 11-14
+- Implemented shallow: 1-14
 
-M7 thuc hien:
+M8 thuc hien:
 
-- capture normalized execution output thanh artifact-like structures
-- tao validation summary `passed` / `failed` / `incomplete`
-- tao review decision `accept` / `reject` / `revise`
+- approval gate summary `approved` / `rejected` / `needs_attention`
+- handoff outputs: inline context, evidence bundle, exchange bundle, manifest reference
+- finalization summary
+- close-run / continue-run decision
 
-ATP chua co approval gate workflow, finalization, hay production artifact materialization.
+ATP van chua co human approval UI, production workspace materialization, hay orchestration plane ngoai repo nay.

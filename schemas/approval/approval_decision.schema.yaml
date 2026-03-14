@@ -1,19 +1,25 @@
 type: object
 required:
-  - decision_id
+  - approval_id
   - request_id
-  - review_status
-  - validation_status
+  - approval_status
+  - approval_mode
 properties:
-  decision_id:
+  approval_id:
     type: string
   request_id:
     type: string
-  review_status:
+  approval_status:
     type: string
-  review_notes:
+  approval_mode:
+    type: string
+  approval_notes:
     type: array
-  validation_status:
+  based_on_review_status:
+    type: string
+  based_on_validation_status:
     type: string
   based_on_artifacts:
     type: array
+  continue_recommended:
+    type: boolean

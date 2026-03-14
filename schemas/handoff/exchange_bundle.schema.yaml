@@ -2,15 +2,23 @@ type: object
 title: Exchange Bundle
 required:
   - handoff_type
+  - exchange_id
+  - request_id
   - artifacts
 properties:
   handoff_type:
     type: string
     enum: [exchange_bundle]
+  exchange_id:
+    type: string
+  request_id:
+    type: string
   artifacts:
     type: array
   provider:
     type: string
   adapter:
     type: string
+  notes:
+    type: array
 additionalProperties: true

@@ -32,11 +32,11 @@ properties:
     type: object
   review:
     type: object
-  approval_gate:
-    type: string
-  created_at:
-    type: string
-  updated_at:
+  approval:
+    type: object
+  finalization:
+    type: object
+  close_or_continue:
     type: string
   latest_transition:
     type: object

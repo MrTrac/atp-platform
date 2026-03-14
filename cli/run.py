@@ -1,4 +1,4 @@
-"""ATP M1-M7 run preview CLI."""
+"""ATP M1-M8 run preview CLI."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ from adapters.filesystem.artifact_store import (
     mark_selected,
     summarize_artifacts,
 )
+from core.approvals.approval_gate import require_approval
 from core.approvals.decision_model import build_decision
 from core.classification.classifier import classify_request
 from core.context.bundle_materializer import materialize_bundle
@@ -27,6 +28,12 @@ from core.context.product_context import build_product_context
 from core.context.task_manifest import build_task_manifest
 from core.execution.executor import ExecutionError
 from core.execution.orchestrator import execute_run
+from core.finalization.close_or_continue import close_or_continue
+from core.finalization.finalize import finalize_run
+from core.handoff.evidence_bundle import build_evidence_bundle
+from core.handoff.exchange_bundle import build_exchange_bundle
+from core.handoff.inline_context import build_inline_context
+from core.handoff.manifest_reference import build_manifest_reference
 from core.intake.loader import RequestLoadError, load_request
 from core.intake.normalizer import normalize_request
 from core.resolution.product_resolver import ProductResolutionError, resolve_product
@@ -39,7 +46,7 @@ from core.validation.validator import validate_artifacts
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Preview the ATP M1-M7 run flow.")
+    parser = argparse.ArgumentParser(description="Preview the ATP M1-M8 run flow.")
     parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
     parser.add_argument("--run-id", default="run-preview-0001", help="Optional preview run identifier.")
     return parser
@@ -67,7 +74,7 @@ def _short_text(value: str, limit: int = 120) -> str:
 
 
 def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
-    """Load, normalize, classify, resolve, package context, route, execute, validate, and review."""
+    """Load, normalize, classify, resolve, package context, route, execute, validate, review, approve, and finalize."""
 
     raw_request = load_request(request_file)
     normalized_request = normalize_request(raw_request)
@@ -111,6 +118,47 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
 
     validation_summary = validate_artifacts(execution_result, artifacts)
     review_decision = build_decision(validation_summary)
+    approval_result = require_approval(validation_summary, review_decision, artifact_summary)
+
+    handoff_outputs = {
+        "inline_context": build_inline_context(
+            summary=f"{resolution['product']} completed ATP v0 flow",
+            request_id=normalized_request["request_id"],
+            product=resolution["product"],
+            final_status=approval_result["approval_status"],
+            review_status=review_decision["review_status"],
+            authoritative=True,
+        ),
+        "evidence_bundle": build_evidence_bundle(
+            selected_artifacts=[{"artifact_id": artifact["artifact_id"], "artifact_type": artifact["artifact_type"]} for artifact in artifacts],
+            request_id=normalized_request["request_id"],
+            product=resolution["product"],
+            bundle_id=f"handoff-evidence-{normalized_request['request_id']}",
+            authoritative_refs=artifact_summary["authoritative_artifacts"],
+            manifest_reference=task_manifest["manifest_id"],
+        ),
+        "exchange_bundle": build_exchange_bundle(
+            artifacts=[artifact["artifact_id"] for artifact in artifacts],
+            request_id=normalized_request["request_id"],
+            provider=routing_result["selected_provider"],
+            adapter=routing_result["execution_path"],
+        ),
+        "manifest_reference": build_manifest_reference(
+            artifact_id=authoritative_artifact["artifact_id"],
+            manifest_reference=task_manifest["manifest_id"],
+            product=resolution["product"],
+        ),
+    }
+
+    finalization_summary = finalize_run(
+        execution_result=execution_result,
+        artifact_summary=artifact_summary,
+        validation_summary=validation_summary,
+        review_decision=review_decision,
+        approval_result=approval_result,
+        handoff_outputs=handoff_outputs,
+    )
+    close_decision = close_or_continue(approval_result)
 
     run_record = build_run_record(run_id=run_id, request_id=normalized_request["request_id"])
     run_record = advance_run_state(run_record, RunState.NORMALIZED, "request normalized")
@@ -121,6 +169,20 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
     run_record = advance_run_state(run_record, RunState.EXECUTED, "execution completed")
     run_record = advance_run_state(run_record, RunState.VALIDATED, "validation summary created")
     run_record = advance_run_state(run_record, RunState.REVIEWED, "review decision created")
+    if approval_result["approval_status"] == "approved":
+        run_record = advance_run_state(run_record, RunState.APPROVED, "approval granted")
+    elif approval_result["approval_status"] == "needs_attention":
+        run_record = advance_run_state(run_record, RunState.CONTINUE_PENDING, "approval needs attention")
+    else:
+        run_record = advance_run_state(run_record, RunState.CLOSED, "approval rejected")
+    run_record = advance_run_state(run_record, RunState.FINALIZED, "finalization summary created")
+    if close_decision == "close":
+        run_record = advance_run_state(run_record, RunState.CLOSED, "run closed")
+    elif close_decision == "continue_pending":
+        run_record = advance_run_state(run_record, RunState.CONTINUE_PENDING, "continuation pending")
+    else:
+        run_record = advance_run_state(run_record, RunState.CLOSED, "run closed as rejected")
+
     run_record["product"] = resolution["product"]
     run_record["resolution"] = {
         "repo_boundary": resolution["repo_boundary"],
@@ -148,6 +210,9 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
     run_record["artifacts"] = artifact_summary
     run_record["validation"] = validation_summary
     run_record["review"] = review_decision
+    run_record["approval"] = approval_result
+    run_record["finalization"] = finalization_summary
+    run_record["close_or_continue"] = close_decision
 
     return {
         "request": {
@@ -189,14 +254,18 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
         },
         "validation": validation_summary,
         "review": review_decision,
+        "approval": approval_result,
+        "handoff": handoff_outputs,
+        "finalization": finalization_summary,
+        "close_or_continue": close_decision,
         "run": run_record,
         "decision_state": initial_decision_state(),
-        "message": "Approval gate and finalization are intentionally not implemented in ATP M1-M7.",
+        "message": "ATP v0 stops at final summary. Human approval UI and production handoff materialization are not implemented.",
     }
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the ATP M1-M7 preview flow."""
+    """Run the ATP M1-M8 preview flow."""
 
     parser = _build_parser()
     args = parser.parse_args(argv)

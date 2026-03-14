@@ -3,11 +3,21 @@ title: Inline Context
 required:
   - handoff_type
   - summary
+  - request_id
+  - product
 properties:
   handoff_type:
     type: string
     enum: [inline_context]
   summary:
+    type: string
+  request_id:
+    type: string
+  product:
+    type: string
+  final_status:
+    type: string
+  review_status:
     type: string
   artifact_freshness:
     type: string

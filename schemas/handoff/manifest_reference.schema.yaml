@@ -4,6 +4,7 @@ required:
   - handoff_type
   - artifact_id
   - manifest_reference
+  - product
 properties:
   handoff_type:
     type: string

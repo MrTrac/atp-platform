@@ -1,6 +1,7 @@
 type: object
 title: Evidence Bundle
 required:
+  - handoff_type
   - bundle_id
   - request_id
   - product
@@ -8,6 +9,9 @@ required:
   - authoritative_refs
   - manifest_reference
 properties:
+  handoff_type:
+    type: string
+    enum: [evidence_bundle]
   bundle_id:
     type: string
   request_id:

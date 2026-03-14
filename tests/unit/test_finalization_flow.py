@@ -1,0 +1,65 @@
+"""Unit tests for ATP M8 approval, handoff, and finalization flow."""
+
+from __future__ import annotations
+
+import unittest
+
+from core.approvals.approval_gate import require_approval
+from core.finalization.close_or_continue import close_or_continue
+from core.finalization.finalize import finalize_run
+from core.handoff.inline_context import build_inline_context
+from core.handoff.manifest_reference import build_manifest_reference
+
+
+class TestFinalizationFlow(unittest.TestCase):
+    """Cover minimal ATP v0 finalization rules."""
+
+    def test_inline_context_returns_stable_essential_fields(self) -> None:
+        inline_context = build_inline_context(
+            summary="ATP run completed",
+            request_id="req-1",
+            product="ATP",
+            final_status="completed",
+            review_status="accept",
+            authoritative=True,
+        )
+
+        self.assertEqual(inline_context["handoff_type"], "inline_context")
+        self.assertEqual(inline_context["request_id"], "req-1")
+
+    def test_manifest_reference_structure_is_stable(self) -> None:
+        manifest_reference = build_manifest_reference("artifact-1", "task-manifest-req-1", "ATP")
+
+        self.assertEqual(manifest_reference["handoff_type"], "manifest_reference")
+        self.assertEqual(manifest_reference["product"], "ATP")
+
+    def test_close_or_continue_logic_follows_minimal_rules(self) -> None:
+        self.assertEqual(close_or_continue({"approval_status": "approved"}), "close")
+        self.assertEqual(close_or_continue({"approval_status": "needs_attention"}), "continue_pending")
+        self.assertEqual(close_or_continue({"approval_status": "rejected"}), "close_rejected")
+
+    def test_finalization_closes_approved_run(self) -> None:
+        approval = require_approval(
+            {"request_id": "req-1", "validation_status": "passed"},
+            {"request_id": "req-1", "review_status": "accept"},
+            {"artifact_ids": ["artifact-1"], "authoritative_artifacts": [{"artifact_id": "artifact-1", "artifact_type": "execution_output"}]},
+        )
+        finalization = finalize_run(
+            execution_result={"request_id": "req-1", "selected_provider": "non_llm_execution", "selected_node": "local_mac"},
+            artifact_summary={"authoritative_artifacts": [{"artifact_id": "artifact-1", "artifact_type": "execution_output"}]},
+            validation_summary={"validation_status": "passed"},
+            review_decision={"review_status": "accept"},
+            approval_result=approval,
+            handoff_outputs={
+                "inline_context": {"handoff_type": "inline_context"},
+                "evidence_bundle": {"bundle_id": "bundle-1"},
+                "exchange_bundle": {"exchange_id": "exchange-1"},
+                "manifest_reference": {"manifest_reference": "task-manifest-req-1"},
+            },
+        )
+
+        self.assertEqual(finalization["final_status"], "completed")
+
+
+if __name__ == "__main__":
+    unittest.main()

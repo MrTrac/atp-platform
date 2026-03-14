@@ -1,0 +1,12 @@
+request_id: req-atp-m8-exec-fail-0001
+product: ATP
+request_type: implementation
+execution_intent: preview
+payload:
+  input_text: Execute a safe failing command and review it
+  command_argv:
+    - python3
+    - -c
+    - import sys; sys.exit(1)
+metadata:
+  capability: shell_execution

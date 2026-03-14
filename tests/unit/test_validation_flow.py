@@ -1,16 +1,17 @@
-"""Unit tests for ATP M7 validation and review flow."""
+"""Unit tests for ATP M7-M8 validation, review, and approval flow."""
 
 from __future__ import annotations
 
 import unittest
 
 from adapters.filesystem.artifact_store import create_filtered_artifact, create_raw_artifact
+from core.approvals.approval_gate import require_approval
 from core.approvals.decision_model import build_decision
 from core.validation.validator import validate_artifacts
 
 
 class TestValidationFlow(unittest.TestCase):
-    """Cover minimal validation and review decision rules."""
+    """Cover minimal validation, review, and approval rules."""
 
     def test_validator_returns_passed_summary_for_exit_code_zero(self) -> None:
         execution_result = {
@@ -58,6 +59,27 @@ class TestValidationFlow(unittest.TestCase):
         self.assertEqual(accept["review_status"], "accept")
         self.assertEqual(reject["review_status"], "reject")
         self.assertEqual(revise["review_status"], "revise")
+
+    def test_approval_gate_follows_minimal_rules(self) -> None:
+        approved = require_approval(
+            {"request_id": "req-1", "validation_status": "passed"},
+            {"request_id": "req-1", "review_status": "accept"},
+            {"artifact_ids": ["a1"]},
+        )
+        rejected = require_approval(
+            {"request_id": "req-1", "validation_status": "failed"},
+            {"request_id": "req-1", "review_status": "reject"},
+            {"artifact_ids": ["a1"]},
+        )
+        attention = require_approval(
+            {"request_id": "req-1", "validation_status": "incomplete"},
+            {"request_id": "req-1", "review_status": "revise"},
+            {"artifact_ids": ["a1"]},
+        )
+
+        self.assertEqual(approved["approval_status"], "approved")
+        self.assertEqual(rejected["approval_status"], "rejected")
+        self.assertEqual(attention["approval_status"], "needs_attention")
 
 
 if __name__ == "__main__":

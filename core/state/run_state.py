@@ -1,4 +1,4 @@
-"""Run state definitions for ATP M1-M7."""
+"""Run state definitions for ATP M1-M8."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ def utc_now() -> str:
 
 
 class RunState:
-    """Enum-like run state names locked for early ATP stages."""
+    """Enum-like run state names locked for ATP v0."""
 
     RECEIVED = "RECEIVED"
     NORMALIZED = "NORMALIZED"
@@ -24,12 +24,16 @@ class RunState:
     EXECUTED = "EXECUTED"
     VALIDATED = "VALIDATED"
     REVIEWED = "REVIEWED"
+    APPROVED = "APPROVED"
+    FINALIZED = "FINALIZED"
+    CLOSED = "CLOSED"
+    CONTINUE_PENDING = "CONTINUE_PENDING"
     FAILED = "FAILED"
 
 
 @dataclass(frozen=True)
 class RunRecord:
-    """Minimal in-memory run record used by early CLI preview flows."""
+    """Minimal in-memory run record used by ATP v0 preview flows."""
 
     run_id: str
     request_id: str
@@ -39,13 +43,11 @@ class RunRecord:
     updated_at: str
 
     def to_dict(self) -> dict[str, str]:
-        """Return a serializable representation."""
-
         return asdict(self)
 
 
 def build_run_record(run_id: str, request_id: str, state: str = RunState.RECEIVED) -> dict[str, str]:
-    """Create a minimal run record for M1-M7 previews."""
+    """Create a minimal run record for ATP v0 previews."""
 
     timestamp = utc_now()
     record = RunRecord(
