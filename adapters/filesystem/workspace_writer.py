@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from core.handoff.continuation_state import build_continuation_state
+
 
 DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[2]
 RUN_TREE_ZONES = (
@@ -284,6 +286,23 @@ def materialize_run_outputs(
         workspace_root=workspace_root,
     )
     exchange_boundary_decision = exchange_summary["decision"]
+    request_id = str(
+        payloads.get("close_or_continue", {}).get("request_id")
+        or payloads.get("run_record", {}).get("request_id")
+        or payloads.get("raw_request", {}).get("request_id")
+        or "request-unknown"
+    )
+    continuation_state = build_continuation_state(
+        run_id=run_id,
+        request_id=request_id,
+        close_decision=str(payloads["close_or_continue"]["decision"]),
+        exchange_boundary_decision=exchange_boundary_decision,
+        exchange_summary=exchange_summary,
+        handoff_outputs={
+            **payloads["handoff_outputs"],
+            "exchange_bundle": payloads["exchange_bundle"],
+        },
+    )
     created_files = {
         "request": [
             _write_json(zone_paths["request"] / "request.raw.json", payloads["raw_request"]),
@@ -328,6 +347,7 @@ def materialize_run_outputs(
         ],
         "final": [
             _write_json(zone_paths["final"] / "finalization-summary.json", payloads["finalization_summary"]),
+            _write_json(zone_paths["final"] / "continuation-state.json", continuation_state),
         ],
         "logs": [
             _write_log(
@@ -397,6 +417,9 @@ def materialize_run_outputs(
     materialization_lines.append(
         f"retention-summary={zone_paths['final'] / 'retention-summary.json'}"
     )
+    materialization_lines.append(
+        f"continuation-state={zone_paths['final'] / 'continuation-state.json'}"
+    )
     materialization_lines.append(f"cleanup-log={zone_paths['logs'] / 'cleanup.log'}")
     created_files["logs"][-1] = _write_log(zone_paths["logs"] / "materialization.log", materialization_lines)
 
@@ -407,6 +430,7 @@ def materialize_run_outputs(
         "files": {zone: [str(path) for path in files] for zone, files in created_files.items()},
         "exchange_boundary": exchange_boundary_decision,
         "exchange": exchange_summary,
+        "continuation": continuation_state,
         "authoritative_projection": projections,
         "retention": retention_summary,
     }

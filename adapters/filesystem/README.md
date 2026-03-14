@@ -12,9 +12,10 @@ Pham vi:
 - project authoritative artifact toi thieu sang `SOURCE_DEV/workspace/atp-artifacts/<artifact-id>/`
 - ghi retention / cleanup semantics toi thieu ma khong auto-delete runtime artifacts
 - materialize `exchange/current-task/` toi thieu chi khi exchange boundary decision yeu cau
+- ghi continuation state toi thieu cho `continue_pending` ma khong them queue/scheduler subsystem
 
 Deferred:
 
 - artifact persistence thuc te
 - day du artifact lifecycle engine
-- `exchange/` subsystem rong hon, retention va cleanup engine rong hon
+- `exchange/` subsystem rong hon, continuity reference/index support, retention va cleanup engine rong hon

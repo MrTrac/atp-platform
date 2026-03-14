@@ -7,6 +7,7 @@ import unittest
 from core.approvals.approval_gate import require_approval
 from core.finalization.close_or_continue import close_or_continue
 from core.finalization.finalize import derive_final_status, finalize_run
+from core.handoff.continuation_state import build_continuation_state
 from core.handoff.exchange_boundary import build_exchange_boundary_decision
 from core.handoff.inline_context import build_inline_context
 from core.handoff.manifest_reference import build_manifest_reference
@@ -64,6 +65,36 @@ class TestFinalizationFlow(unittest.TestCase):
         self.assertEqual(continue_decision["exchange_materialization_status"], "deferred")
         self.assertFalse(close_decision["requires_exchange_boundary"])
         self.assertEqual(close_decision["boundary_mode"], "run_local_handoff")
+
+    def test_continuation_state_uses_exchange_current_task_for_continue_pending(self) -> None:
+        state = build_continuation_state(
+            run_id="run-1",
+            request_id="req-1",
+            close_decision="continue_pending",
+            exchange_boundary_decision={
+                "decision_id": "exchange-boundary-run-1",
+                "boundary_mode": "external_exchange_candidate",
+                "exchange_materialization_status": "materialized_current_task",
+            },
+            exchange_summary={
+                "materialized": True,
+                "exchange_root": "/tmp/SOURCE_DEV/workspace/exchange/current-task/run-1",
+            },
+            handoff_outputs={
+                "evidence_bundle": {
+                    "bundle_id": "handoff-evidence-req-1",
+                    "selected_artifacts": [{"artifact_id": "artifact-selected-req-1", "artifact_type": "execution_output"}],
+                    "authoritative_refs": [{"artifact_id": "artifact-authoritative-req-1", "artifact_type": "execution_output"}],
+                },
+                "manifest_reference": {"manifest_reference": "task-manifest-req-1"},
+                "exchange_bundle": {"exchange_id": "exchange-req-1"},
+            },
+        )
+
+        self.assertTrue(state["continuation_required"])
+        self.assertEqual(state["continuity_status"], "continuation_pending")
+        self.assertEqual(state["current_source"], "exchange_current_task")
+        self.assertEqual(state["continuity_refs"]["exchange_bundle_id"], "exchange-req-1")
 
     def test_derive_final_status_keeps_finalization_vocabulary_stable(self) -> None:
         self.assertEqual(derive_final_status({"approval_status": "approved"}), "completed")

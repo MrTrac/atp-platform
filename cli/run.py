@@ -266,6 +266,7 @@ def preview_run(
         },
     )
     exchange_boundary_decision = dict(materialization["exchange_boundary"])
+    continuation_state = dict(materialization["continuation"])
 
     return {
         "request": {
@@ -310,6 +311,7 @@ def preview_run(
         "approval": approval_result,
         "handoff": handoff_outputs,
         "exchange_boundary": exchange_boundary_decision,
+        "continuation": continuation_state,
         "finalization": finalization_summary,
         "close_or_continue": close_decision,
         "run": run_record,
