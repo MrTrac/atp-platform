@@ -56,7 +56,7 @@ Nói ngắn gọn, `v0.6` tồn tại để hoàn tất nốt phần foundationa
 
 ## 6. Capability gap mà `v0.6` cần address
 
-Capability gap của `v0.6` là thiếu một `post-execution decision` layer rõ, bounded, file-based, và traceable sau Slice D.
+Capability gap của `v0.6` là thiếu một `post-execution decision` layer rõ, bounded, file-based, và traceable sau product execution result contract (`v0.5` Slice D).
 
 Gap này nằm ở vùng semantics giữa:
 
@@ -85,6 +85,8 @@ Gap này không phải:
 - planning baseline rõ cho foundational closure của `v0`
 - explicit framing rằng `v0.6` không phải breadth expansion
 - Slice A `Post-Execution Decision Contract`
+- Slice B `Decision-to-Closure / Continuation Handoff Contract`
+- Slice C `Closure / Continuation State Contract`
 - boundary semantics rõ giữa post-execution decision với approval UI, recovery engine, routing, và broader orchestration
 - freeze/integration criteria vẫn bám current `v0` horizon
 
@@ -111,21 +113,32 @@ Vẫn defer beyond `v0.6` nếu chưa có evidence đủ mạnh:
 
 ## 11. Slice structure
 
-`v0.6` mở với một first slice rõ ràng:
+`v0.6` hiện được tổ chức như một closure chain bounded:
 
 1. Slice A: Post-Execution Decision Contract
+2. Slice B: Decision-to-Closure / Continuation Handoff Contract
+3. Slice C: Closure / Continuation State Contract
 
-Các slices tiếp theo, nếu có, chỉ nên được mở sau khi Slice A được implement và review, và chỉ khi chúng vẫn chứng minh được là foundational closure của `v0`, không phải mở rộng breadth.
+Các slice này phải hoạt động như một foundational closure chain nhất quán sau execution result. Nếu có slice tiếp theo, nó chỉ được mở khi chứng minh được là vẫn thuộc foundational closure của `v0`, không phải mở rộng breadth.
 
-## 12. Slice A — Post-Execution Decision Contract
+## 12. Current closure chain
 
-Slice A của `v0.6` phải trả lời:
+Baseline A-C hiện tại phải trả lời tuần tự:
 
-- ATP đang ghi nhận bounded decision nào sau execution result
-- decision đó nối thế nào tới `close`, `close_rejected`, `continue_pending`, và `escalate_review` hoặc bounded review-escalation semantics tương đương
-- decision đó traceable thế nào tới Slice D execution result contract
+- Slice A:
+  - ATP đang ghi nhận bounded decision nào sau execution result
+  - decision đó nối thế nào tới `close`, `close_rejected`, `continue_pending`, và `escalate_review` hoặc bounded review-escalation semantics tương đương
+  - decision đó traceable thế nào tới Slice D execution result contract
 
-Slice này phải giữ rõ separation với:
+- Slice B:
+  - ATP đang hand off bounded decision đó vào closure / continuation path nào
+  - handoff đó vẫn tách biệt với approval UI, recovery engine, routing, provider selection, và broader orchestration
+
+- Slice C:
+  - ATP đang ghi bounded state nào cho path đã được chọn
+  - state đó phản ánh `close`, `close_rejected`, hoặc `continue_pending` mà không biến thành lifecycle engine
+
+Toàn bộ closure chain này phải giữ rõ separation với:
 
 - approval UI
 - recovery engine
@@ -133,7 +146,7 @@ Slice này phải giữ rõ separation với:
 - provider selection
 - broader orchestration
 
-Nó chỉ nên harden một `post-execution decision contract`, không biến ATP thành workflow engine mới.
+Nó chỉ nên harden bounded closure semantics của `v0`, không biến ATP thành workflow engine mới.
 
 ## 13. Freeze criteria
 
