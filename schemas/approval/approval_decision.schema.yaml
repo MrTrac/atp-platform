@@ -1,10 +1,19 @@
 type: object
 required:
-  - decision_state
+  - decision_id
+  - request_id
+  - review_status
+  - validation_status
 properties:
-  decision_state:
+  decision_id:
     type: string
-  approver:
+  request_id:
     type: string
-  rationale:
+  review_status:
     type: string
+  review_notes:
+    type: array
+  validation_status:
+    type: string
+  based_on_artifacts:
+    type: array

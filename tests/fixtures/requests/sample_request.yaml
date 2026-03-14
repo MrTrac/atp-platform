@@ -1,12 +1,12 @@
-request_id: req-atp-m6-0001
+request_id: req-atp-m7-0001
 product: ATP
 request_type: implementation
 execution_intent: preview
 payload:
-  input_text: Build ATP M6 execution preview
+  input_text: Build ATP M7 validation and review preview
   command_argv:
     - echo
-    - atp-m6
+    - atp-m7
 metadata:
   provider: local
   adapter: subprocess

@@ -26,6 +26,12 @@ properties:
     type: object
   execution:
     type: object
+  artifacts:
+    type: object
+  validation:
+    type: object
+  review:
+    type: object
   approval_gate:
     type: string
   created_at:

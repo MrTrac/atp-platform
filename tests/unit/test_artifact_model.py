@@ -1,9 +1,16 @@
-"""Unit tests for ATP M4-M6 artifact, evidence, routing, execution, and state seed models."""
+"""Unit tests for ATP M4-M7 artifact, routing, validation, and state seed models."""
 
 from __future__ import annotations
 
 import unittest
 
+from adapters.filesystem.artifact_store import (
+    create_filtered_artifact,
+    create_raw_artifact,
+    mark_authoritative,
+    mark_deprecated,
+    mark_selected,
+)
 from core.context.bundle_materializer import materialize_bundle
 from core.context.evidence_selector import select_evidence
 from core.handoff.evidence_bundle import build_evidence_bundle
@@ -16,6 +23,47 @@ from core.state.transitions import advance_run_state, build_transition_record
 
 class TestArtifactModel(unittest.TestCase):
     """Cover shallow artifact and transition contracts."""
+
+    def test_execution_output_transforms_into_raw_artifact_structure(self) -> None:
+        raw_artifact = create_raw_artifact(
+            {
+                "execution_id": "execution-req-1",
+                "request_id": "req-1",
+                "product": "ATP",
+                "command": ["echo", "hello"],
+                "exit_code": 0,
+                "stdout": "hello\n",
+                "stderr": "",
+                "status": "succeeded",
+            }
+        )
+
+        self.assertEqual(raw_artifact["artifact_state"], "raw")
+        self.assertEqual(raw_artifact["artifact_type"], "execution_output")
+
+    def test_filtered_selected_and_authoritative_flags_apply_as_expected(self) -> None:
+        raw_artifact = create_raw_artifact(
+            {
+                "execution_id": "execution-req-1",
+                "request_id": "req-1",
+                "product": "ATP",
+                "command": ["echo", "hello"],
+                "exit_code": 0,
+                "stdout": "hello\n",
+                "stderr": "",
+                "status": "succeeded",
+            }
+        )
+        filtered = create_filtered_artifact(raw_artifact)
+        selected = mark_selected(filtered)
+        authoritative = mark_authoritative(selected)
+        deprecated = mark_deprecated(authoritative)
+
+        self.assertEqual(filtered["artifact_state"], "filtered")
+        self.assertEqual(selected["artifact_state"], "selected")
+        self.assertEqual(authoritative["artifact_state"], "authoritative")
+        self.assertTrue(authoritative["authoritative"])
+        self.assertEqual(deprecated["artifact_state"], "deprecated")
 
     def test_inline_context_and_manifest_reference_keep_locked_names(self) -> None:
         inline_context = build_inline_context("seed summary", authoritative=True)
@@ -72,13 +120,44 @@ class TestArtifactModel(unittest.TestCase):
         self.assertEqual(routing_result["execution_path"], "local_subprocess")
         self.assertEqual(routing_result["status"], "selected")
 
+    def test_artifact_schema_keys_remain_stable(self) -> None:
+        artifact = create_raw_artifact(
+            {
+                "execution_id": "execution-req-1",
+                "request_id": "req-1",
+                "product": "ATP",
+                "command": ["echo", "hello"],
+                "exit_code": 0,
+                "stdout": "hello\n",
+                "stderr": "",
+                "status": "succeeded",
+            }
+        )
+
+        self.assertEqual(
+            set(artifact.keys()),
+            {
+                "artifact_id",
+                "request_id",
+                "product",
+                "artifact_type",
+                "artifact_state",
+                "source_stage",
+                "source_ref",
+                "authoritative",
+                "artifact_freshness",
+                "payload_summary",
+                "notes",
+            },
+        )
+
     def test_state_transition_helper_returns_expected_structure(self) -> None:
         run_record = build_run_record(run_id="run-1", request_id="req-1")
-        updated = advance_run_state(run_record, RunState.EXECUTED, "execution completed")
-        transition = build_transition_record("run-1", RunState.ROUTED, RunState.EXECUTED, RunState.EXECUTED)
+        updated = advance_run_state(run_record, RunState.REVIEWED, "review decision created")
+        transition = build_transition_record("run-1", RunState.VALIDATED, RunState.REVIEWED, RunState.REVIEWED)
 
-        self.assertEqual(updated["state"], RunState.EXECUTED)
-        self.assertEqual(updated["latest_transition"]["detail"], "execution completed")
+        self.assertEqual(updated["state"], RunState.REVIEWED)
+        self.assertEqual(updated["latest_transition"]["detail"], "review decision created")
         self.assertEqual(
             set(transition.keys()),
             {"run_id", "from_state", "to_state", "stage", "detail", "recorded_at"},

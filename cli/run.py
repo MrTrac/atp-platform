@@ -1,4 +1,4 @@
-"""ATP M1-M6 run preview CLI."""
+"""ATP M1-M7 run preview CLI."""
 
 from __future__ import annotations
 
@@ -12,6 +12,14 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from adapters.filesystem.artifact_store import (
+    create_filtered_artifact,
+    create_raw_artifact,
+    mark_authoritative,
+    mark_selected,
+    summarize_artifacts,
+)
+from core.approvals.decision_model import build_decision
 from core.classification.classifier import classify_request
 from core.context.bundle_materializer import materialize_bundle
 from core.context.evidence_selector import select_evidence
@@ -27,10 +35,11 @@ from core.routing.route_select import RouteSelectionError, select_route
 from core.state.decision_state import initial_decision_state
 from core.state.run_state import RunState, build_run_record
 from core.state.transitions import advance_run_state
+from core.validation.validator import validate_artifacts
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Preview the ATP M1-M6 run flow.")
+    parser = argparse.ArgumentParser(description="Preview the ATP M1-M7 run flow.")
     parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
     parser.add_argument("--run-id", default="run-preview-0001", help="Optional preview run identifier.")
     return parser
@@ -58,7 +67,7 @@ def _short_text(value: str, limit: int = 120) -> str:
 
 
 def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
-    """Load, normalize, classify, resolve, package context, route, and execute."""
+    """Load, normalize, classify, resolve, package context, route, execute, validate, and review."""
 
     raw_request = load_request(request_file)
     normalized_request = normalize_request(raw_request)
@@ -93,6 +102,16 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
         routing_result=routing_result,
     )
 
+    raw_artifact = create_raw_artifact(execution_result)
+    filtered_artifact = create_filtered_artifact(raw_artifact)
+    selected_artifact = mark_selected(filtered_artifact)
+    authoritative_artifact = mark_authoritative(selected_artifact)
+    artifacts = [raw_artifact, filtered_artifact, selected_artifact, authoritative_artifact]
+    artifact_summary = summarize_artifacts(artifacts)
+
+    validation_summary = validate_artifacts(execution_result, artifacts)
+    review_decision = build_decision(validation_summary)
+
     run_record = build_run_record(run_id=run_id, request_id=normalized_request["request_id"])
     run_record = advance_run_state(run_record, RunState.NORMALIZED, "request normalized")
     run_record = advance_run_state(run_record, RunState.CLASSIFIED, "request classified")
@@ -100,6 +119,8 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
     run_record = advance_run_state(run_record, RunState.CONTEXT_PACKAGED, "context packaged")
     run_record = advance_run_state(run_record, RunState.ROUTED, "route selected")
     run_record = advance_run_state(run_record, RunState.EXECUTED, "execution completed")
+    run_record = advance_run_state(run_record, RunState.VALIDATED, "validation summary created")
+    run_record = advance_run_state(run_record, RunState.REVIEWED, "review decision created")
     run_record["product"] = resolution["product"]
     run_record["resolution"] = {
         "repo_boundary": resolution["repo_boundary"],
@@ -124,6 +145,9 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
         "exit_code": execution_result["exit_code"],
         "status": execution_result["status"],
     }
+    run_record["artifacts"] = artifact_summary
+    run_record["validation"] = validation_summary
+    run_record["review"] = review_decision
 
     return {
         "request": {
@@ -159,14 +183,20 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
             "stderr_preview": _short_text(execution_result["stderr"]),
             "status": execution_result["status"],
         },
+        "artifacts": {
+            "items": artifacts,
+            "summary": artifact_summary,
+        },
+        "validation": validation_summary,
+        "review": review_decision,
         "run": run_record,
         "decision_state": initial_decision_state(),
-        "message": "Validation, review, approval, and finalization are intentionally not implemented in ATP M1-M6.",
+        "message": "Approval gate and finalization are intentionally not implemented in ATP M1-M7.",
     }
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Run the ATP M1-M6 preview flow."""
+    """Run the ATP M1-M7 preview flow."""
 
     parser = _build_parser()
     args = parser.parse_args(argv)

@@ -1,4 +1,4 @@
-"""ATP M1-M6 validate CLI."""
+"""ATP M1-M7 validate CLI."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from core.approvals.decision_model import build_decision
 from core.classification.classifier import classify_request
 from core.context.bundle_materializer import materialize_bundle
 from core.context.evidence_selector import select_evidence
@@ -22,10 +23,11 @@ from core.intake.normalizer import normalize_request
 from core.resolution.product_resolver import ProductResolutionError, resolve_product
 from core.routing.route_prepare import RoutePreparationError, prepare_route
 from core.routing.route_select import RouteSelectionError, select_route
+from core.validation.validation_result import build_validation_result
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Validate an ATP M1-M6 request preview.")
+    parser = argparse.ArgumentParser(description="Validate an ATP M1-M7 request preview.")
     parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
     return parser
 
@@ -47,7 +49,7 @@ def _build_core_artifacts(
 
 
 def validate_request(request_file: str) -> dict[str, Any]:
-    """Load, normalize, classify, resolve, package context, and select a route."""
+    """Load, normalize, classify, resolve, package context, and preview review state."""
 
     raw_request = load_request(request_file)
     normalized_request = normalize_request(raw_request)
@@ -73,6 +75,18 @@ def validate_request(request_file: str) -> dict[str, Any]:
         evidence_bundle,
     )
     routing_result = select_route(prepared_route)
+    validation_preview = build_validation_result(
+        request_id=normalized_request["request_id"],
+        validation_status="incomplete",
+        exit_code=None,
+        execution_status="not_executed",
+        stdout_preview="",
+        stderr_preview="",
+        checked_keys=[],
+        artifact_ids=[],
+        notes=["Execution is not performed during validate."],
+    )
+    review_preview = build_decision(validation_preview)
 
     return {
         "request_file": request_file,
@@ -82,6 +96,8 @@ def validate_request(request_file: str) -> dict[str, Any]:
         "selected_provider": routing_result["selected_provider"],
         "selected_node": routing_result["selected_node"],
         "execution_path": routing_result["execution_path"],
+        "validation_status": validation_preview["validation_status"],
+        "review_status": review_preview["review_status"],
         "reason_codes": routing_result["reason_codes"],
     }
 

@@ -1,11 +1,11 @@
-request_id: req-atp-m6-atp-0001
+request_id: req-atp-m7-atp-0001
 product: ATP
 request_type: implementation
 execution_intent: preview
 payload:
-  input_text: Build ATP execution preview
+  input_text: Build ATP artifact capture preview
   command_argv:
     - echo
-    - atp-route
+    - atp-artifact
 metadata:
   capability: shell_execution

@@ -1,4 +1,4 @@
-"""Normalize raw adapter output into ATP M6 execution results."""
+"""Normalize raw adapter output into ATP M6-M7 execution results."""
 
 from __future__ import annotations
 
@@ -30,5 +30,6 @@ def normalize_output(
         "stdout": raw_result.get("stdout", ""),
         "stderr": raw_result.get("stderr", ""),
         "status": status,
+        "source_stage": "execution",
         "notes": list(raw_result.get("notes", [])),
     }

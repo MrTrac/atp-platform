@@ -1,6 +1,6 @@
 # Run Model
 
-Run model dai dien cho mot lan ATP orchestration. Trong M5, run model du de the hien intake, classification, resolution, context packaging, va routing.
+Run model dai dien cho mot lan ATP orchestration. Trong M7, run model du de the hien intake, routing, execution, artifact capture, validation, va review.
 
 Run fields toi thieu:
 
@@ -17,6 +17,10 @@ Run co the mang them thong tin seed:
 - `resolution`
 - `context_package`
 - `routing`
+- `execution`
+- `artifacts`
+- `validation`
+- `review`
 - `latest_transition`
 
 State duoc khoa cho giai doan hien tai:
@@ -27,15 +31,9 @@ State duoc khoa cho giai doan hien tai:
 - `RESOLVED`
 - `CONTEXT_PACKAGED`
 - `ROUTED`
+- `EXECUTED`
+- `VALIDATED`
+- `REVIEWED`
 - `FAILED`
 
-`routing` trong M5 co the chua summary nhe cua:
-
-- required capabilities
-- candidate providers
-- candidate nodes
-- selected provider
-- selected node
-- reason codes
-
-Transition record van giu nhe, khong persistence, khong queue, khong retry.
+Validation summary trong M7 chi la rule-based summary nhe. Review decision trong M7 chi la pre-approval preview, chua la approval workflow.

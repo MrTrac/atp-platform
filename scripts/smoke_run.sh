@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Name: smoke_run.sh
-# Purpose: Safe ATP M1-M6 smoke flow.
+# Purpose: Safe ATP M1-M7 smoke flow.
 
 set -euo pipefail
 
@@ -14,4 +14,4 @@ test -f "$REQUEST_FILE"
 python3 "$ROOT_DIR/cli/validate.py" "$REQUEST_FILE" >/dev/null
 python3 "$ROOT_DIR/cli/run.py" "$REQUEST_FILE" >/dev/null
 
-printf 'ATP M1-M6 smoke: OK\n'
+printf 'ATP M1-M7 smoke: OK\n'

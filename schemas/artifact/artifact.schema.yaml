@@ -2,28 +2,35 @@ type: object
 title: ATP Artifact
 required:
   - artifact_id
-  - artifact_type
-  - run_id
+  - request_id
   - product
-  - artifact_freshness
+  - artifact_type
+  - artifact_state
+  - source_stage
+  - source_ref
   - authoritative
+  - artifact_freshness
 properties:
   artifact_id:
     type: string
-  artifact_type:
-    type: string
-  run_id:
+  request_id:
     type: string
   product:
     type: string
-  capability:
+  artifact_type:
     type: string
-  artifact_freshness:
+  artifact_state:
+    type: string
+  source_stage:
+    type: string
+  source_ref:
     type: string
   authoritative:
     type: boolean
-  manifest_reference:
+  artifact_freshness:
     type: string
-  metadata:
+  payload_summary:
     type: object
+  notes:
+    type: array
 additionalProperties: true

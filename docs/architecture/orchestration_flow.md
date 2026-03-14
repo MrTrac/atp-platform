@@ -1,6 +1,6 @@
 # Orchestration Flow
 
-Flow ATP v0 van giu day du theo architecture da khoa, nhung implementation hien tai chi bao phu den M6.
+Flow ATP v0 van giu day du theo architecture da khoa, nhung implementation hien tai chi bao phu den M7.
 
 Flow chuan:
 
@@ -21,13 +21,13 @@ Flow chuan:
 
 Trang thai implementation hien tai:
 
-- Implemented shallow: 1, 2, 3, 4, 5, 6, 7, 8, 9
-- Stub only: 10-14
+- Implemented shallow: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+- Stub only: 11-14
 
-Execution trong M6 thuc hien:
+M7 thuc hien:
 
-- map route sang local subprocess adapter khi route la `non_llm_execution` + `local_mac`
-- chay local command an toan tu `payload.command_argv`
-- normalize raw output thanh execution result on dinh
+- capture normalized execution output thanh artifact-like structures
+- tao validation summary `passed` / `failed` / `incomplete`
+- tao review decision `accept` / `reject` / `revise`
 
-ATP chua co validation, approval, hay production artifact materialization.
+ATP chua co approval gate workflow, finalization, hay production artifact materialization.

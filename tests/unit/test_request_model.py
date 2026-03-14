@@ -1,10 +1,17 @@
-"""Unit tests for ATP M1-M6 request, context, routing, and execution flow."""
+"""Unit tests for ATP M1-M7 request, context, routing, execution, validation, and review flow."""
 
 from __future__ import annotations
 
 import unittest
 from pathlib import Path
 
+from adapters.filesystem.artifact_store import (
+    create_filtered_artifact,
+    create_raw_artifact,
+    mark_authoritative,
+    mark_selected,
+)
+from core.approvals.decision_model import build_decision
 from core.classification.classifier import classify_request
 from core.context.product_context import build_product_context
 from core.context.task_manifest import build_task_manifest
@@ -14,18 +21,19 @@ from core.intake.normalizer import normalize_request
 from core.resolution.product_resolver import resolve_product
 from core.routing.route_prepare import prepare_route
 from core.routing.route_select import select_route
+from core.validation.validator import validate_artifacts
 
 
 FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "requests"
 
 
 class TestRequestModel(unittest.TestCase):
-    """Cover the M1-M6 request seed flow."""
+    """Cover the M1-M7 request seed flow."""
 
     def test_loader_reads_sample_request_fixture(self) -> None:
         loaded = load_request(FIXTURE_DIR / "sample_request.yaml")
 
-        self.assertEqual(loaded["request_id"], "req-atp-m6-0001")
+        self.assertEqual(loaded["request_id"], "req-atp-m7-0001")
         self.assertEqual(loaded["product"], "ATP")
 
     def test_normalizer_fills_default_fields(self) -> None:
@@ -72,7 +80,7 @@ class TestRequestModel(unittest.TestCase):
         self.assertEqual(product_context["product"], "TDF")
         self.assertEqual(product_context["profile_ref"], "profiles/TDF/profile.yaml")
 
-    def test_request_flow_can_execute_supported_local_route(self) -> None:
+    def test_request_flow_can_execute_validate_and_review_supported_local_route(self) -> None:
         normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_exec_echo.yaml"))
         classification = classify_request(normalized)
         resolution = resolve_product(normalized, classification)
@@ -95,8 +103,14 @@ class TestRequestModel(unittest.TestCase):
             routing_result=routing_result,
         )
 
-        self.assertEqual(execution_result["exit_code"], 0)
-        self.assertEqual(execution_result["selected_provider"], "non_llm_execution")
+        raw_artifact = create_raw_artifact(execution_result)
+        filtered_artifact = create_filtered_artifact(raw_artifact)
+        authoritative_artifact = mark_authoritative(mark_selected(filtered_artifact))
+        validation_summary = validate_artifacts(execution_result, [raw_artifact, filtered_artifact, authoritative_artifact])
+        review_decision = build_decision(validation_summary)
+
+        self.assertEqual(validation_summary["validation_status"], "passed")
+        self.assertEqual(review_decision["review_status"], "accept")
 
 
 if __name__ == "__main__":

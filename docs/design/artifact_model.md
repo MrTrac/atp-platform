@@ -1,31 +1,27 @@
 # Artifact Model
 
-Artifact la don vi dau ra/dua vao chinh cua ATP. Trong M4, artifact model bat dau co vai tro cu the hon cho Context Packaging.
+Artifact la don vi dau ra/dua vao chinh cua ATP. Trong M7, artifact model bat dau duoc dung cho execution output capture.
 
 Artifact seed fields:
 
 - `artifact_id`
-- `artifact_type`
-- `run_id`
+- `request_id`
 - `product`
-- `artifact_freshness`
+- `artifact_type`
+- `artifact_state`
+- `source_stage`
+- `source_ref`
 - `authoritative`
-- `manifest_reference`
-- `metadata`
+- `artifact_freshness`
+- `payload_summary`
+- `notes`
 
-Artifact types duoc dung trong M4:
+Artifact state trong v0:
 
-- `request_raw`
-- `request_normalized`
-- `classification`
-- `resolution`
-- `task_manifest`
-- `product_context`
+- `raw`: execution output vua duoc capture
+- `filtered`: da trim xuong de phuc vu summary
+- `selected`: da duoc chon cho continuity
+- `authoritative`: artifact dai dien nguon su that hien tai cua run
+- `deprecated`: state model-only de giu compatibility cho phase sau
 
-Evidence Selection v0:
-
-- chi chon artifact cot loi cho next-step continuity
-- uu tien artifact co `authoritative: true`
-- khong scan workspace hay repo ngoai ATP
-
-M4 van chua co artifact store, retention, version chain, hay exchange materialization.
+Artifact capture trong M7 chi la dict-based shaping, khong co production persistence hay retention engine.

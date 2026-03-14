@@ -1,4 +1,4 @@
-"""Unit tests for ATP M6 execution flow."""
+"""Unit tests for ATP M6-M7 execution flow."""
 
 from __future__ import annotations
 
@@ -55,6 +55,7 @@ class TestExecutionFlow(unittest.TestCase):
                 "stdout",
                 "stderr",
                 "status",
+                "source_stage",
                 "notes",
             },
         )

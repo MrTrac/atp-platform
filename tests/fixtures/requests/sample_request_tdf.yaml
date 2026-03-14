@@ -1,11 +1,11 @@
-request_id: req-atp-m6-tdf-0001
+request_id: req-atp-m7-tdf-0001
 product: TDF
 request_type: implementation
 execution_intent: preview
 payload:
-  input_text: Build TDF execution preview
+  input_text: Build TDF validation preview
   command_argv:
     - echo
-    - tdf-route
+    - tdf-validate
 metadata:
   capability: shell_execution
