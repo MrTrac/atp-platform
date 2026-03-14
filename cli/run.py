@@ -40,6 +40,7 @@ from core.intake.loader import RequestLoadError, load_request
 from core.intake.normalizer import normalize_request
 from core.resolution.product_resolver import (
     ProductResolutionError,
+    build_product_execution_preparation_contract,
     build_request_to_product_resolution_contract,
     build_resolution_to_handoff_intent_contract,
     resolve_product,
@@ -115,6 +116,15 @@ def preview_run(
         product=resolution["product"],
         evidence_selection=evidence_selection,
         manifest_reference=task_manifest["manifest_id"],
+    )
+    product_execution_preparation = build_product_execution_preparation_contract(
+        run_id=run_id,
+        normalized_request=normalized_request,
+        resolution_contract=request_to_product_resolution,
+        handoff_intent_contract=resolution_to_handoff_intent,
+        task_manifest=task_manifest,
+        product_context=product_context,
+        evidence_bundle=evidence_bundle,
     )
     prepared_route = prepare_route(
         normalized_request,
@@ -233,6 +243,13 @@ def preview_run(
         "target_product": resolution_to_handoff_intent["handoff_intent"]["target_product"],
         "target_capability": resolution_to_handoff_intent["handoff_intent"]["target_capability"],
     }
+    run_record["product_execution_preparation"] = {
+        "contract_id": product_execution_preparation["contract_id"],
+        "preparation_scope": product_execution_preparation["preparation_scope"],
+        "preparation_mode": product_execution_preparation["execution_preparation"]["preparation_mode"],
+        "task_manifest_id": product_execution_preparation["execution_preparation"]["task_manifest_id"],
+        "evidence_bundle_id": product_execution_preparation["execution_preparation"]["evidence_bundle_id"],
+    }
     run_record["context_package"] = {
         "manifest_id": task_manifest["manifest_id"],
         "product_context_profile": product_context["profile_ref"],
@@ -269,6 +286,7 @@ def preview_run(
             "resolution": resolution,
             "request_to_product_resolution": request_to_product_resolution,
             "resolution_to_handoff_intent": resolution_to_handoff_intent,
+            "product_execution_preparation": product_execution_preparation,
             "task_manifest": task_manifest,
             "product_context": product_context,
             "manifest_reference": handoff_outputs["manifest_reference"],
@@ -306,6 +324,7 @@ def preview_run(
     continuation_state = dict(materialization["continuation"])
     request_to_product_resolution_summary = dict(materialization["request_to_product_resolution"])
     resolution_to_handoff_intent_summary = dict(materialization["resolution_to_handoff_intent"])
+    product_execution_preparation_summary = dict(materialization["product_execution_preparation"])
 
     return {
         "request": {
@@ -328,6 +347,10 @@ def preview_run(
         "resolution_to_handoff_intent": {
             **resolution_to_handoff_intent,
             "contract_path": resolution_to_handoff_intent_summary["contract_path"],
+        },
+        "product_execution_preparation": {
+            **product_execution_preparation,
+            "contract_path": product_execution_preparation_summary["contract_path"],
         },
         "context_package": {
             "task_manifest": task_manifest,

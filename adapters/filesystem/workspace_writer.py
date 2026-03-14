@@ -156,6 +156,22 @@ def summarize_resolution_to_handoff_intent_contract(contract: dict[str, Any], co
     }
 
 
+def summarize_product_execution_preparation_contract(contract: dict[str, Any], contract_path: Path) -> dict[str, Any]:
+    """Summarize the explicit v0.5 Slice C product execution preparation contract."""
+
+    return {
+        "contract_id": str(contract.get("contract_id", "")),
+        "contract_path": str(contract_path),
+        "preparation_scope": str(contract.get("preparation_scope", "")),
+        "preparation_mode": str(contract.get("execution_preparation", {}).get("preparation_mode", "")),
+        "target_product": str(contract.get("execution_preparation", {}).get("target_product", "")),
+        "target_capability": str(contract.get("execution_preparation", {}).get("target_capability", "")),
+        "resolution_contract_id": str(contract.get("request_to_product_resolution_ref", {}).get("contract_id", "")),
+        "handoff_intent_contract_id": str(contract.get("resolution_to_handoff_intent_ref", {}).get("contract_id", "")),
+        "traceability": dict(contract.get("traceability", {})),
+    }
+
+
 def project_authoritative_artifacts(
     run_id: str,
     artifacts: list[dict[str, Any]],
@@ -597,6 +613,7 @@ def materialize_run_outputs(
     )
     resolution_contract_path = zone_paths["manifests"] / "request-to-product-resolution-contract.json"
     handoff_intent_contract_path = zone_paths["manifests"] / "resolution-to-handoff-intent-contract.json"
+    execution_preparation_contract_path = zone_paths["manifests"] / "product-execution-preparation-contract.json"
     created_files = {
         "request": [
             _write_json(zone_paths["request"] / "request.raw.json", payloads["raw_request"]),
@@ -607,6 +624,7 @@ def materialize_run_outputs(
             _write_json(zone_paths["manifests"] / "resolution.json", payloads["resolution"]),
             _write_json(resolution_contract_path, payloads["request_to_product_resolution"]),
             _write_json(handoff_intent_contract_path, payloads["resolution_to_handoff_intent"]),
+            _write_json(execution_preparation_contract_path, payloads["product_execution_preparation"]),
             _write_json(zone_paths["manifests"] / "task-manifest.json", payloads["task_manifest"]),
             _write_json(zone_paths["manifests"] / "product-context.json", payloads["product_context"]),
             _write_json(zone_paths["manifests"] / "manifest-reference.json", payloads["manifest_reference"]),
@@ -802,6 +820,10 @@ def materialize_run_outputs(
         payloads["resolution_to_handoff_intent"],
         handoff_intent_contract_path,
     )
+    product_execution_preparation_summary = summarize_product_execution_preparation_contract(
+        payloads["product_execution_preparation"],
+        execution_preparation_contract_path,
+    )
 
     return {
         "workspace_root": str(zone_paths["workspace_root"]),
@@ -816,6 +838,7 @@ def materialize_run_outputs(
         "continuation": continuation_state,
         "request_to_product_resolution": request_to_product_resolution_summary,
         "resolution_to_handoff_intent": resolution_to_handoff_intent_summary,
+        "product_execution_preparation": product_execution_preparation_summary,
         "reference_index": reference_index,
         "authoritative_projection": projections,
         "retention": retention_summary,

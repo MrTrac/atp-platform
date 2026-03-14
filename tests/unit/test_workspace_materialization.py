@@ -1,4 +1,4 @@
-"""Unit tests for ATP v0.4 runtime slices plus v0.5 Slice A-B materialization."""
+"""Unit tests for ATP v0.4 runtime slices plus v0.5 Slice A-C materialization."""
 
 from __future__ import annotations
 
@@ -109,6 +109,54 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
             "notes": [
                 "This contract prepares handoff intent only.",
                 "It is distinct from classification, routing, provider selection, and broader orchestration.",
+            ],
+        },
+        "product_execution_preparation": {
+            "contract_id": "product-execution-preparation-req-1",
+            "contract_version": "v0.5-slice-c",
+            "request_id": "req-1",
+            "run_id": run_id,
+            "preparation_scope": "product_execution_preparation_only",
+            "request_to_product_resolution_ref": {
+                "contract_id": "request-to-product-resolution-req-1",
+                "resolution_scope": "request_to_product_only",
+                "product_target": "ATP",
+                "capability_target": "product_resolution",
+            },
+            "resolution_to_handoff_intent_ref": {
+                "contract_id": "resolution-to-handoff-intent-req-1",
+                "handoff_scope": "resolution_to_handoff_only",
+                "handoff_intent": "prepare_structured_product_handoff",
+            },
+            "execution_preparation": {
+                "preparation_mode": "pre_routing_pre_provider",
+                "target_product": "ATP",
+                "target_capability": "product_resolution",
+                "task_manifest_id": "task-manifest-req-1",
+                "product_context_profile": "profiles/ATP/profile.yaml",
+                "evidence_bundle_id": "evidence-bundle-req-1",
+                "required_capabilities": [],
+            },
+            "preparation_rationale": {
+                "rationale_codes": [
+                    "product_execution_preparation_contract",
+                    "pre_routing_pre_provider_preparation_only",
+                    "preparation_package_composed_from_manifest_context_evidence",
+                ],
+                "summary": "ATP is preparing a bounded execution package before routing, provider selection, and execution.",
+                "module_scope_count": 1,
+                "selected_evidence_count": 2,
+            },
+            "traceability": {
+                "task_manifest_id": "task-manifest-req-1",
+                "product_context_profile": "profiles/ATP/profile.yaml",
+                "evidence_bundle_id": "evidence-bundle-req-1",
+                "request_to_product_resolution_contract_id": "request-to-product-resolution-req-1",
+                "resolution_to_handoff_intent_contract_id": "resolution-to-handoff-intent-req-1",
+            },
+            "notes": [
+                "This contract prepares a product execution package only.",
+                "It is distinct from handoff intent, routing, provider selection, execution result, and broader orchestration.",
             ],
         },
         "task_manifest": {"manifest_id": "task-manifest-req-1", "request_id": "req-1"},
@@ -225,6 +273,7 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertTrue((run_root / "manifests" / "manifest-reference.json").is_file())
             self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "resolution-to-handoff-intent-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "product-execution-preparation-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
@@ -267,6 +316,18 @@ class TestWorkspaceMaterialization(unittest.TestCase):
                 summary["resolution_to_handoff_intent"]["resolution_contract_id"],
                 "request-to-product-resolution-req-1",
             )
+            self.assertEqual(
+                summary["product_execution_preparation"]["preparation_scope"],
+                "product_execution_preparation_only",
+            )
+            self.assertEqual(
+                summary["product_execution_preparation"]["preparation_mode"],
+                "pre_routing_pre_provider",
+            )
+            self.assertEqual(
+                summary["product_execution_preparation"]["handoff_intent_contract_id"],
+                "resolution-to-handoff-intent-req-1",
+            )
             self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
             projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
             self.assertTrue((projection_root / "artifact.json").is_file())
@@ -307,6 +368,30 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertNotIn("selected_provider", handoff_intent_contract)
             self.assertNotIn("selected_node", handoff_intent_contract)
             self.assertNotIn("reason_codes", handoff_intent_contract)
+            execution_preparation_contract = json.loads(
+                (run_root / "manifests" / "product-execution-preparation-contract.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(execution_preparation_contract["request_id"], "req-1")
+            self.assertEqual(execution_preparation_contract["run_id"], "run-slice1-2")
+            self.assertEqual(
+                execution_preparation_contract["preparation_scope"],
+                "product_execution_preparation_only",
+            )
+            self.assertEqual(
+                execution_preparation_contract["request_to_product_resolution_ref"]["contract_id"],
+                "request-to-product-resolution-req-1",
+            )
+            self.assertEqual(
+                execution_preparation_contract["resolution_to_handoff_intent_ref"]["contract_id"],
+                "resolution-to-handoff-intent-req-1",
+            )
+            self.assertEqual(
+                execution_preparation_contract["execution_preparation"]["preparation_mode"],
+                "pre_routing_pre_provider",
+            )
+            self.assertNotIn("selected_provider", execution_preparation_contract)
+            self.assertNotIn("selected_node", execution_preparation_contract)
+            self.assertNotIn("execution_id", execution_preparation_contract)
 
     def test_authoritative_projection_keeps_traceability_to_run_and_source_stage(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -1,4 +1,4 @@
-"""Resolve ATP products and build the v0.5 Slice A-B resolution contracts."""
+"""Resolve ATP products and build the v0.5 Slice A-C preparation contracts."""
 
 from __future__ import annotations
 
@@ -248,5 +248,87 @@ def build_resolution_to_handoff_intent_contract(
         "notes": [
             "This contract prepares handoff intent only.",
             "It is distinct from classification, routing, provider selection, and broader orchestration.",
+        ],
+    }
+
+
+def build_product_execution_preparation_contract(
+    run_id: str,
+    normalized_request: dict[str, Any],
+    resolution_contract: dict[str, Any],
+    handoff_intent_contract: dict[str, Any],
+    task_manifest: dict[str, Any],
+    product_context: dict[str, Any],
+    evidence_bundle: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the explicit v0.5 Slice C product execution preparation contract."""
+
+    request_id = str(normalized_request.get("request_id", "")).strip()
+    if not request_id:
+        raise ValueError("request_id is required for the product execution preparation contract.")
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for the product execution preparation contract.")
+
+    resolution_contract_id = str(resolution_contract.get("contract_id", "")).strip()
+    handoff_intent_contract_id = str(handoff_intent_contract.get("contract_id", "")).strip()
+    if not resolution_contract_id or not handoff_intent_contract_id:
+        raise ValueError("Slice A and Slice B contracts are required for the execution preparation contract.")
+
+    manifest_id = str(task_manifest.get("manifest_id", "")).strip()
+    product_target = str(resolution_contract.get("product_target", {}).get("product", "")).strip()
+    capability_target = str(resolution_contract.get("capability_target", {}).get("capability", "")).strip()
+    handoff_intent = str(handoff_intent_contract.get("handoff_intent", {}).get("intent", "")).strip()
+    profile_ref = str(product_context.get("profile_ref", "")).strip()
+    evidence_bundle_id = str(evidence_bundle.get("bundle_id", "")).strip()
+    if not manifest_id or not product_target or not capability_target or not handoff_intent or not profile_ref:
+        raise ValueError("Task manifest, resolved target, handoff intent, and product context are required.")
+
+    return {
+        "contract_id": f"product-execution-preparation-{request_id}",
+        "contract_version": "v0.5-slice-c",
+        "request_id": request_id,
+        "run_id": run_id,
+        "preparation_scope": "product_execution_preparation_only",
+        "request_to_product_resolution_ref": {
+            "contract_id": resolution_contract_id,
+            "resolution_scope": str(resolution_contract.get("resolution_scope", "")),
+            "product_target": product_target,
+            "capability_target": capability_target,
+        },
+        "resolution_to_handoff_intent_ref": {
+            "contract_id": handoff_intent_contract_id,
+            "handoff_scope": str(handoff_intent_contract.get("handoff_scope", "")),
+            "handoff_intent": handoff_intent,
+        },
+        "execution_preparation": {
+            "preparation_mode": "pre_routing_pre_provider",
+            "target_product": product_target,
+            "target_capability": capability_target,
+            "task_manifest_id": manifest_id,
+            "product_context_profile": profile_ref,
+            "evidence_bundle_id": evidence_bundle_id,
+            "required_capabilities": list(task_manifest.get("required_capabilities", [])),
+        },
+        "preparation_rationale": {
+            "rationale_codes": [
+                "product_execution_preparation_contract",
+                "pre_routing_pre_provider_preparation_only",
+                "preparation_package_composed_from_manifest_context_evidence",
+            ],
+            "summary": "ATP is preparing a bounded execution package before routing, provider selection, and execution.",
+            "module_scope_count": len(list(product_context.get("module_scope", []))),
+            "selected_evidence_count": len(list(evidence_bundle.get("selected_artifacts", []))),
+        },
+        "traceability": {
+            "task_manifest_id": manifest_id,
+            "product_context_profile": profile_ref,
+            "evidence_bundle_id": evidence_bundle_id,
+            "request_to_product_resolution_contract_id": resolution_contract_id,
+            "resolution_to_handoff_intent_contract_id": handoff_intent_contract_id,
+        },
+        "notes": [
+            "This contract prepares a product execution package only.",
+            "It is distinct from handoff intent, routing, provider selection, execution result, and broader orchestration.",
         ],
     }

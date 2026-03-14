@@ -8,6 +8,7 @@ Phạm vi hiện hành:
 - load registry entry, product profile, và policy refs tối thiểu
 - build explicit v0.5 Slice A `request-to-product` resolution contract
 - build explicit v0.5 Slice B `resolution-to-handoff intent` contract
+- build explicit v0.5 Slice C `product execution preparation` contract
 
 Resolution boundary này phải giữ rõ separation với:
 
@@ -36,6 +37,13 @@ Kết quả hiện hành gồm hai lớp:
   - `handoff_intent`
   - `handoff_rationale`
   - `handoff_scope`
+  - `traceability`
+- product execution preparation contract với:
+  - `request_to_product_resolution_ref`
+  - `resolution_to_handoff_intent_ref`
+  - `execution_preparation`
+  - `preparation_rationale`
+  - `preparation_scope`
   - `traceability`
 
 Deferred rõ ràng:

@@ -56,11 +56,32 @@ class TestHappyPath(unittest.TestCase):
                 preview["resolution_to_handoff_intent"]["handoff_intent"]["target_capability"],
                 "shell_execution",
             )
+            self.assertEqual(
+                preview["product_execution_preparation"]["preparation_scope"],
+                "product_execution_preparation_only",
+            )
+            self.assertEqual(
+                preview["product_execution_preparation"]["request_to_product_resolution_ref"]["contract_id"],
+                preview["request_to_product_resolution"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["product_execution_preparation"]["resolution_to_handoff_intent_ref"]["contract_id"],
+                preview["resolution_to_handoff_intent"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["product_execution_preparation"]["execution_preparation"]["preparation_mode"],
+                "pre_routing_pre_provider",
+            )
+            self.assertEqual(
+                preview["product_execution_preparation"]["execution_preparation"]["target_product"],
+                "ATP",
+            )
             run_root = Path(preview["materialization"]["run_root"])
             workspace_root = Path(preview["materialization"]["workspace_root"])
             self.assertTrue(run_root.is_dir())
             self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "resolution-to-handoff-intent-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "product-execution-preparation-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())

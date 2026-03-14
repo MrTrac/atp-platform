@@ -11,6 +11,7 @@ Phạm vi hiện hành:
 - materialize handoff outputs tối thiểu trong `handoff/` của run tree
 - materialize explicit v0.5 Slice A `request-to-product` resolution contract riêng với legacy `resolution.json`
 - materialize explicit v0.5 Slice B `resolution-to-handoff-intent` contract riêng với Slice A contract
+- materialize explicit v0.5 Slice C `product-execution-preparation` contract riêng với Slice A-B contracts
 - project authoritative artifacts tối thiểu sang `SOURCE_DEV/workspace/atp-artifacts/<artifact-id>/`
 - ghi retention / cleanup semantics tối thiểu mà không auto-delete runtime artifacts
 - materialize `exchange/current-task/` tối thiểu chỉ khi exchange boundary decision yêu cầu

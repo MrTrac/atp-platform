@@ -1,4 +1,4 @@
-"""Unit tests for ATP M3-M4 resolution plus v0.5 Slice A-B contract hardening."""
+"""Unit tests for ATP M3-M4 resolution plus v0.5 Slice A-C contract hardening."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from core.intake.normalizer import normalize_request
 from core.resolution.policy_loader import load_policies
 from core.resolution.product_resolver import (
     ProductResolutionError,
+    build_product_execution_preparation_contract,
     build_request_to_product_resolution_contract,
     build_resolution_to_handoff_intent_contract,
     resolve_product,
@@ -23,7 +24,7 @@ FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "requests"
 
 
 class TestProductResolution(unittest.TestCase):
-    """Cover file-based resolution flow plus the v0.5 Slice A-B contracts."""
+    """Cover file-based resolution flow plus the v0.5 Slice A-C contracts."""
 
     def test_resolve_atp_from_explicit_product_field(self) -> None:
         normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
@@ -184,6 +185,74 @@ class TestProductResolution(unittest.TestCase):
         self.assertNotIn("selected_provider", contract)
         self.assertNotIn("selected_node", contract)
         self.assertNotIn("reason_codes", contract)
+
+    def test_product_execution_preparation_contract_is_explicit_and_narrow(self) -> None:
+        normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
+        classification = classify_request(normalized)
+        resolution = resolve_product(normalized, classification)
+        resolution_contract = build_request_to_product_resolution_contract(
+            run_id="run-v0-5-slice-c-1",
+            normalized_request=normalized,
+            classification=classification,
+            resolution=resolution,
+            manifest_id="task-manifest-req-1",
+        )
+        handoff_contract = build_resolution_to_handoff_intent_contract(
+            run_id="run-v0-5-slice-c-1",
+            normalized_request=normalized,
+            classification=classification,
+            resolution_contract=resolution_contract,
+            manifest_id="task-manifest-req-1",
+        )
+        task_manifest = {
+            "manifest_id": "task-manifest-req-1",
+            "required_capabilities": ["shell_execution"],
+        }
+        product_context = build_product_context(resolution)
+        evidence_bundle = {
+            "bundle_id": "evidence-bundle-req-1",
+            "selected_artifacts": [
+                {"artifact_id": "classification-req-1", "artifact_type": "classification"},
+                {"artifact_id": "task-manifest-req-1", "artifact_type": "task_manifest"},
+            ],
+        }
+
+        contract = build_product_execution_preparation_contract(
+            run_id="run-v0-5-slice-c-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            task_manifest=task_manifest,
+            product_context=product_context,
+            evidence_bundle=evidence_bundle,
+        )
+
+        self.assertEqual(contract["request_id"], normalized["request_id"])
+        self.assertEqual(contract["run_id"], "run-v0-5-slice-c-1")
+        self.assertEqual(contract["preparation_scope"], "product_execution_preparation_only")
+        self.assertEqual(
+            contract["request_to_product_resolution_ref"]["contract_id"],
+            resolution_contract["contract_id"],
+        )
+        self.assertEqual(
+            contract["resolution_to_handoff_intent_ref"]["contract_id"],
+            handoff_contract["contract_id"],
+        )
+        self.assertEqual(
+            contract["execution_preparation"]["preparation_mode"],
+            "pre_routing_pre_provider",
+        )
+        self.assertEqual(contract["execution_preparation"]["target_product"], "ATP")
+        self.assertEqual(contract["execution_preparation"]["target_capability"], "shell_execution")
+        self.assertEqual(contract["execution_preparation"]["task_manifest_id"], "task-manifest-req-1")
+        self.assertEqual(contract["traceability"]["evidence_bundle_id"], "evidence-bundle-req-1")
+        self.assertEqual(
+            contract["traceability"]["resolution_to_handoff_intent_contract_id"],
+            handoff_contract["contract_id"],
+        )
+        self.assertNotIn("selected_provider", contract)
+        self.assertNotIn("selected_node", contract)
+        self.assertNotIn("execution_id", contract)
 
 
 if __name__ == "__main__":

@@ -67,6 +67,22 @@ class TestContinuePendingPath(unittest.TestCase):
                 preview["resolution_to_handoff_intent"]["handoff_intent"]["target_capability"],
                 "shell_execution",
             )
+            self.assertEqual(
+                preview["product_execution_preparation"]["preparation_scope"],
+                "product_execution_preparation_only",
+            )
+            self.assertEqual(
+                preview["product_execution_preparation"]["request_to_product_resolution_ref"]["contract_id"],
+                preview["request_to_product_resolution"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["product_execution_preparation"]["resolution_to_handoff_intent_ref"]["contract_id"],
+                preview["resolution_to_handoff_intent"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["product_execution_preparation"]["execution_preparation"]["preparation_mode"],
+                "pre_routing_pre_provider",
+            )
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["materialized"])
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["persistence_state_path"].endswith("current-task-state.json"))
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["active_pointer_path"].endswith("active-pointer.json"))
@@ -78,6 +94,7 @@ class TestContinuePendingPath(unittest.TestCase):
             exchange_root = Path(preview["materialization"]["exchange"]["exchange_root"])
             self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "resolution-to-handoff-intent-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "product-execution-preparation-contract.json").is_file())
             self.assertTrue((run_root / "final" / "continuation-state.json").is_file())
             self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())
