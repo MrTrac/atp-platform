@@ -1,4 +1,4 @@
-"""Unit tests for ATP M3-M4 resolution plus v0.5 Slice A contract hardening."""
+"""Unit tests for ATP M3-M4 resolution plus v0.5 Slice A-B contract hardening."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from core.resolution.policy_loader import load_policies
 from core.resolution.product_resolver import (
     ProductResolutionError,
     build_request_to_product_resolution_contract,
+    build_resolution_to_handoff_intent_contract,
     resolve_product,
 )
 
@@ -22,7 +23,7 @@ FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "requests"
 
 
 class TestProductResolution(unittest.TestCase):
-    """Cover file-based resolution flow plus the v0.5 Slice A contract."""
+    """Cover file-based resolution flow plus the v0.5 Slice A-B contracts."""
 
     def test_resolve_atp_from_explicit_product_field(self) -> None:
         normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
@@ -141,6 +142,48 @@ class TestProductResolution(unittest.TestCase):
         self.assertEqual(contract["capability_target"]["capability"], "product_surface_read")
         self.assertEqual(contract["capability_target"]["source"], "classification.capability")
         self.assertEqual(contract["resolution_rationale"]["profile_ref"], "profiles/TDF/profile.yaml")
+
+    def test_resolution_to_handoff_intent_contract_is_explicit_and_narrow(self) -> None:
+        normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
+        classification = classify_request(normalized)
+        resolution = resolve_product(normalized, classification)
+        resolution_contract = build_request_to_product_resolution_contract(
+            run_id="run-v0-5-slice-b-1",
+            normalized_request=normalized,
+            classification=classification,
+            resolution=resolution,
+            manifest_id="task-manifest-req-1",
+        )
+
+        contract = build_resolution_to_handoff_intent_contract(
+            run_id="run-v0-5-slice-b-1",
+            normalized_request=normalized,
+            classification=classification,
+            resolution_contract=resolution_contract,
+            manifest_id="task-manifest-req-1",
+        )
+
+        self.assertEqual(contract["request_id"], normalized["request_id"])
+        self.assertEqual(contract["run_id"], "run-v0-5-slice-b-1")
+        self.assertEqual(contract["handoff_scope"], "resolution_to_handoff_only")
+        self.assertEqual(
+            contract["request_to_product_resolution_ref"]["contract_id"],
+            resolution_contract["contract_id"],
+        )
+        self.assertEqual(contract["handoff_intent"]["intent"], "prepare_structured_product_handoff")
+        self.assertEqual(contract["handoff_intent"]["intent_stage"], "pre_routing")
+        self.assertEqual(contract["handoff_intent"]["target_product"], "ATP")
+        self.assertEqual(contract["handoff_intent"]["target_capability"], "shell_execution")
+        self.assertEqual(contract["handoff_intent"]["execution_intent"], "preview")
+        self.assertEqual(contract["handoff_rationale"]["request_type"], "implementation")
+        self.assertEqual(contract["traceability"]["manifest_id"], "task-manifest-req-1")
+        self.assertEqual(
+            contract["traceability"]["request_to_product_resolution_contract_id"],
+            resolution_contract["contract_id"],
+        )
+        self.assertNotIn("selected_provider", contract)
+        self.assertNotIn("selected_node", contract)
+        self.assertNotIn("reason_codes", contract)
 
 
 if __name__ == "__main__":

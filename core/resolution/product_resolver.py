@@ -1,4 +1,4 @@
-"""Resolve ATP products and build the v0.5 Slice A request-to-product contract."""
+"""Resolve ATP products and build the v0.5 Slice A-B resolution contracts."""
 
 from __future__ import annotations
 
@@ -175,6 +175,78 @@ def build_request_to_product_resolution_contract(
         },
         "notes": [
             "This contract resolves request intent to a product target and capability target only.",
+            "It is distinct from classification, routing, provider selection, and broader orchestration.",
+        ],
+    }
+
+
+def build_resolution_to_handoff_intent_contract(
+    run_id: str,
+    normalized_request: dict[str, Any],
+    classification: dict[str, Any] | None,
+    resolution_contract: dict[str, Any],
+    manifest_id: str = "",
+) -> dict[str, Any]:
+    """Build the explicit v0.5 Slice B resolution-to-handoff intent contract."""
+
+    request_id = str(normalized_request.get("request_id", "")).strip()
+    if not request_id:
+        raise ValueError("request_id is required for the resolution-to-handoff intent contract.")
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for the resolution-to-handoff intent contract.")
+
+    resolution_contract_id = str(resolution_contract.get("contract_id", "")).strip()
+    if not resolution_contract_id:
+        raise ValueError("Slice A resolution contract is required for the resolution-to-handoff intent contract.")
+
+    product_target = str(resolution_contract.get("product_target", {}).get("product", "")).strip()
+    capability_target = str(resolution_contract.get("capability_target", {}).get("capability", "")).strip()
+    if not product_target or not capability_target:
+        raise ValueError("Resolved product and capability targets are required for the handoff intent contract.")
+
+    execution_intent = str((classification or {}).get("execution_intent", "unknown")).strip() or "unknown"
+    request_type = str((classification or {}).get("request_type", "unknown")).strip() or "unknown"
+    rationale_codes = [
+        "resolution_to_handoff_intent_contract",
+        "handoff_preparation_without_routing_selection",
+        "handoff_target_inherited_from_resolution_contract",
+    ]
+
+    return {
+        "contract_id": f"resolution-to-handoff-intent-{request_id}",
+        "contract_version": "v0.5-slice-b",
+        "request_id": request_id,
+        "run_id": run_id,
+        "handoff_scope": "resolution_to_handoff_only",
+        "request_to_product_resolution_ref": {
+            "contract_id": resolution_contract_id,
+            "contract_version": str(resolution_contract.get("contract_version", "")),
+            "resolution_scope": str(resolution_contract.get("resolution_scope", "")),
+            "product_target": product_target,
+            "capability_target": capability_target,
+        },
+        "handoff_intent": {
+            "intent": "prepare_structured_product_handoff",
+            "intent_stage": "pre_routing",
+            "target_product": product_target,
+            "target_capability": capability_target,
+            "execution_intent": execution_intent,
+        },
+        "handoff_rationale": {
+            "request_type": request_type,
+            "execution_intent": execution_intent,
+            "rationale_codes": rationale_codes,
+            "summary": "ATP is preparing a bounded handoff intent toward the resolved product/capability target.",
+        },
+        "traceability": {
+            "manifest_id": manifest_id,
+            "request_to_product_resolution_contract_id": resolution_contract_id,
+            "classification_request_type": request_type,
+            "classification_execution_intent": execution_intent,
+        },
+        "notes": [
+            "This contract prepares handoff intent only.",
             "It is distinct from classification, routing, provider selection, and broader orchestration.",
         ],
     }

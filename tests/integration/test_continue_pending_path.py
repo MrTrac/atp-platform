@@ -54,6 +54,19 @@ class TestContinuePendingPath(unittest.TestCase):
                 preview["request_to_product_resolution"]["resolution_rationale"]["product_source"],
                 "normalized_request.product",
             )
+            self.assertEqual(preview["resolution_to_handoff_intent"]["handoff_scope"], "resolution_to_handoff_only")
+            self.assertEqual(
+                preview["resolution_to_handoff_intent"]["request_to_product_resolution_ref"]["contract_id"],
+                preview["request_to_product_resolution"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["resolution_to_handoff_intent"]["handoff_intent"]["intent"],
+                "prepare_structured_product_handoff",
+            )
+            self.assertEqual(
+                preview["resolution_to_handoff_intent"]["handoff_intent"]["target_capability"],
+                "shell_execution",
+            )
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["materialized"])
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["persistence_state_path"].endswith("current-task-state.json"))
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["active_pointer_path"].endswith("active-pointer.json"))
@@ -64,6 +77,7 @@ class TestContinuePendingPath(unittest.TestCase):
             run_root = Path(preview["materialization"]["run_root"])
             exchange_root = Path(preview["materialization"]["exchange"]["exchange_root"])
             self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "resolution-to-handoff-intent-contract.json").is_file())
             self.assertTrue((run_root / "final" / "continuation-state.json").is_file())
             self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())

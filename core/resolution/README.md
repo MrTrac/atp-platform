@@ -7,6 +7,7 @@ Phạm vi hiện hành:
 - file-based product resolution cho `ATP` và `TDF`
 - load registry entry, product profile, và policy refs tối thiểu
 - build explicit v0.5 Slice A `request-to-product` resolution contract
+- build explicit v0.5 Slice B `resolution-to-handoff intent` contract
 
 Resolution boundary này phải giữ rõ separation với:
 
@@ -29,6 +30,12 @@ Kết quả hiện hành gồm hai lớp:
   - `capability_target`
   - `resolution_rationale`
   - `resolution_scope`
+  - `traceability`
+- resolution-to-handoff intent contract với:
+  - `request_to_product_resolution_ref`
+  - `handoff_intent`
+  - `handoff_rationale`
+  - `handoff_scope`
   - `traceability`
 
 Deferred rõ ràng:
