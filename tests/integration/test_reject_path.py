@@ -53,8 +53,10 @@ class TestRejectPath(unittest.TestCase):
             self.assertEqual(preview["materialization"]["retention"]["cleanup_actions"], [])
             self.assertTrue((run_root / "final" / "retention-summary.json").is_file())
             self.assertTrue((run_root / "logs" / "cleanup.log").is_file())
+            self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertFalse((run_root / "exchange").exists())
             self.assertFalse((workspace_root / "exchange").exists())
+            self.assertFalse(preview["reference_index"]["exchange_current_task"]["materialized"])
 
 
 if __name__ == "__main__":

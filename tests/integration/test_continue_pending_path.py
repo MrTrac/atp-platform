@@ -40,12 +40,16 @@ class TestContinuePendingPath(unittest.TestCase):
             self.assertTrue(preview["continuation"]["continuation_required"])
             self.assertEqual(preview["continuation"]["continuity_status"], "continuation_pending")
             self.assertEqual(preview["continuation"]["current_source"], "exchange_current_task")
+            self.assertTrue(preview["reference_index"]["exchange_current_task"]["materialized"])
+            self.assertEqual(preview["reference_index"]["continuation"]["current_source"], "exchange_current_task")
 
             run_root = Path(preview["materialization"]["run_root"])
             exchange_root = Path(preview["materialization"]["exchange"]["exchange_root"])
             self.assertTrue((run_root / "final" / "continuation-state.json").is_file())
+            self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())
             self.assertTrue((exchange_root / "exchange-metadata.json").is_file())
+            self.assertTrue((exchange_root / "current.json").is_file())
 
 
 if __name__ == "__main__":

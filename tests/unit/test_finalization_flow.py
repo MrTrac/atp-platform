@@ -96,6 +96,31 @@ class TestFinalizationFlow(unittest.TestCase):
         self.assertEqual(state["current_source"], "exchange_current_task")
         self.assertEqual(state["continuity_refs"]["exchange_bundle_id"], "exchange-req-1")
 
+    def test_continuation_state_for_closed_run_does_not_require_current_exchange_reference(self) -> None:
+        state = build_continuation_state(
+            run_id="run-2",
+            request_id="req-2",
+            close_decision="close",
+            exchange_boundary_decision={
+                "decision_id": "exchange-boundary-run-2",
+                "boundary_mode": "run_local_handoff",
+                "exchange_materialization_status": "not_required",
+            },
+            exchange_summary={
+                "materialized": False,
+                "exchange_root": "",
+            },
+            handoff_outputs={
+                "evidence_bundle": {"bundle_id": "handoff-evidence-req-2"},
+                "manifest_reference": {"manifest_reference": "task-manifest-req-2"},
+                "exchange_bundle": {"exchange_id": "exchange-req-2"},
+            },
+        )
+
+        self.assertFalse(state["continuation_required"])
+        self.assertEqual(state["current_source"], "none")
+        self.assertEqual(state["continuity_refs"]["exchange_root"], "")
+
     def test_derive_final_status_keeps_finalization_vocabulary_stable(self) -> None:
         self.assertEqual(derive_final_status({"approval_status": "approved"}), "completed")
         self.assertEqual(derive_final_status({"approval_status": "rejected"}), "rejected")

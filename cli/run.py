@@ -312,6 +312,7 @@ def preview_run(
         "handoff": handoff_outputs,
         "exchange_boundary": exchange_boundary_decision,
         "continuation": continuation_state,
+        "reference_index": dict(materialization["reference_index"]),
         "finalization": finalization_summary,
         "close_or_continue": close_decision,
         "run": run_record,

@@ -13,9 +13,10 @@ Pham vi:
 - ghi retention / cleanup semantics toi thieu ma khong auto-delete runtime artifacts
 - materialize `exchange/current-task/` toi thieu chi khi exchange boundary decision yeu cau
 - ghi continuation state toi thieu cho `continue_pending` ma khong them queue/scheduler subsystem
+- ghi reference/index artifact toi thieu de tro current exchange, continuation, va authoritative refs
 
 Deferred:
 
 - artifact persistence thuc te
 - day du artifact lifecycle engine
-- `exchange/` subsystem rong hon, continuity reference/index support, retention va cleanup engine rong hon
+- `exchange/` subsystem rong hon, indexing/search subsystem rong hon, retention va cleanup engine rong hon

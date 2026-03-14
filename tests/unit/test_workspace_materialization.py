@@ -148,10 +148,13 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertTrue((run_root / "logs" / "cleanup.log").is_file())
             self.assertTrue((run_root / "final" / "retention-summary.json").is_file())
             self.assertTrue((run_root / "final" / "continuation-state.json").is_file())
+            self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertFalse(summary["exchange_boundary"]["requires_exchange_boundary"])
             self.assertEqual(summary["exchange_boundary"]["exchange_materialization_status"], "not_required")
             self.assertFalse(summary["exchange"]["materialized"])
             self.assertFalse(summary["continuation"]["continuation_required"])
+            self.assertFalse(summary["reference_index"]["exchange_current_task"]["materialized"])
+            self.assertEqual(summary["reference_index"]["continuation"]["current_source"], "none")
             self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
             projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
             self.assertTrue((projection_root / "artifact.json").is_file())
@@ -244,9 +247,15 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertTrue(summary["continuation"]["continuation_required"])
             self.assertEqual(summary["continuation"]["current_source"], "exchange_current_task")
             self.assertEqual(summary["continuation"]["exchange_boundary_mode"], "external_exchange_candidate")
+            self.assertTrue(summary["reference_index"]["exchange_current_task"]["materialized"])
+            self.assertEqual(
+                summary["reference_index"]["continuation"]["current_source"],
+                "exchange_current_task",
+            )
             exchange_root = Path(summary["exchange"]["exchange_root"])
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())
             self.assertTrue((exchange_root / "exchange-metadata.json").is_file())
+            self.assertTrue((exchange_root / "current.json").is_file())
             self.assertFalse((repo_root / "exchange").exists())
 
 
