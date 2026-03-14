@@ -103,7 +103,8 @@ Giá trị thực tế của stage này là:
 ATP chỉ nên rời `v0` khi có evidence rằng:
 
 - current `v0` seams đã được harden tới mức coherent maturity boundary
-- `v0.5` đã làm rõ doctrine continuity, roadmap continuity, và next capability direction
+- `v0.5` đã harden foundational request-to-product execution chain
+- `v0.6` đã đóng nốt post-execution closure semantics ở mức foundational contract nếu seam đó vẫn còn thuộc `v0`
 - bước tiếp theo đòi hỏi capability horizon mới, không chỉ refinement thêm trong `v0`
 - stage tiếp theo có thể được mô tả như nâng chất lượng mediation giữa requested user, ATP, và products lên mức vận hành cao hơn
 

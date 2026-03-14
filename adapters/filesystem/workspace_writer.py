@@ -1,4 +1,4 @@
-"""Workspace materialization helpers for ATP v0.2-v0.5 runtime slices."""
+"""Workspace materialization helpers for ATP v0.2-v0.6 foundational runtime slices."""
 
 from __future__ import annotations
 
@@ -183,6 +183,68 @@ def summarize_product_execution_result_contract(contract: dict[str, Any], contra
         "status": str(contract.get("execution_result", {}).get("status", "")),
         "exit_code": int(contract.get("execution_result", {}).get("exit_code", -1)),
         "execution_preparation_contract_id": str(contract.get("product_execution_preparation_ref", {}).get("contract_id", "")),
+        "traceability": dict(contract.get("traceability", {})),
+    }
+
+
+def summarize_post_execution_decision_contract(contract: dict[str, Any], contract_path: Path) -> dict[str, Any]:
+    """Summarize the explicit v0.6 Slice A post-execution decision contract."""
+
+    return {
+        "contract_id": str(contract.get("contract_id", "")),
+        "contract_path": str(contract_path),
+        "decision_scope": str(contract.get("decision_scope", "")),
+        "bounded_outcome": str(contract.get("post_execution_decision", {}).get("bounded_outcome", "")),
+        "review_followup_action": str(contract.get("post_execution_decision", {}).get("review_followup_action", "")),
+        "execution_result_contract_id": str(contract.get("product_execution_result_ref", {}).get("contract_id", "")),
+        "traceability": dict(contract.get("traceability", {})),
+    }
+
+
+def summarize_decision_to_closure_continuation_handoff_contract(
+    contract: dict[str, Any],
+    contract_path: Path,
+) -> dict[str, Any]:
+    """Summarize the explicit v0.6 Slice B decision-to-handoff contract."""
+
+    return {
+        "contract_id": str(contract.get("contract_id", "")),
+        "contract_path": str(contract_path),
+        "handoff_scope": str(contract.get("handoff_scope", "")),
+        "bounded_next_path": str(
+            contract.get("closure_or_continuation_handoff", {}).get("bounded_next_path", "")
+        ),
+        "next_record_type": str(
+            contract.get("closure_or_continuation_handoff", {}).get("next_record_type", "")
+        ),
+        "review_escalation_mode": str(
+            contract.get("closure_or_continuation_handoff", {}).get("review_escalation_mode", "")
+        ),
+        "post_execution_decision_contract_id": str(
+            contract.get("post_execution_decision_ref", {}).get("contract_id", "")
+        ),
+        "traceability": dict(contract.get("traceability", {})),
+    }
+
+
+def summarize_closure_continuation_state_contract(
+    contract: dict[str, Any],
+    contract_path: Path,
+) -> dict[str, Any]:
+    """Summarize the explicit v0.6 Slice C closure/continuation state contract."""
+
+    return {
+        "contract_id": str(contract.get("contract_id", "")),
+        "contract_path": str(contract_path),
+        "state_scope": str(contract.get("state_scope", "")),
+        "bounded_path": str(contract.get("closure_or_continuation_state", {}).get("bounded_path", "")),
+        "state_status": str(contract.get("closure_or_continuation_state", {}).get("state_status", "")),
+        "continuation_required": bool(
+            contract.get("closure_or_continuation_state", {}).get("continuation_required", False)
+        ),
+        "decision_to_handoff_contract_id": str(
+            contract.get("decision_to_closure_continuation_handoff_ref", {}).get("contract_id", "")
+        ),
         "traceability": dict(contract.get("traceability", {})),
     }
 
@@ -597,7 +659,7 @@ def materialize_run_outputs(
     repo_root: Path | None = None,
     workspace_root: Path | None = None,
 ) -> dict[str, Any]:
-    """Materialize the approved ATP v0.2-v0.5 run outputs."""
+    """Materialize the approved ATP v0.2-v0.6 foundational run outputs."""
 
     zone_paths = materialize_run_tree(run_id, repo_root=repo_root, workspace_root=workspace_root)
     exchange_summary = materialize_exchange_boundary(
@@ -630,6 +692,13 @@ def materialize_run_outputs(
     handoff_intent_contract_path = zone_paths["manifests"] / "resolution-to-handoff-intent-contract.json"
     execution_preparation_contract_path = zone_paths["manifests"] / "product-execution-preparation-contract.json"
     execution_result_contract_path = zone_paths["manifests"] / "product-execution-result-contract.json"
+    post_execution_decision_contract_path = zone_paths["manifests"] / "post-execution-decision-contract.json"
+    decision_to_handoff_contract_path = (
+        zone_paths["manifests"] / "decision-to-closure-continuation-handoff-contract.json"
+    )
+    closure_continuation_state_contract_path = (
+        zone_paths["manifests"] / "closure-continuation-state-contract.json"
+    )
     created_files = {
         "request": [
             _write_json(zone_paths["request"] / "request.raw.json", payloads["raw_request"]),
@@ -642,6 +711,15 @@ def materialize_run_outputs(
             _write_json(handoff_intent_contract_path, payloads["resolution_to_handoff_intent"]),
             _write_json(execution_preparation_contract_path, payloads["product_execution_preparation"]),
             _write_json(execution_result_contract_path, payloads["product_execution_result"]),
+            _write_json(post_execution_decision_contract_path, payloads["post_execution_decision"]),
+            _write_json(
+                decision_to_handoff_contract_path,
+                payloads["decision_to_closure_continuation_handoff"],
+            ),
+            _write_json(
+                closure_continuation_state_contract_path,
+                payloads["closure_continuation_state"],
+            ),
             _write_json(zone_paths["manifests"] / "task-manifest.json", payloads["task_manifest"]),
             _write_json(zone_paths["manifests"] / "product-context.json", payloads["product_context"]),
             _write_json(zone_paths["manifests"] / "manifest-reference.json", payloads["manifest_reference"]),
@@ -845,6 +923,20 @@ def materialize_run_outputs(
         payloads["product_execution_result"],
         execution_result_contract_path,
     )
+    post_execution_decision_summary = summarize_post_execution_decision_contract(
+        payloads["post_execution_decision"],
+        post_execution_decision_contract_path,
+    )
+    decision_to_closure_continuation_handoff_summary = (
+        summarize_decision_to_closure_continuation_handoff_contract(
+            payloads["decision_to_closure_continuation_handoff"],
+            decision_to_handoff_contract_path,
+        )
+    )
+    closure_continuation_state_summary = summarize_closure_continuation_state_contract(
+        payloads["closure_continuation_state"],
+        closure_continuation_state_contract_path,
+    )
 
     return {
         "workspace_root": str(zone_paths["workspace_root"]),
@@ -861,6 +953,9 @@ def materialize_run_outputs(
         "resolution_to_handoff_intent": resolution_to_handoff_intent_summary,
         "product_execution_preparation": product_execution_preparation_summary,
         "product_execution_result": product_execution_result_summary,
+        "post_execution_decision": post_execution_decision_summary,
+        "decision_to_closure_continuation_handoff": decision_to_closure_continuation_handoff_summary,
+        "closure_continuation_state": closure_continuation_state_summary,
         "reference_index": reference_index,
         "authoritative_projection": projections,
         "retention": retention_summary,

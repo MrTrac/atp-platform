@@ -1,4 +1,4 @@
-"""Unit tests for ATP M3-M4 resolution plus v0.5 Slice A-D contract hardening."""
+"""Unit tests for ATP M3-M4 resolution plus the v0.5-v0.6 foundational contract chain."""
 
 from __future__ import annotations
 
@@ -13,6 +13,9 @@ from core.intake.normalizer import normalize_request
 from core.resolution.policy_loader import load_policies
 from core.resolution.product_resolver import (
     ProductResolutionError,
+    build_closure_continuation_state_contract,
+    build_decision_to_closure_continuation_handoff_contract,
+    build_post_execution_decision_contract,
     build_product_execution_preparation_contract,
     build_product_execution_result_contract,
     build_request_to_product_resolution_contract,
@@ -25,7 +28,7 @@ FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "requests"
 
 
 class TestProductResolution(unittest.TestCase):
-    """Cover file-based resolution flow plus the v0.5 Slice A-D contracts."""
+    """Cover file-based resolution flow plus the v0.5-v0.6 foundational contract chain."""
 
     def test_resolve_atp_from_explicit_product_field(self) -> None:
         normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
@@ -330,6 +333,324 @@ class TestProductResolution(unittest.TestCase):
         self.assertNotIn("selected_provider", contract)
         self.assertNotIn("selected_node", contract)
         self.assertNotIn("approval_status", contract)
+
+    def test_post_execution_decision_contract_is_explicit_and_narrow(self) -> None:
+        normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
+        classification = classify_request(normalized)
+        resolution = resolve_product(normalized, classification)
+        resolution_contract = build_request_to_product_resolution_contract(
+            run_id="run-v0-6-slice-a-1",
+            normalized_request=normalized,
+            classification=classification,
+            resolution=resolution,
+            manifest_id="task-manifest-req-1",
+        )
+        handoff_contract = build_resolution_to_handoff_intent_contract(
+            run_id="run-v0-6-slice-a-1",
+            normalized_request=normalized,
+            classification=classification,
+            resolution_contract=resolution_contract,
+            manifest_id="task-manifest-req-1",
+        )
+        preparation_contract = build_product_execution_preparation_contract(
+            run_id="run-v0-6-slice-a-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            task_manifest={"manifest_id": "task-manifest-req-1", "required_capabilities": ["shell_execution"]},
+            product_context=build_product_context(resolution),
+            evidence_bundle={
+                "bundle_id": "evidence-bundle-req-1",
+                "selected_artifacts": [{"artifact_id": "classification-req-1", "artifact_type": "classification"}],
+            },
+        )
+        execution_result_contract = build_product_execution_result_contract(
+            run_id="run-v0-6-slice-a-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            execution_preparation_contract=preparation_contract,
+            execution_result={
+                "execution_id": "execution-req-1",
+                "status": "succeeded",
+                "exit_code": 0,
+                "command": ["echo", "hello"],
+                "stdout": "hello\n",
+                "stderr": "",
+            },
+            artifact_summary={"artifact_ids": ["artifact-selected-req-1", "artifact-authoritative-req-1"]},
+        )
+
+        contract = build_post_execution_decision_contract(
+            run_id="run-v0-6-slice-a-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            execution_preparation_contract=preparation_contract,
+            execution_result_contract=execution_result_contract,
+            review_decision={
+                "decision_id": "review-req-1",
+                "review_status": "accept",
+                "validation_status": "passed",
+            },
+            approval_result={
+                "approval_id": "approval-req-1",
+                "approval_status": "approved",
+                "continue_recommended": False,
+            },
+            close_decision="close",
+        )
+
+        self.assertEqual(contract["request_id"], normalized["request_id"])
+        self.assertEqual(contract["run_id"], "run-v0-6-slice-a-1")
+        self.assertEqual(contract["decision_scope"], "post_execution_decision_only")
+        self.assertEqual(
+            contract["request_to_product_resolution_ref"]["contract_id"],
+            resolution_contract["contract_id"],
+        )
+        self.assertEqual(
+            contract["resolution_to_handoff_intent_ref"]["contract_id"],
+            handoff_contract["contract_id"],
+        )
+        self.assertEqual(
+            contract["product_execution_preparation_ref"]["contract_id"],
+            preparation_contract["contract_id"],
+        )
+        self.assertEqual(
+            contract["product_execution_result_ref"]["contract_id"],
+            execution_result_contract["contract_id"],
+        )
+        self.assertEqual(contract["post_execution_decision"]["bounded_outcome"], "close")
+        self.assertEqual(contract["post_execution_decision"]["review_followup_action"], "none")
+        self.assertEqual(contract["decision_rationale"]["approval_status"], "approved")
+        self.assertEqual(
+            contract["traceability"]["product_execution_result_contract_id"],
+            execution_result_contract["contract_id"],
+        )
+        self.assertNotIn("selected_provider", contract)
+        self.assertNotIn("selected_node", contract)
+        self.assertNotIn("recovery_scope", contract)
+        self.assertNotIn("approval_mode", contract)
+
+    def test_decision_to_closure_continuation_handoff_contract_is_explicit_and_narrow(self) -> None:
+        normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
+        classification = classify_request(normalized)
+        resolution = resolve_product(normalized, classification)
+        resolution_contract = build_request_to_product_resolution_contract(
+            run_id="run-v0-6-slice-b-1",
+            normalized_request=normalized,
+            classification=classification,
+            resolution=resolution,
+            manifest_id="task-manifest-req-1",
+        )
+        handoff_contract = build_resolution_to_handoff_intent_contract(
+            run_id="run-v0-6-slice-b-1",
+            normalized_request=normalized,
+            classification=classification,
+            resolution_contract=resolution_contract,
+            manifest_id="task-manifest-req-1",
+        )
+        preparation_contract = build_product_execution_preparation_contract(
+            run_id="run-v0-6-slice-b-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            task_manifest={"manifest_id": "task-manifest-req-1", "required_capabilities": ["shell_execution"]},
+            product_context=build_product_context(resolution),
+            evidence_bundle={
+                "bundle_id": "evidence-bundle-req-1",
+                "selected_artifacts": [{"artifact_id": "classification-req-1", "artifact_type": "classification"}],
+            },
+        )
+        execution_result_contract = build_product_execution_result_contract(
+            run_id="run-v0-6-slice-b-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            execution_preparation_contract=preparation_contract,
+            execution_result={
+                "execution_id": "execution-req-1",
+                "status": "succeeded",
+                "exit_code": 0,
+                "command": ["echo", "hello"],
+                "stdout": "hello\n",
+                "stderr": "",
+            },
+            artifact_summary={"artifact_ids": ["artifact-selected-req-1", "artifact-authoritative-req-1"]},
+        )
+        post_execution_decision_contract = build_post_execution_decision_contract(
+            run_id="run-v0-6-slice-b-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            execution_preparation_contract=preparation_contract,
+            execution_result_contract=execution_result_contract,
+            review_decision={
+                "decision_id": "review-req-1",
+                "review_status": "accept",
+                "validation_status": "passed",
+            },
+            approval_result={
+                "approval_id": "approval-req-1",
+                "approval_status": "approved",
+                "continue_recommended": False,
+            },
+            close_decision="close",
+        )
+
+        contract = build_decision_to_closure_continuation_handoff_contract(
+            run_id="run-v0-6-slice-b-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            execution_preparation_contract=preparation_contract,
+            execution_result_contract=execution_result_contract,
+            post_execution_decision_contract=post_execution_decision_contract,
+        )
+
+        self.assertEqual(contract["request_id"], normalized["request_id"])
+        self.assertEqual(contract["run_id"], "run-v0-6-slice-b-1")
+        self.assertEqual(contract["handoff_scope"], "decision_to_closure_continuation_only")
+        self.assertEqual(
+            contract["post_execution_decision_ref"]["contract_id"],
+            post_execution_decision_contract["contract_id"],
+        )
+        self.assertEqual(
+            contract["closure_or_continuation_handoff"]["bounded_next_path"],
+            "close",
+        )
+        self.assertEqual(
+            contract["closure_or_continuation_handoff"]["next_record_type"],
+            "closure_record",
+        )
+        self.assertEqual(
+            contract["closure_or_continuation_handoff"]["review_escalation_mode"],
+            "none",
+        )
+        self.assertEqual(
+            contract["traceability"]["post_execution_decision_contract_id"],
+            post_execution_decision_contract["contract_id"],
+        )
+        self.assertEqual(
+            contract["traceability"]["product_execution_result_contract_id"],
+            execution_result_contract["contract_id"],
+        )
+        self.assertNotIn("selected_provider", contract)
+        self.assertNotIn("selected_node", contract)
+        self.assertNotIn("recovery_scope", contract)
+        self.assertNotIn("approval_mode", contract)
+
+    def test_closure_continuation_state_contract_is_explicit_and_narrow(self) -> None:
+        normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
+        classification = classify_request(normalized)
+        resolution = resolve_product(normalized, classification)
+        resolution_contract = build_request_to_product_resolution_contract(
+            run_id="run-v0-6-slice-c-1",
+            normalized_request=normalized,
+            classification=classification,
+            resolution=resolution,
+            manifest_id="task-manifest-req-1",
+        )
+        handoff_contract = build_resolution_to_handoff_intent_contract(
+            run_id="run-v0-6-slice-c-1",
+            normalized_request=normalized,
+            classification=classification,
+            resolution_contract=resolution_contract,
+            manifest_id="task-manifest-req-1",
+        )
+        preparation_contract = build_product_execution_preparation_contract(
+            run_id="run-v0-6-slice-c-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            task_manifest={"manifest_id": "task-manifest-req-1", "required_capabilities": ["shell_execution"]},
+            product_context=build_product_context(resolution),
+            evidence_bundle={
+                "bundle_id": "evidence-bundle-req-1",
+                "selected_artifacts": [{"artifact_id": "classification-req-1", "artifact_type": "classification"}],
+            },
+        )
+        execution_result_contract = build_product_execution_result_contract(
+            run_id="run-v0-6-slice-c-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            execution_preparation_contract=preparation_contract,
+            execution_result={
+                "execution_id": "execution-req-1",
+                "status": "succeeded",
+                "exit_code": 0,
+                "command": ["echo", "hello"],
+                "stdout": "hello\n",
+                "stderr": "",
+            },
+            artifact_summary={"artifact_ids": ["artifact-selected-req-1", "artifact-authoritative-req-1"]},
+        )
+        post_execution_decision_contract = build_post_execution_decision_contract(
+            run_id="run-v0-6-slice-c-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            execution_preparation_contract=preparation_contract,
+            execution_result_contract=execution_result_contract,
+            review_decision={
+                "decision_id": "review-req-1",
+                "review_status": "accept",
+                "validation_status": "passed",
+            },
+            approval_result={
+                "approval_id": "approval-req-1",
+                "approval_status": "approved",
+                "continue_recommended": False,
+            },
+            close_decision="close",
+        )
+        decision_to_handoff_contract = build_decision_to_closure_continuation_handoff_contract(
+            run_id="run-v0-6-slice-c-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            execution_preparation_contract=preparation_contract,
+            execution_result_contract=execution_result_contract,
+            post_execution_decision_contract=post_execution_decision_contract,
+        )
+
+        contract = build_closure_continuation_state_contract(
+            run_id="run-v0-6-slice-c-1",
+            normalized_request=normalized,
+            resolution_contract=resolution_contract,
+            handoff_intent_contract=handoff_contract,
+            execution_preparation_contract=preparation_contract,
+            execution_result_contract=execution_result_contract,
+            post_execution_decision_contract=post_execution_decision_contract,
+            decision_to_handoff_contract=decision_to_handoff_contract,
+        )
+
+        self.assertEqual(contract["request_id"], normalized["request_id"])
+        self.assertEqual(contract["run_id"], "run-v0-6-slice-c-1")
+        self.assertEqual(contract["state_scope"], "closure_continuation_state_only")
+        self.assertEqual(
+            contract["decision_to_closure_continuation_handoff_ref"]["contract_id"],
+            decision_to_handoff_contract["contract_id"],
+        )
+        self.assertEqual(
+            contract["closure_or_continuation_state"]["bounded_path"],
+            "close",
+        )
+        self.assertEqual(
+            contract["closure_or_continuation_state"]["state_status"],
+            "closed",
+        )
+        self.assertFalse(contract["closure_or_continuation_state"]["continuation_required"])
+        self.assertFalse(contract["closure_or_continuation_state"]["review_escalation_active"])
+        self.assertEqual(
+            contract["traceability"]["decision_to_closure_continuation_handoff_contract_id"],
+            decision_to_handoff_contract["contract_id"],
+        )
+        self.assertNotIn("selected_provider", contract)
+        self.assertNotIn("selected_node", contract)
+        self.assertNotIn("recovery_scope", contract)
+        self.assertNotIn("approval_mode", contract)
 
 
 if __name__ == "__main__":

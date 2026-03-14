@@ -1,4 +1,4 @@
-"""Integration tests for ATP M8 happy path plus v0.5 Slice A-D contracts."""
+"""Integration tests for ATP M8 happy path plus the v0.5-v0.6 foundational contract chain."""
 
 from __future__ import annotations
 
@@ -90,6 +90,52 @@ class TestHappyPath(unittest.TestCase):
                 preview["product_execution_preparation"]["contract_id"],
             )
             self.assertEqual(preview["product_execution_result"]["execution_result"]["status"], "succeeded")
+            self.assertEqual(preview["post_execution_decision"]["decision_scope"], "post_execution_decision_only")
+            self.assertEqual(
+                preview["post_execution_decision"]["product_execution_result_ref"]["contract_id"],
+                preview["product_execution_result"]["contract_id"],
+            )
+            self.assertEqual(preview["post_execution_decision"]["post_execution_decision"]["bounded_outcome"], "close")
+            self.assertEqual(
+                preview["post_execution_decision"]["post_execution_decision"]["review_followup_action"],
+                "none",
+            )
+            self.assertEqual(
+                preview["decision_to_closure_continuation_handoff"]["handoff_scope"],
+                "decision_to_closure_continuation_only",
+            )
+            self.assertEqual(
+                preview["decision_to_closure_continuation_handoff"]["post_execution_decision_ref"]["contract_id"],
+                preview["post_execution_decision"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["decision_to_closure_continuation_handoff"]["closure_or_continuation_handoff"][
+                    "bounded_next_path"
+                ],
+                "close",
+            )
+            self.assertEqual(
+                preview["decision_to_closure_continuation_handoff"]["closure_or_continuation_handoff"][
+                    "review_escalation_mode"
+                ],
+                "none",
+            )
+            self.assertEqual(
+                preview["closure_continuation_state"]["state_scope"],
+                "closure_continuation_state_only",
+            )
+            self.assertEqual(
+                preview["closure_continuation_state"]["decision_to_closure_continuation_handoff_ref"]["contract_id"],
+                preview["decision_to_closure_continuation_handoff"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["closure_continuation_state"]["closure_or_continuation_state"]["bounded_path"],
+                "close",
+            )
+            self.assertEqual(
+                preview["closure_continuation_state"]["closure_or_continuation_state"]["state_status"],
+                "closed",
+            )
             run_root = Path(preview["materialization"]["run_root"])
             workspace_root = Path(preview["materialization"]["workspace_root"])
             self.assertTrue(run_root.is_dir())
@@ -97,6 +143,11 @@ class TestHappyPath(unittest.TestCase):
             self.assertTrue((run_root / "manifests" / "resolution-to-handoff-intent-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "product-execution-preparation-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "product-execution-result-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "post-execution-decision-contract.json").is_file())
+            self.assertTrue(
+                (run_root / "manifests" / "decision-to-closure-continuation-handoff-contract.json").is_file()
+            )
+            self.assertTrue((run_root / "manifests" / "closure-continuation-state-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())

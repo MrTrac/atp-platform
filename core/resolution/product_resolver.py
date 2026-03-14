@@ -1,4 +1,4 @@
-"""Resolve ATP products and build the v0.5 Slice A-D preparation contracts."""
+"""Resolve ATP products and build the v0.5-v0.6 foundational contract chain."""
 
 from __future__ import annotations
 
@@ -414,5 +414,334 @@ def build_product_execution_result_contract(
         "notes": [
             "This contract records a bounded execution result only.",
             "It is distinct from routing, provider selection, approval, recovery, and broader orchestration.",
+        ],
+    }
+
+
+def build_post_execution_decision_contract(
+    run_id: str,
+    normalized_request: dict[str, Any],
+    resolution_contract: dict[str, Any],
+    handoff_intent_contract: dict[str, Any],
+    execution_preparation_contract: dict[str, Any],
+    execution_result_contract: dict[str, Any],
+    review_decision: dict[str, Any],
+    approval_result: dict[str, Any],
+    close_decision: str,
+) -> dict[str, Any]:
+    """Build the explicit v0.6 Slice A post-execution decision contract."""
+
+    request_id = str(normalized_request.get("request_id", "")).strip()
+    if not request_id:
+        raise ValueError("request_id is required for the post-execution decision contract.")
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for the post-execution decision contract.")
+
+    resolution_contract_id = str(resolution_contract.get("contract_id", "")).strip()
+    handoff_intent_contract_id = str(handoff_intent_contract.get("contract_id", "")).strip()
+    execution_preparation_contract_id = str(execution_preparation_contract.get("contract_id", "")).strip()
+    execution_result_contract_id = str(execution_result_contract.get("contract_id", "")).strip()
+    if (
+        not resolution_contract_id
+        or not handoff_intent_contract_id
+        or not execution_preparation_contract_id
+        or not execution_result_contract_id
+    ):
+        raise ValueError("Slice A-D contracts are required for the post-execution decision contract.")
+
+    review_status = str(review_decision.get("review_status", "unknown")).strip() or "unknown"
+    approval_status = str(approval_result.get("approval_status", "unknown")).strip() or "unknown"
+    if not str(close_decision).strip():
+        raise ValueError("close_decision is required for the post-execution decision contract.")
+
+    review_followup_action = "escalate_review" if close_decision == "continue_pending" else "none"
+    return {
+        "contract_id": f"post-execution-decision-{request_id}",
+        "contract_version": "v0.6-slice-a",
+        "request_id": request_id,
+        "run_id": run_id,
+        "decision_scope": "post_execution_decision_only",
+        "request_to_product_resolution_ref": {
+            "contract_id": resolution_contract_id,
+            "product_target": str(resolution_contract.get("product_target", {}).get("product", "")),
+            "capability_target": str(resolution_contract.get("capability_target", {}).get("capability", "")),
+        },
+        "resolution_to_handoff_intent_ref": {
+            "contract_id": handoff_intent_contract_id,
+            "handoff_intent": str(handoff_intent_contract.get("handoff_intent", {}).get("intent", "")),
+        },
+        "product_execution_preparation_ref": {
+            "contract_id": execution_preparation_contract_id,
+            "preparation_mode": str(execution_preparation_contract.get("execution_preparation", {}).get("preparation_mode", "")),
+        },
+        "product_execution_result_ref": {
+            "contract_id": execution_result_contract_id,
+            "execution_id": str(execution_result_contract.get("execution_result", {}).get("execution_id", "")),
+            "execution_status": str(execution_result_contract.get("execution_result", {}).get("status", "")),
+        },
+        "post_execution_decision": {
+            "decision_stage": "post_execution",
+            "bounded_outcome": close_decision,
+            "review_followup_action": review_followup_action,
+            "review_status": review_status,
+            "approval_status": approval_status,
+        },
+        "decision_rationale": {
+            "validation_status": str(review_decision.get("validation_status", "unknown")),
+            "review_status": review_status,
+            "approval_status": approval_status,
+            "continue_recommended": bool(approval_result.get("continue_recommended", False)),
+            "rationale_codes": [
+                "post_execution_decision_contract",
+                "bounded_post_execution_decision_only",
+                "decision_derived_from_review_approval_close_semantics",
+            ],
+            "summary": "ATP is recording the bounded post-execution decision only.",
+        },
+        "traceability": {
+            "product_execution_result_contract_id": execution_result_contract_id,
+            "review_decision_id": str(review_decision.get("decision_id", "")),
+            "approval_id": str(approval_result.get("approval_id", "")),
+            "close_or_continue": close_decision,
+        },
+        "notes": [
+            "This contract records a bounded post-execution decision only.",
+            "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
+        ],
+    }
+
+
+def build_decision_to_closure_continuation_handoff_contract(
+    run_id: str,
+    normalized_request: dict[str, Any],
+    resolution_contract: dict[str, Any],
+    handoff_intent_contract: dict[str, Any],
+    execution_preparation_contract: dict[str, Any],
+    execution_result_contract: dict[str, Any],
+    post_execution_decision_contract: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the explicit v0.6 Slice B decision-to-closure/continuation handoff contract."""
+
+    request_id = str(normalized_request.get("request_id", "")).strip()
+    if not request_id:
+        raise ValueError("request_id is required for the decision-to-handoff contract.")
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for the decision-to-handoff contract.")
+
+    resolution_contract_id = str(resolution_contract.get("contract_id", "")).strip()
+    handoff_intent_contract_id = str(handoff_intent_contract.get("contract_id", "")).strip()
+    execution_preparation_contract_id = str(execution_preparation_contract.get("contract_id", "")).strip()
+    execution_result_contract_id = str(execution_result_contract.get("contract_id", "")).strip()
+    post_execution_decision_contract_id = str(post_execution_decision_contract.get("contract_id", "")).strip()
+    if (
+        not resolution_contract_id
+        or not handoff_intent_contract_id
+        or not execution_preparation_contract_id
+        or not execution_result_contract_id
+        or not post_execution_decision_contract_id
+    ):
+        raise ValueError("Slice A-D and v0.6 Slice A contracts are required for the decision-to-handoff contract.")
+
+    bounded_outcome = str(
+        post_execution_decision_contract.get("post_execution_decision", {}).get("bounded_outcome", "")
+    ).strip()
+    review_followup_action = str(
+        post_execution_decision_contract.get("post_execution_decision", {}).get("review_followup_action", "")
+    ).strip() or "none"
+    review_status = str(
+        post_execution_decision_contract.get("post_execution_decision", {}).get("review_status", "unknown")
+    ).strip() or "unknown"
+    approval_status = str(
+        post_execution_decision_contract.get("post_execution_decision", {}).get("approval_status", "unknown")
+    ).strip() or "unknown"
+    if not bounded_outcome:
+        raise ValueError("bounded post-execution outcome is required for the decision-to-handoff contract.")
+
+    next_record_type_map = {
+        "close": "closure_record",
+        "close_rejected": "rejected_closure_record",
+        "continue_pending": "continuation_record",
+    }
+    next_record_type = next_record_type_map.get(bounded_outcome, "undetermined")
+
+    return {
+        "contract_id": f"decision-to-closure-continuation-handoff-{request_id}",
+        "contract_version": "v0.6-slice-b",
+        "request_id": request_id,
+        "run_id": run_id,
+        "handoff_scope": "decision_to_closure_continuation_only",
+        "request_to_product_resolution_ref": {
+            "contract_id": resolution_contract_id,
+            "product_target": str(resolution_contract.get("product_target", {}).get("product", "")),
+            "capability_target": str(resolution_contract.get("capability_target", {}).get("capability", "")),
+        },
+        "resolution_to_handoff_intent_ref": {
+            "contract_id": handoff_intent_contract_id,
+            "handoff_intent": str(handoff_intent_contract.get("handoff_intent", {}).get("intent", "")),
+        },
+        "product_execution_preparation_ref": {
+            "contract_id": execution_preparation_contract_id,
+            "preparation_mode": str(
+                execution_preparation_contract.get("execution_preparation", {}).get("preparation_mode", "")
+            ),
+        },
+        "product_execution_result_ref": {
+            "contract_id": execution_result_contract_id,
+            "execution_id": str(execution_result_contract.get("execution_result", {}).get("execution_id", "")),
+            "execution_status": str(execution_result_contract.get("execution_result", {}).get("status", "")),
+        },
+        "post_execution_decision_ref": {
+            "contract_id": post_execution_decision_contract_id,
+            "decision_scope": str(post_execution_decision_contract.get("decision_scope", "")),
+            "bounded_outcome": bounded_outcome,
+            "review_followup_action": review_followup_action,
+        },
+        "closure_or_continuation_handoff": {
+            "handoff_stage": "post_execution_transition",
+            "bounded_next_path": bounded_outcome,
+            "next_record_type": next_record_type,
+            "review_escalation_mode": review_followup_action,
+            "handoff_readiness": "ready_for_bounded_transition",
+        },
+        "handoff_rationale": {
+            "review_status": review_status,
+            "approval_status": approval_status,
+            "rationale_codes": [
+                "decision_to_closure_continuation_handoff_contract",
+                "bounded_transition_handoff_only",
+                "handoff_derived_from_post_execution_decision",
+            ],
+            "summary": "ATP is handing a bounded post-execution decision into a closure or continuation path only.",
+        },
+        "traceability": {
+            "post_execution_decision_contract_id": post_execution_decision_contract_id,
+            "product_execution_result_contract_id": execution_result_contract_id,
+            "review_decision_id": str(post_execution_decision_contract.get("traceability", {}).get("review_decision_id", "")),
+            "approval_id": str(post_execution_decision_contract.get("traceability", {}).get("approval_id", "")),
+            "close_or_continue": bounded_outcome,
+        },
+        "notes": [
+            "This contract hands a bounded post-execution decision into a closure or continuation path only.",
+            "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
+        ],
+    }
+
+
+def build_closure_continuation_state_contract(
+    run_id: str,
+    normalized_request: dict[str, Any],
+    resolution_contract: dict[str, Any],
+    handoff_intent_contract: dict[str, Any],
+    execution_preparation_contract: dict[str, Any],
+    execution_result_contract: dict[str, Any],
+    post_execution_decision_contract: dict[str, Any],
+    decision_to_handoff_contract: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the explicit v0.6 Slice C closure/continuation state contract."""
+
+    request_id = str(normalized_request.get("request_id", "")).strip()
+    if not request_id:
+        raise ValueError("request_id is required for the closure/continuation state contract.")
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for the closure/continuation state contract.")
+
+    resolution_contract_id = str(resolution_contract.get("contract_id", "")).strip()
+    handoff_intent_contract_id = str(handoff_intent_contract.get("contract_id", "")).strip()
+    execution_preparation_contract_id = str(execution_preparation_contract.get("contract_id", "")).strip()
+    execution_result_contract_id = str(execution_result_contract.get("contract_id", "")).strip()
+    post_execution_decision_contract_id = str(post_execution_decision_contract.get("contract_id", "")).strip()
+    decision_to_handoff_contract_id = str(decision_to_handoff_contract.get("contract_id", "")).strip()
+    if (
+        not resolution_contract_id
+        or not handoff_intent_contract_id
+        or not execution_preparation_contract_id
+        or not execution_result_contract_id
+        or not post_execution_decision_contract_id
+        or not decision_to_handoff_contract_id
+    ):
+        raise ValueError("Slice A-D and v0.6 Slice A-B contracts are required for the closure/continuation state contract.")
+
+    bounded_next_path = str(
+        decision_to_handoff_contract.get("closure_or_continuation_handoff", {}).get("bounded_next_path", "")
+    ).strip()
+    review_escalation_mode = str(
+        decision_to_handoff_contract.get("closure_or_continuation_handoff", {}).get("review_escalation_mode", "")
+    ).strip() or "none"
+    if not bounded_next_path:
+        raise ValueError("bounded next path is required for the closure/continuation state contract.")
+
+    state_status_map = {
+        "close": "closed",
+        "close_rejected": "closed_rejected",
+        "continue_pending": "continuation_pending",
+    }
+    state_status = state_status_map.get(bounded_next_path, "undetermined")
+    continuation_required = bounded_next_path == "continue_pending"
+
+    return {
+        "contract_id": f"closure-continuation-state-{request_id}",
+        "contract_version": "v0.6-slice-c",
+        "request_id": request_id,
+        "run_id": run_id,
+        "state_scope": "closure_continuation_state_only",
+        "request_to_product_resolution_ref": {
+            "contract_id": resolution_contract_id,
+            "product_target": str(resolution_contract.get("product_target", {}).get("product", "")),
+            "capability_target": str(resolution_contract.get("capability_target", {}).get("capability", "")),
+        },
+        "resolution_to_handoff_intent_ref": {
+            "contract_id": handoff_intent_contract_id,
+            "handoff_intent": str(handoff_intent_contract.get("handoff_intent", {}).get("intent", "")),
+        },
+        "product_execution_preparation_ref": {
+            "contract_id": execution_preparation_contract_id,
+            "preparation_mode": str(
+                execution_preparation_contract.get("execution_preparation", {}).get("preparation_mode", "")
+            ),
+        },
+        "product_execution_result_ref": {
+            "contract_id": execution_result_contract_id,
+            "execution_id": str(execution_result_contract.get("execution_result", {}).get("execution_id", "")),
+            "execution_status": str(execution_result_contract.get("execution_result", {}).get("status", "")),
+        },
+        "post_execution_decision_ref": {
+            "contract_id": post_execution_decision_contract_id,
+            "bounded_outcome": str(
+                post_execution_decision_contract.get("post_execution_decision", {}).get("bounded_outcome", "")
+            ),
+        },
+        "decision_to_closure_continuation_handoff_ref": {
+            "contract_id": decision_to_handoff_contract_id,
+            "handoff_scope": str(decision_to_handoff_contract.get("handoff_scope", "")),
+            "bounded_next_path": bounded_next_path,
+        },
+        "closure_or_continuation_state": {
+            "state_stage": "post_handoff_state",
+            "bounded_path": bounded_next_path,
+            "state_status": state_status,
+            "continuation_required": continuation_required,
+            "review_escalation_active": review_escalation_mode == "escalate_review",
+        },
+        "state_rationale": {
+            "review_escalation_mode": review_escalation_mode,
+            "rationale_codes": [
+                "closure_continuation_state_contract",
+                "bounded_state_record_only",
+                "state_derived_from_decision_to_handoff_contract",
+            ],
+            "summary": "ATP is recording the bounded state of the selected closure or continuation path only.",
+        },
+        "traceability": {
+            "decision_to_closure_continuation_handoff_contract_id": decision_to_handoff_contract_id,
+            "post_execution_decision_contract_id": post_execution_decision_contract_id,
+            "product_execution_result_contract_id": execution_result_contract_id,
+            "close_or_continue": bounded_next_path,
+        },
+        "notes": [
+            "This contract records a bounded closure or continuation state only.",
+            "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
         ],
     }

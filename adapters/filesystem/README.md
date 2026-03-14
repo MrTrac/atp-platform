@@ -13,6 +13,9 @@ Phạm vi hiện hành:
 - materialize explicit v0.5 Slice B `resolution-to-handoff-intent` contract riêng với Slice A contract
 - materialize explicit v0.5 Slice C `product-execution-preparation` contract riêng với Slice A-B contracts
 - materialize explicit v0.5 Slice D `product-execution-result` contract riêng với Slice A-C contracts
+- materialize explicit v0.6 Slice A `post-execution-decision` contract riêng với Slice A-D chain
+- materialize explicit v0.6 Slice B `decision-to-closure-continuation-handoff` contract riêng với Slice A-D và v0.6 Slice A chain
+- materialize explicit v0.6 Slice C `closure-continuation-state` contract riêng với v0.6 Slice A-B chain
 - project authoritative artifacts tối thiểu sang `SOURCE_DEV/workspace/atp-artifacts/<artifact-id>/`
 - ghi retention / cleanup semantics tối thiểu mà không auto-delete runtime artifacts
 - materialize `exchange/current-task/` tối thiểu chỉ khi exchange boundary decision yêu cầu

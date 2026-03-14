@@ -1,4 +1,4 @@
-"""Unit tests for ATP v0.4 runtime slices plus v0.5 Slice A-D materialization."""
+"""Unit tests for ATP v0.4 runtime slices plus the v0.5-v0.6 foundational contract chain."""
 
 from __future__ import annotations
 
@@ -207,6 +207,179 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
                 "It is distinct from routing, provider selection, approval, recovery, and broader orchestration.",
             ],
         },
+        "post_execution_decision": {
+            "contract_id": "post-execution-decision-req-1",
+            "contract_version": "v0.6-slice-a",
+            "request_id": "req-1",
+            "run_id": run_id,
+            "decision_scope": "post_execution_decision_only",
+            "request_to_product_resolution_ref": {
+                "contract_id": "request-to-product-resolution-req-1",
+                "product_target": "ATP",
+                "capability_target": "product_resolution",
+            },
+            "resolution_to_handoff_intent_ref": {
+                "contract_id": "resolution-to-handoff-intent-req-1",
+                "handoff_intent": "prepare_structured_product_handoff",
+            },
+            "product_execution_preparation_ref": {
+                "contract_id": "product-execution-preparation-req-1",
+                "preparation_mode": "pre_routing_pre_provider",
+            },
+            "product_execution_result_ref": {
+                "contract_id": "product-execution-result-req-1",
+                "execution_id": "execution-req-1",
+                "execution_status": "succeeded",
+            },
+            "post_execution_decision": {
+                "decision_stage": "post_execution",
+                "bounded_outcome": "close",
+                "review_followup_action": "none",
+                "review_status": "accept",
+                "approval_status": "approved",
+            },
+            "decision_rationale": {
+                "validation_status": "passed",
+                "review_status": "accept",
+                "approval_status": "approved",
+                "continue_recommended": False,
+                "rationale_codes": [
+                    "post_execution_decision_contract",
+                    "bounded_post_execution_decision_only",
+                    "decision_derived_from_review_approval_close_semantics",
+                ],
+                "summary": "ATP is recording the bounded post-execution decision only.",
+            },
+            "traceability": {
+                "product_execution_result_contract_id": "product-execution-result-req-1",
+                "review_decision_id": "review-req-1",
+                "approval_id": "approval-req-1",
+                "close_or_continue": "close",
+            },
+            "notes": [
+                "This contract records a bounded post-execution decision only.",
+                "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
+            ],
+        },
+        "decision_to_closure_continuation_handoff": {
+            "contract_id": "decision-to-closure-continuation-handoff-req-1",
+            "contract_version": "v0.6-slice-b",
+            "request_id": "req-1",
+            "run_id": run_id,
+            "handoff_scope": "decision_to_closure_continuation_only",
+            "request_to_product_resolution_ref": {
+                "contract_id": "request-to-product-resolution-req-1",
+                "product_target": "ATP",
+                "capability_target": "product_resolution",
+            },
+            "resolution_to_handoff_intent_ref": {
+                "contract_id": "resolution-to-handoff-intent-req-1",
+                "handoff_intent": "prepare_structured_product_handoff",
+            },
+            "product_execution_preparation_ref": {
+                "contract_id": "product-execution-preparation-req-1",
+                "preparation_mode": "pre_routing_pre_provider",
+            },
+            "product_execution_result_ref": {
+                "contract_id": "product-execution-result-req-1",
+                "execution_id": "execution-req-1",
+                "execution_status": "succeeded",
+            },
+            "post_execution_decision_ref": {
+                "contract_id": "post-execution-decision-req-1",
+                "decision_scope": "post_execution_decision_only",
+                "bounded_outcome": "close",
+                "review_followup_action": "none",
+            },
+            "closure_or_continuation_handoff": {
+                "handoff_stage": "post_execution_transition",
+                "bounded_next_path": "close",
+                "next_record_type": "closure_record",
+                "review_escalation_mode": "none",
+                "handoff_readiness": "ready_for_bounded_transition",
+            },
+            "handoff_rationale": {
+                "review_status": "accept",
+                "approval_status": "approved",
+                "rationale_codes": [
+                    "decision_to_closure_continuation_handoff_contract",
+                    "bounded_transition_handoff_only",
+                    "handoff_derived_from_post_execution_decision",
+                ],
+                "summary": "ATP is handing a bounded post-execution decision into a closure or continuation path only.",
+            },
+            "traceability": {
+                "post_execution_decision_contract_id": "post-execution-decision-req-1",
+                "product_execution_result_contract_id": "product-execution-result-req-1",
+                "review_decision_id": "review-req-1",
+                "approval_id": "approval-req-1",
+                "close_or_continue": "close",
+            },
+            "notes": [
+                "This contract hands a bounded post-execution decision into a closure or continuation path only.",
+                "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
+            ],
+        },
+        "closure_continuation_state": {
+            "contract_id": "closure-continuation-state-req-1",
+            "contract_version": "v0.6-slice-c",
+            "request_id": "req-1",
+            "run_id": run_id,
+            "state_scope": "closure_continuation_state_only",
+            "request_to_product_resolution_ref": {
+                "contract_id": "request-to-product-resolution-req-1",
+                "product_target": "ATP",
+                "capability_target": "product_resolution",
+            },
+            "resolution_to_handoff_intent_ref": {
+                "contract_id": "resolution-to-handoff-intent-req-1",
+                "handoff_intent": "prepare_structured_product_handoff",
+            },
+            "product_execution_preparation_ref": {
+                "contract_id": "product-execution-preparation-req-1",
+                "preparation_mode": "pre_routing_pre_provider",
+            },
+            "product_execution_result_ref": {
+                "contract_id": "product-execution-result-req-1",
+                "execution_id": "execution-req-1",
+                "execution_status": "succeeded",
+            },
+            "post_execution_decision_ref": {
+                "contract_id": "post-execution-decision-req-1",
+                "bounded_outcome": "close",
+            },
+            "decision_to_closure_continuation_handoff_ref": {
+                "contract_id": "decision-to-closure-continuation-handoff-req-1",
+                "handoff_scope": "decision_to_closure_continuation_only",
+                "bounded_next_path": "close",
+            },
+            "closure_or_continuation_state": {
+                "state_stage": "post_handoff_state",
+                "bounded_path": "close",
+                "state_status": "closed",
+                "continuation_required": False,
+                "review_escalation_active": False,
+            },
+            "state_rationale": {
+                "review_escalation_mode": "none",
+                "rationale_codes": [
+                    "closure_continuation_state_contract",
+                    "bounded_state_record_only",
+                    "state_derived_from_decision_to_handoff_contract",
+                ],
+                "summary": "ATP is recording the bounded state of the selected closure or continuation path only.",
+            },
+            "traceability": {
+                "decision_to_closure_continuation_handoff_contract_id": "decision-to-closure-continuation-handoff-req-1",
+                "post_execution_decision_contract_id": "post-execution-decision-req-1",
+                "product_execution_result_contract_id": "product-execution-result-req-1",
+                "close_or_continue": "close",
+            },
+            "notes": [
+                "This contract records a bounded closure or continuation state only.",
+                "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
+            ],
+        },
         "task_manifest": {"manifest_id": "task-manifest-req-1", "request_id": "req-1"},
         "product_context": {"product": "ATP", "profile_ref": "profiles/ATP/profile.yaml"},
         "manifest_reference": {"handoff_type": "manifest_reference", "manifest_reference": "task-manifest-req-1"},
@@ -323,6 +496,11 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertTrue((run_root / "manifests" / "resolution-to-handoff-intent-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "product-execution-preparation-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "product-execution-result-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "post-execution-decision-contract.json").is_file())
+            self.assertTrue(
+                (run_root / "manifests" / "decision-to-closure-continuation-handoff-contract.json").is_file()
+            )
+            self.assertTrue((run_root / "manifests" / "closure-continuation-state-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
@@ -388,6 +566,42 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertEqual(
                 summary["product_execution_result"]["execution_preparation_contract_id"],
                 "product-execution-preparation-req-1",
+            )
+            self.assertEqual(
+                summary["post_execution_decision"]["decision_scope"],
+                "post_execution_decision_only",
+            )
+            self.assertEqual(
+                summary["post_execution_decision"]["bounded_outcome"],
+                "close",
+            )
+            self.assertEqual(
+                summary["post_execution_decision"]["execution_result_contract_id"],
+                "product-execution-result-req-1",
+            )
+            self.assertEqual(
+                summary["decision_to_closure_continuation_handoff"]["handoff_scope"],
+                "decision_to_closure_continuation_only",
+            )
+            self.assertEqual(
+                summary["decision_to_closure_continuation_handoff"]["bounded_next_path"],
+                "close",
+            )
+            self.assertEqual(
+                summary["decision_to_closure_continuation_handoff"]["post_execution_decision_contract_id"],
+                "post-execution-decision-req-1",
+            )
+            self.assertEqual(
+                summary["closure_continuation_state"]["state_scope"],
+                "closure_continuation_state_only",
+            )
+            self.assertEqual(
+                summary["closure_continuation_state"]["bounded_path"],
+                "close",
+            )
+            self.assertEqual(
+                summary["closure_continuation_state"]["decision_to_handoff_contract_id"],
+                "decision-to-closure-continuation-handoff-req-1",
             )
             self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
             projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
@@ -474,6 +688,87 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertNotIn("selected_provider", execution_result_contract)
             self.assertNotIn("selected_node", execution_result_contract)
             self.assertNotIn("approval_status", execution_result_contract)
+            post_execution_decision_contract = json.loads(
+                (run_root / "manifests" / "post-execution-decision-contract.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(post_execution_decision_contract["request_id"], "req-1")
+            self.assertEqual(post_execution_decision_contract["run_id"], "run-slice1-2")
+            self.assertEqual(post_execution_decision_contract["decision_scope"], "post_execution_decision_only")
+            self.assertEqual(
+                post_execution_decision_contract["product_execution_result_ref"]["contract_id"],
+                "product-execution-result-req-1",
+            )
+            self.assertEqual(
+                post_execution_decision_contract["post_execution_decision"]["bounded_outcome"],
+                "close",
+            )
+            self.assertEqual(
+                post_execution_decision_contract["post_execution_decision"]["review_followup_action"],
+                "none",
+            )
+            self.assertNotIn("selected_provider", post_execution_decision_contract)
+            self.assertNotIn("selected_node", post_execution_decision_contract)
+            self.assertNotIn("recovery_scope", post_execution_decision_contract)
+            self.assertNotIn("approval_mode", post_execution_decision_contract)
+            decision_to_handoff_contract = json.loads(
+                (
+                    run_root / "manifests" / "decision-to-closure-continuation-handoff-contract.json"
+                ).read_text(encoding="utf-8")
+            )
+            self.assertEqual(decision_to_handoff_contract["request_id"], "req-1")
+            self.assertEqual(decision_to_handoff_contract["run_id"], "run-slice1-2")
+            self.assertEqual(
+                decision_to_handoff_contract["handoff_scope"],
+                "decision_to_closure_continuation_only",
+            )
+            self.assertEqual(
+                decision_to_handoff_contract["post_execution_decision_ref"]["contract_id"],
+                "post-execution-decision-req-1",
+            )
+            self.assertEqual(
+                decision_to_handoff_contract["closure_or_continuation_handoff"]["bounded_next_path"],
+                "close",
+            )
+            self.assertEqual(
+                decision_to_handoff_contract["closure_or_continuation_handoff"]["next_record_type"],
+                "closure_record",
+            )
+            self.assertEqual(
+                decision_to_handoff_contract["closure_or_continuation_handoff"]["review_escalation_mode"],
+                "none",
+            )
+            self.assertNotIn("selected_provider", decision_to_handoff_contract)
+            self.assertNotIn("selected_node", decision_to_handoff_contract)
+            self.assertNotIn("recovery_scope", decision_to_handoff_contract)
+            self.assertNotIn("approval_mode", decision_to_handoff_contract)
+            closure_continuation_state_contract = json.loads(
+                (run_root / "manifests" / "closure-continuation-state-contract.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(closure_continuation_state_contract["request_id"], "req-1")
+            self.assertEqual(closure_continuation_state_contract["run_id"], "run-slice1-2")
+            self.assertEqual(
+                closure_continuation_state_contract["state_scope"],
+                "closure_continuation_state_only",
+            )
+            self.assertEqual(
+                closure_continuation_state_contract["decision_to_closure_continuation_handoff_ref"]["contract_id"],
+                "decision-to-closure-continuation-handoff-req-1",
+            )
+            self.assertEqual(
+                closure_continuation_state_contract["closure_or_continuation_state"]["bounded_path"],
+                "close",
+            )
+            self.assertEqual(
+                closure_continuation_state_contract["closure_or_continuation_state"]["state_status"],
+                "closed",
+            )
+            self.assertFalse(
+                closure_continuation_state_contract["closure_or_continuation_state"]["continuation_required"]
+            )
+            self.assertNotIn("selected_provider", closure_continuation_state_contract)
+            self.assertNotIn("selected_node", closure_continuation_state_contract)
+            self.assertNotIn("recovery_scope", closure_continuation_state_contract)
+            self.assertNotIn("approval_mode", closure_continuation_state_contract)
 
     def test_authoritative_projection_keeps_traceability_to_run_and_source_stage(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
