@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 from adapters.filesystem.workspace_writer import (
-    SLICE1_RUN_ZONES,
+    RUN_TREE_ZONES,
     materialize_run_outputs,
     materialize_run_tree,
     resolve_workspace_root,
@@ -46,12 +46,21 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
         "approval_result": {"approval_status": "approved"},
         "close_or_continue": {"run_id": run_id, "decision": "close"},
         "decision_state": {"decision_status": "finalized"},
+        "handoff_outputs": {
+            "inline_context": {"handoff_type": "inline_context", "summary": "done", "authoritative": True},
+            "evidence_bundle": {"handoff_type": "evidence_bundle", "bundle_id": "handoff-evidence-req-1"},
+            "manifest_reference": {
+                "handoff_type": "manifest_reference",
+                "manifest_reference": "task-manifest-req-1",
+                "authoritative": True,
+            },
+        },
         "finalization_summary": {"final_status": "completed"},
     }
 
 
 class TestWorkspaceMaterialization(unittest.TestCase):
-    """Cover runtime root resolution and Slice 1 run tree creation."""
+    """Cover runtime root resolution and Slice 1-2 run tree creation."""
 
     def test_workspace_root_resolves_from_repo_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -66,14 +75,14 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             with self.assertRaises(ValueError):
                 resolve_workspace_root(invalid_repo_root)
 
-    def test_materialize_run_tree_creates_only_slice1_zones(self) -> None:
+    def test_materialize_run_tree_creates_only_approved_run_tree_zones(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             repo_root = _build_fake_repo_root(Path(temp_dir))
             tree = materialize_run_tree("run-slice1-1", repo_root=repo_root)
 
-            self.assertEqual(set(tree["run_root"].iterdir()), {tree[zone] for zone in SLICE1_RUN_ZONES})
+            self.assertEqual(set(tree["run_root"].iterdir()), {tree[zone] for zone in RUN_TREE_ZONES})
             self.assertFalse((tree["run_root"] / "planning").exists())
-            self.assertFalse((tree["run_root"] / "handoff").exists())
+            self.assertFalse((tree["run_root"] / "exchange").exists())
 
     def test_materialize_run_outputs_writes_only_under_workspace(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -82,10 +91,14 @@ class TestWorkspaceMaterialization(unittest.TestCase):
 
             run_root = Path(summary["run_root"])
             self.assertTrue(run_root.is_dir())
-            self.assertEqual(set(Path(path).name for path in run_root.iterdir()), set(SLICE1_RUN_ZONES))
+            self.assertEqual(set(Path(path).name for path in run_root.iterdir()), set(RUN_TREE_ZONES))
             self.assertTrue((run_root / "request" / "request.raw.json").is_file())
             self.assertTrue((run_root / "manifests" / "manifest-reference.json").is_file())
+            self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
+            self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
+            self.assertTrue((run_root / "handoff" / "manifest-reference.json").is_file())
             self.assertTrue((run_root / "logs" / "materialization.log").is_file())
+            self.assertFalse((run_root / "exchange").exists())
             self.assertFalse((repo_root / "atp-runs").exists())
             self.assertFalse((repo_root / "request").exists())
 

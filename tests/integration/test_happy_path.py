@@ -35,8 +35,12 @@ class TestHappyPath(unittest.TestCase):
             )
             self.assertEqual(preview["close_or_continue"], "close")
             self.assertEqual(preview["run"]["current_stage"], "CLOSED")
-            self.assertTrue(Path(preview["materialization"]["run_root"]).is_dir())
-            self.assertFalse((Path(preview["materialization"]["run_root"]) / "handoff").exists())
+            run_root = Path(preview["materialization"]["run_root"])
+            self.assertTrue(run_root.is_dir())
+            self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
+            self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
+            self.assertTrue((run_root / "handoff" / "manifest-reference.json").is_file())
+            self.assertFalse((run_root / "exchange").exists())
 
 
 if __name__ == "__main__":

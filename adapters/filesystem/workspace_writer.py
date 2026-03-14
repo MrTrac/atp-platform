@@ -1,4 +1,4 @@
-"""Workspace materialization helpers for ATP v0.2 Slice 1."""
+"""Workspace materialization helpers for ATP v0.2 runtime slices."""
 
 from __future__ import annotations
 
@@ -8,13 +8,14 @@ from typing import Any
 
 
 DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[2]
-SLICE1_RUN_ZONES = (
+RUN_TREE_ZONES = (
     "request",
     "manifests",
     "routing",
     "executor-outputs",
     "validation",
     "decisions",
+    "handoff",
     "final",
     "logs",
 )
@@ -56,8 +57,8 @@ def resolve_run_root(
 def workspace_path(run_id: str, area: str) -> str:
     """Return the approved runtime workspace path for a run area."""
 
-    if area not in SLICE1_RUN_ZONES:
-        raise ValueError(f"Unsupported Slice 1 runtime area: {area}")
+    if area not in RUN_TREE_ZONES:
+        raise ValueError(f"Unsupported ATP runtime area: {area}")
     return str(Path("SOURCE_DEV") / "workspace" / "atp-runs" / run_id / area)
 
 
@@ -72,13 +73,13 @@ def materialize_run_tree(
     repo_root: Path | None = None,
     workspace_root: Path | None = None,
 ) -> dict[str, Path]:
-    """Create the approved ATP v0.2 Slice 1 run tree."""
+    """Create the approved ATP v0.2 run tree for the current slices."""
 
     run_root = resolve_run_root(run_id, repo_root=repo_root, workspace_root=workspace_root)
     run_root.mkdir(parents=True, exist_ok=True)
 
     zone_paths: dict[str, Path] = {}
-    for zone in SLICE1_RUN_ZONES:
+    for zone in RUN_TREE_ZONES:
         zone_path = run_root / zone
         zone_path.mkdir(exist_ok=True)
         zone_paths[zone] = zone_path
@@ -101,7 +102,7 @@ def materialize_run_outputs(
     repo_root: Path | None = None,
     workspace_root: Path | None = None,
 ) -> dict[str, Any]:
-    """Materialize the minimal ATP v0.2 Slice 1 run tree outputs."""
+    """Materialize the approved ATP v0.2 run tree outputs."""
 
     zone_paths = materialize_run_tree(run_id, repo_root=repo_root, workspace_root=workspace_root)
     created_files = {
@@ -134,6 +135,14 @@ def materialize_run_outputs(
             _write_json(zone_paths["decisions"] / "close-or-continue.json", payloads["close_or_continue"]),
             _write_json(zone_paths["decisions"] / "decision-state.json", payloads["decision_state"]),
         ],
+        "handoff": [
+            _write_json(zone_paths["handoff"] / "inline-context.json", payloads["handoff_outputs"]["inline_context"]),
+            _write_json(zone_paths["handoff"] / "evidence-bundle.json", payloads["handoff_outputs"]["evidence_bundle"]),
+            _write_json(
+                zone_paths["handoff"] / "manifest-reference.json",
+                payloads["handoff_outputs"]["manifest_reference"],
+            ),
+        ],
         "final": [
             _write_json(zone_paths["final"] / "finalization-summary.json", payloads["finalization_summary"]),
         ],
@@ -159,9 +168,9 @@ def materialize_run_outputs(
         f"run_id={run_id}",
         f"workspace_root={zone_paths['workspace_root']}",
         f"run_root={zone_paths['run_root']}",
-        "zones=" + ",".join(SLICE1_RUN_ZONES),
+        "zones=" + ",".join(RUN_TREE_ZONES),
     ]
-    for zone in SLICE1_RUN_ZONES:
+    for zone in RUN_TREE_ZONES:
         materialization_lines.append(f"{zone}={zone_paths[zone]}")
     for zone_name, files in created_files.items():
         for path in files:
@@ -171,6 +180,6 @@ def materialize_run_outputs(
     return {
         "workspace_root": str(zone_paths["workspace_root"]),
         "run_root": str(zone_paths["run_root"]),
-        "zones": {zone: str(zone_paths[zone]) for zone in SLICE1_RUN_ZONES},
+        "zones": {zone: str(zone_paths[zone]) for zone in RUN_TREE_ZONES},
         "files": {zone: [str(path) for path in files] for zone, files in created_files.items()},
     }
