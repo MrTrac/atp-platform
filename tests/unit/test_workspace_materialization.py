@@ -1,4 +1,4 @@
-"""Unit tests for ATP v0.3 Slice A-D runtime materialization baseline."""
+"""Unit tests for ATP v0.4 Slice A plus earlier runtime materialization baseline."""
 
 from __future__ import annotations
 
@@ -106,7 +106,7 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
 
 
 class TestWorkspaceMaterialization(unittest.TestCase):
-    """Cover runtime root resolution and Slice 1-4 plus v0.3 traceability semantics."""
+    """Cover runtime root resolution plus v0.3-v0.4 traceability and persistence semantics."""
 
     def test_workspace_root_resolves_from_repo_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -152,6 +152,7 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertFalse(summary["exchange_boundary"]["requires_exchange_boundary"])
             self.assertEqual(summary["exchange_boundary"]["exchange_materialization_status"], "not_required")
             self.assertFalse(summary["exchange"]["materialized"])
+            self.assertFalse(summary["current_task_persistence"]["persisted"])
             self.assertFalse(summary["continuation"]["continuation_required"])
             self.assertFalse(summary["reference_index"]["exchange_current_task"]["materialized"])
             self.assertEqual(summary["reference_index"]["continuation"]["current_source"], "none")
@@ -202,6 +203,9 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             exchange_root = Path(summary["exchange"]["exchange_root"])
             reference_index = json.loads((run_root / "final" / "reference-index.json").read_text(encoding="utf-8"))
             current_pointer = json.loads((exchange_root / "current.json").read_text(encoding="utf-8"))
+            current_task_state = json.loads(
+                (exchange_root / "current-task-state.json").read_text(encoding="utf-8")
+            )
 
             self.assertEqual(reference_index["run_id"], "run-sliceD-1")
             self.assertTrue(reference_index["exchange_current_task"]["materialized"])
@@ -211,6 +215,16 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             )
             self.assertEqual(current_pointer["reference_index_path"], str(run_root / "final" / "reference-index.json"))
             self.assertEqual(current_pointer["continuation_state_path"], str(run_root / "final" / "continuation-state.json"))
+            self.assertEqual(
+                reference_index["exchange_current_task"]["persistence_state_path"],
+                str(exchange_root / "current-task-state.json"),
+            )
+            self.assertTrue(summary["current_task_persistence"]["persisted"])
+            self.assertEqual(summary["current_task_persistence"]["current_task_id"], "current-task-run-sliceD-1")
+            self.assertEqual(current_task_state["current_reference_path"], str(exchange_root / "current.json"))
+            self.assertEqual(current_task_state["reference_index_path"], str(run_root / "final" / "reference-index.json"))
+            self.assertEqual(current_task_state["continuation_state_path"], str(run_root / "final" / "continuation-state.json"))
+            self.assertEqual(current_task_state["persistence_scope"], "workspace_exchange_current_task")
 
     def test_retention_summary_marks_deprecated_artifacts_cleanup_eligible_after_close(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -284,6 +298,7 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())
             self.assertTrue((exchange_root / "exchange-metadata.json").is_file())
             self.assertTrue((exchange_root / "current.json").is_file())
+            self.assertTrue((exchange_root / "current-task-state.json").is_file())
             self.assertFalse((repo_root / "exchange").exists())
 
 

@@ -12,12 +12,14 @@ Phạm vi hiện hành:
 - project authoritative artifacts tối thiểu sang `SOURCE_DEV/workspace/atp-artifacts/<artifact-id>/`
 - ghi retention / cleanup semantics tối thiểu mà không auto-delete runtime artifacts
 - materialize `exchange/current-task/` tối thiểu chỉ khi exchange boundary decision yêu cầu
+- persist current-task state tối thiểu ở mức file-based khi exchange current-task được materialize
 - ghi continuation state tối thiểu cho `continue_pending` mà không thêm queue/scheduler subsystem
 - ghi reference/index artifacts tối thiểu để trỏ current exchange, continuation, và authoritative refs
 
 Deferred có chủ đích:
 
-- current-task persistence contract rộng hơn
+- continue-pending recovery contract rộng hơn
+- current-task supersede / active pointer model rộng hơn
 - artifact persistence thực tế ở mức production
 - đầy đủ artifact lifecycle engine
 - `exchange/` subsystem rộng hơn
