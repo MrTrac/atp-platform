@@ -243,6 +243,10 @@ def materialize_run_outputs(
             _write_json(zone_paths["decisions"] / "approval-result.json", payloads["approval_result"]),
             _write_json(zone_paths["decisions"] / "close-or-continue.json", payloads["close_or_continue"]),
             _write_json(zone_paths["decisions"] / "decision-state.json", payloads["decision_state"]),
+            _write_json(
+                zone_paths["decisions"] / "exchange-boundary-decision.json",
+                payloads["exchange_boundary_decision"],
+            ),
         ],
         "handoff": [
             _write_json(zone_paths["handoff"] / "inline-context.json", payloads["handoff_outputs"]["inline_context"]),
@@ -327,6 +331,7 @@ def materialize_run_outputs(
         "run_root": str(zone_paths["run_root"]),
         "zones": {zone: str(zone_paths[zone]) for zone in RUN_TREE_ZONES},
         "files": {zone: [str(path) for path in files] for zone, files in created_files.items()},
+        "exchange_boundary": dict(payloads["exchange_boundary_decision"]),
         "authoritative_projection": projections,
         "retention": retention_summary,
     }

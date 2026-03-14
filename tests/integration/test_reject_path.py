@@ -33,9 +33,12 @@ class TestRejectPath(unittest.TestCase):
                 preview["handoff"]["evidence_bundle"]["selected_artifacts"],
                 [{"artifact_id": "artifact-selected-req-atp-m8-exec-fail-0001", "artifact_type": "execution_output"}],
             )
+            self.assertFalse(preview["exchange_boundary"]["requires_exchange_boundary"])
+            self.assertEqual(preview["exchange_boundary"]["boundary_mode"], "run_local_handoff")
             self.assertEqual(preview["close_or_continue"], "close_rejected")
             self.assertEqual(preview["run"]["current_stage"], "CLOSED")
             run_root = Path(preview["materialization"]["run_root"])
+            self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
             self.assertTrue((run_root / "handoff" / "manifest-reference.json").is_file())

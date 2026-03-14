@@ -72,6 +72,18 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
         "approval_result": {"approval_status": "approved"},
         "close_or_continue": {"run_id": run_id, "decision": "close"},
         "decision_state": {"decision_status": "finalized"},
+        "exchange_boundary_decision": {
+            "decision_id": f"exchange-boundary-{run_id}",
+            "run_id": run_id,
+            "request_id": "req-1",
+            "close_or_continue": "close",
+            "boundary_mode": "run_local_handoff",
+            "requires_exchange_boundary": False,
+            "exchange_materialization_status": "deferred",
+            "manifest_reference": "task-manifest-req-1",
+            "evidence_bundle_id": "handoff-evidence-req-1",
+            "reason_codes": ["closed_run_keeps_handoff_inside_current_run"],
+        },
         "handoff_outputs": {
             "inline_context": {"handoff_type": "inline_context", "summary": "done", "authoritative": True},
             "evidence_bundle": {"handoff_type": "evidence_bundle", "bundle_id": "handoff-evidence-req-1"},
@@ -120,12 +132,14 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertEqual(set(Path(path).name for path in run_root.iterdir()), set(RUN_TREE_ZONES))
             self.assertTrue((run_root / "request" / "request.raw.json").is_file())
             self.assertTrue((run_root / "manifests" / "manifest-reference.json").is_file())
+            self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
             self.assertTrue((run_root / "handoff" / "manifest-reference.json").is_file())
             self.assertTrue((run_root / "logs" / "materialization.log").is_file())
             self.assertTrue((run_root / "logs" / "cleanup.log").is_file())
             self.assertTrue((run_root / "final" / "retention-summary.json").is_file())
+            self.assertFalse(summary["exchange_boundary"]["requires_exchange_boundary"])
             self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
             projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
             self.assertTrue((projection_root / "artifact.json").is_file())
@@ -199,12 +213,19 @@ class TestWorkspaceMaterialization(unittest.TestCase):
                 }
             )
             payloads["close_or_continue"]["decision"] = "continue_pending"
+            payloads["exchange_boundary_decision"]["close_or_continue"] = "continue_pending"
+            payloads["exchange_boundary_decision"]["boundary_mode"] = "external_exchange_candidate"
+            payloads["exchange_boundary_decision"]["requires_exchange_boundary"] = True
+            payloads["exchange_boundary_decision"]["reason_codes"] = [
+                "continue_pending_requires_external_handoff_boundary"
+            ]
 
             summary = materialize_run_outputs("run-slice4-2", payloads, repo_root=repo_root)
 
             self.assertEqual(summary["retention"]["retention_mode"], "retain_for_continuation")
             self.assertEqual(summary["retention"]["cleanup_eligible_artifacts"], [])
             self.assertEqual(summary["retention"]["cleanup_actions"], [])
+            self.assertTrue(summary["exchange_boundary"]["requires_exchange_boundary"])
 
 
 if __name__ == "__main__":
