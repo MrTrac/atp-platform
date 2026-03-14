@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from core.handoff.continuation_state import build_continuation_state
+
 
 DEFAULT_REPO_ROOT = Path(__file__).resolve().parents[2]
 RUN_TREE_ZONES = (
@@ -66,6 +68,20 @@ def resolve_artifact_projection_root(
 
     runtime_root = workspace_root.resolve() if workspace_root is not None else resolve_workspace_root(repo_root)
     return runtime_root / "atp-artifacts" / artifact_id
+
+
+def resolve_exchange_current_task_root(
+    run_id: str,
+    repo_root: Path | None = None,
+    workspace_root: Path | None = None,
+) -> Path:
+    """Resolve the minimal current-task exchange root for a run."""
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for exchange materialization.")
+
+    runtime_root = workspace_root.resolve() if workspace_root is not None else resolve_workspace_root(repo_root)
+    return runtime_root / "exchange" / "current-task" / run_id
 
 
 def workspace_path(run_id: str, area: str) -> str:
@@ -205,6 +221,145 @@ def build_retention_summary(
     }
 
 
+def materialize_exchange_boundary(
+    run_id: str,
+    exchange_boundary_decision: dict[str, Any],
+    exchange_bundle: dict[str, Any],
+    handoff_outputs: dict[str, Any],
+    repo_root: Path | None = None,
+    workspace_root: Path | None = None,
+) -> dict[str, Any]:
+    """Materialize the minimal external exchange payload only when required."""
+
+    decision = dict(exchange_boundary_decision)
+    if not decision.get("requires_exchange_boundary"):
+        decision["exchange_materialization_status"] = "not_required"
+        return {
+            "materialized": False,
+            "exchange_root": "",
+            "files": [],
+            "decision": decision,
+        }
+
+    exchange_root = resolve_exchange_current_task_root(
+        run_id,
+        repo_root=repo_root,
+        workspace_root=workspace_root,
+    )
+    exchange_root.mkdir(parents=True, exist_ok=True)
+    metadata = {
+        "run_id": run_id,
+        "request_id": decision.get("request_id", ""),
+        "decision_id": decision.get("decision_id", ""),
+        "boundary_mode": decision.get("boundary_mode", ""),
+        "source_manifest_reference": handoff_outputs.get("manifest_reference", {}).get("manifest_reference", ""),
+        "source_evidence_bundle_id": handoff_outputs.get("evidence_bundle", {}).get("bundle_id", ""),
+        "source_exchange_bundle_id": exchange_bundle.get("exchange_id", ""),
+        "source_handoff_type": exchange_bundle.get("handoff_type", ""),
+    }
+    bundle_path = _write_json(exchange_root / "exchange-bundle.json", exchange_bundle)
+    metadata_path = _write_json(exchange_root / "exchange-metadata.json", metadata)
+    decision["exchange_materialization_status"] = "materialized_current_task"
+    return {
+        "materialized": True,
+        "exchange_root": str(exchange_root),
+        "files": [str(bundle_path), str(metadata_path)],
+        "bundle_path": str(bundle_path),
+        "metadata_path": str(metadata_path),
+        "decision": decision,
+    }
+
+
+def build_reference_index(
+    run_id: str,
+    request_id: str,
+    close_decision: str,
+    zone_paths: dict[str, Path],
+    exchange_boundary_decision: dict[str, Any],
+    exchange_summary: dict[str, Any],
+    continuation_state: dict[str, Any],
+    manifest_reference: dict[str, Any],
+    projections: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the minimal file-based reference/index artifact for Slice D."""
+
+    return {
+        "index_id": f"reference-index-{run_id}",
+        "run_id": run_id,
+        "request_id": request_id,
+        "close_or_continue": close_decision,
+        "exchange_boundary_decision_id": exchange_boundary_decision.get("decision_id", ""),
+        "exchange_boundary_mode": exchange_boundary_decision.get("boundary_mode", ""),
+        "manifest_reference": {
+            "value": manifest_reference.get("manifest_reference", ""),
+            "manifests_path": str(zone_paths["manifests"] / "manifest-reference.json"),
+            "handoff_path": str(zone_paths["handoff"] / "manifest-reference.json"),
+        },
+        "continuation": {
+            "continuation_id": continuation_state.get("continuation_id", ""),
+            "continuation_required": continuation_state.get("continuation_required", False),
+            "current_source": continuation_state.get("current_source", "none"),
+            "state_path": str(zone_paths["final"] / "continuation-state.json"),
+        },
+        "exchange_current_task": {
+            "materialized": exchange_summary.get("materialized", False),
+            "exchange_root": exchange_summary.get("exchange_root", ""),
+            "bundle_path": exchange_summary.get("bundle_path", ""),
+            "metadata_path": exchange_summary.get("metadata_path", ""),
+            "current_reference_path": exchange_summary.get("current_reference_path", ""),
+        },
+        "authoritative_refs": [
+            {
+                "artifact_id": item.get("artifact_id", ""),
+                "projection_root": item.get("projection_root", ""),
+                "metadata_path": item.get("metadata_path", ""),
+            }
+            for item in projections.get("items", [])
+        ],
+        "notes": [
+            "Slice D provides minimal file-based references only.",
+            "This is not a generalized index, catalog, or persistence subsystem.",
+        ],
+    }
+
+
+def materialize_current_exchange_reference(
+    run_id: str,
+    request_id: str,
+    exchange_boundary_decision: dict[str, Any],
+    exchange_summary: dict[str, Any],
+    continuation_state_path: Path,
+    reference_index_path: Path,
+    manifest_reference: dict[str, Any],
+) -> dict[str, Any]:
+    """Write the minimal current-task exchange pointer only when exchange exists."""
+
+    if not exchange_summary.get("materialized"):
+        return {
+            "materialized": False,
+            "current_reference_path": "",
+        }
+
+    current_reference_path = Path(str(exchange_summary["exchange_root"])) / "current.json"
+    payload = {
+        "run_id": run_id,
+        "request_id": request_id,
+        "exchange_boundary_decision_id": exchange_boundary_decision.get("decision_id", ""),
+        "exchange_boundary_mode": exchange_boundary_decision.get("boundary_mode", ""),
+        "exchange_root": exchange_summary.get("exchange_root", ""),
+        "exchange_bundle_path": exchange_summary.get("bundle_path", ""),
+        "exchange_metadata_path": exchange_summary.get("metadata_path", ""),
+        "continuation_state_path": str(continuation_state_path),
+        "reference_index_path": str(reference_index_path),
+        "manifest_reference": manifest_reference.get("manifest_reference", ""),
+    }
+    _write_json(current_reference_path, payload)
+    return {
+        "materialized": True,
+        "current_reference_path": str(current_reference_path),
+    }
+
+
 def materialize_run_outputs(
     run_id: str,
     payloads: dict[str, Any],
@@ -214,6 +369,32 @@ def materialize_run_outputs(
     """Materialize the approved ATP v0.2 run tree outputs."""
 
     zone_paths = materialize_run_tree(run_id, repo_root=repo_root, workspace_root=workspace_root)
+    exchange_summary = materialize_exchange_boundary(
+        run_id=run_id,
+        exchange_boundary_decision=payloads["exchange_boundary_decision"],
+        exchange_bundle=payloads["exchange_bundle"],
+        handoff_outputs=payloads["handoff_outputs"],
+        repo_root=repo_root,
+        workspace_root=workspace_root,
+    )
+    exchange_boundary_decision = exchange_summary["decision"]
+    request_id = str(
+        payloads.get("close_or_continue", {}).get("request_id")
+        or payloads.get("run_record", {}).get("request_id")
+        or payloads.get("raw_request", {}).get("request_id")
+        or "request-unknown"
+    )
+    continuation_state = build_continuation_state(
+        run_id=run_id,
+        request_id=request_id,
+        close_decision=str(payloads["close_or_continue"]["decision"]),
+        exchange_boundary_decision=exchange_boundary_decision,
+        exchange_summary=exchange_summary,
+        handoff_outputs={
+            **payloads["handoff_outputs"],
+            "exchange_bundle": payloads["exchange_bundle"],
+        },
+    )
     created_files = {
         "request": [
             _write_json(zone_paths["request"] / "request.raw.json", payloads["raw_request"]),
@@ -243,6 +424,10 @@ def materialize_run_outputs(
             _write_json(zone_paths["decisions"] / "approval-result.json", payloads["approval_result"]),
             _write_json(zone_paths["decisions"] / "close-or-continue.json", payloads["close_or_continue"]),
             _write_json(zone_paths["decisions"] / "decision-state.json", payloads["decision_state"]),
+            _write_json(
+                zone_paths["decisions"] / "exchange-boundary-decision.json",
+                exchange_boundary_decision,
+            ),
         ],
         "handoff": [
             _write_json(zone_paths["handoff"] / "inline-context.json", payloads["handoff_outputs"]["inline_context"]),
@@ -254,6 +439,7 @@ def materialize_run_outputs(
         ],
         "final": [
             _write_json(zone_paths["final"] / "finalization-summary.json", payloads["finalization_summary"]),
+            _write_json(zone_paths["final"] / "continuation-state.json", continuation_state),
         ],
         "logs": [
             _write_log(
@@ -299,6 +485,30 @@ def materialize_run_outputs(
         projections=projections,
     )
     created_files["final"].append(_write_json(zone_paths["final"] / "retention-summary.json", retention_summary))
+    reference_index_path = zone_paths["final"] / "reference-index.json"
+    continuation_state_path = zone_paths["final"] / "continuation-state.json"
+    current_exchange_reference = materialize_current_exchange_reference(
+        run_id=run_id,
+        request_id=request_id,
+        exchange_boundary_decision=exchange_boundary_decision,
+        exchange_summary=exchange_summary,
+        continuation_state_path=continuation_state_path,
+        reference_index_path=reference_index_path,
+        manifest_reference=payloads["handoff_outputs"]["manifest_reference"],
+    )
+    exchange_summary["current_reference_path"] = current_exchange_reference.get("current_reference_path", "")
+    reference_index = build_reference_index(
+        run_id=run_id,
+        request_id=request_id,
+        close_decision=str(payloads["close_or_continue"]["decision"]),
+        zone_paths=zone_paths,
+        exchange_boundary_decision=exchange_boundary_decision,
+        exchange_summary=exchange_summary,
+        continuation_state=continuation_state,
+        manifest_reference=payloads["handoff_outputs"]["manifest_reference"],
+        projections=projections,
+    )
+    created_files["final"].append(_write_json(reference_index_path, reference_index))
     created_files["logs"].append(
         _write_log(
             zone_paths["logs"] / "cleanup.log",
@@ -316,9 +526,19 @@ def materialize_run_outputs(
         materialization_lines.append(f"projection={item['projection_root']}")
         materialization_lines.append(f"projection-metadata={item['metadata_path']}")
         materialization_lines.append(f"projection-payload={item['payload_path']}")
+    if exchange_summary["materialized"]:
+        materialization_lines.append(f"exchange={exchange_summary['exchange_root']}")
+        for path in exchange_summary["files"]:
+            materialization_lines.append(f"exchange-file={path}")
+    if current_exchange_reference["materialized"]:
+        materialization_lines.append(f"exchange-current-reference={current_exchange_reference['current_reference_path']}")
     materialization_lines.append(
         f"retention-summary={zone_paths['final'] / 'retention-summary.json'}"
     )
+    materialization_lines.append(
+        f"continuation-state={zone_paths['final'] / 'continuation-state.json'}"
+    )
+    materialization_lines.append(f"reference-index={reference_index_path}")
     materialization_lines.append(f"cleanup-log={zone_paths['logs'] / 'cleanup.log'}")
     created_files["logs"][-1] = _write_log(zone_paths["logs"] / "materialization.log", materialization_lines)
 
@@ -327,6 +547,10 @@ def materialize_run_outputs(
         "run_root": str(zone_paths["run_root"]),
         "zones": {zone: str(zone_paths[zone]) for zone in RUN_TREE_ZONES},
         "files": {zone: [str(path) for path in files] for zone, files in created_files.items()},
+        "exchange_boundary": exchange_boundary_decision,
+        "exchange": exchange_summary,
+        "continuation": continuation_state,
+        "reference_index": reference_index,
         "authoritative_projection": projections,
         "retention": retention_summary,
     }

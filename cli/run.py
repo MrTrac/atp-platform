@@ -31,6 +31,7 @@ from core.execution.executor import ExecutionError
 from core.execution.orchestrator import execute_run
 from core.finalization.close_or_continue import close_or_continue
 from core.finalization.finalize import derive_final_status, finalize_run
+from core.handoff.exchange_boundary import build_exchange_boundary_decision
 from core.handoff.evidence_bundle import build_evidence_bundle
 from core.handoff.exchange_bundle import build_exchange_bundle
 from core.handoff.inline_context import build_inline_context
@@ -168,6 +169,12 @@ def preview_run(
         handoff_outputs=handoff_outputs,
     )
     close_decision = close_or_continue(approval_result)
+    exchange_boundary_decision = build_exchange_boundary_decision(
+        run_id=run_id,
+        request_id=normalized_request["request_id"],
+        close_decision=close_decision,
+        handoff_outputs=handoff_outputs,
+    )
 
     run_record = build_run_record(run_id=run_id, request_id=normalized_request["request_id"])
     run_record = advance_run_state(run_record, RunState.NORMALIZED, "request normalized")
@@ -248,6 +255,8 @@ def preview_run(
                 "decision": close_decision,
             },
             "decision_state": decision_state,
+            "exchange_boundary_decision": exchange_boundary_decision,
+            "exchange_bundle": handoff_outputs["exchange_bundle"],
             "handoff_outputs": {
                 "inline_context": handoff_outputs["inline_context"],
                 "evidence_bundle": handoff_outputs["evidence_bundle"],
@@ -256,6 +265,8 @@ def preview_run(
             "finalization_summary": finalization_summary,
         },
     )
+    exchange_boundary_decision = dict(materialization["exchange_boundary"])
+    continuation_state = dict(materialization["continuation"])
 
     return {
         "request": {
@@ -299,6 +310,9 @@ def preview_run(
         "review": review_decision,
         "approval": approval_result,
         "handoff": handoff_outputs,
+        "exchange_boundary": exchange_boundary_decision,
+        "continuation": continuation_state,
+        "reference_index": dict(materialization["reference_index"]),
         "finalization": finalization_summary,
         "close_or_continue": close_decision,
         "run": run_record,
