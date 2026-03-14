@@ -12,7 +12,11 @@ from adapters.filesystem.artifact_store import (
     mark_deprecated,
     mark_selected,
 )
-from adapters.filesystem.workspace_writer import repo_local_serialization_path, workspace_path
+from adapters.filesystem.workspace_writer import (
+    repo_local_serialization_path,
+    resolve_run_root,
+    workspace_path,
+)
 from core.context.bundle_materializer import materialize_bundle
 from core.context.evidence_selector import select_evidence
 from core.handoff.evidence_bundle import build_evidence_bundle
@@ -166,7 +170,11 @@ class TestArtifactModel(unittest.TestCase):
         )
 
     def test_workspace_path_helpers_preserve_repo_vs_runtime_boundary(self) -> None:
-        self.assertEqual(workspace_path("run-1", "exchange"), "SOURCE_DEV/workspace/exchange/run-1")
+        self.assertEqual(workspace_path("run-1", "logs"), "SOURCE_DEV/workspace/atp-runs/run-1/logs")
+        self.assertEqual(
+            resolve_run_root("run-1", workspace_root=Path("/tmp") / "SOURCE_DEV" / "workspace"),
+            (Path("/tmp") / "SOURCE_DEV" / "workspace" / "atp-runs" / "run-1").resolve(),
+        )
         self.assertEqual(
             repo_local_serialization_path("run-1", "exchange"),
             Path("tests") / "fixtures" / "outputs" / "exchange" / "run-1",

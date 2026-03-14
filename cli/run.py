@@ -19,6 +19,7 @@ from adapters.filesystem.artifact_store import (
     mark_selected,
     summarize_artifacts,
 )
+from adapters.filesystem.workspace_writer import materialize_run_outputs
 from core.approvals.approval_gate import require_approval
 from core.approvals.decision_model import build_decision
 from core.classification.classifier import classify_request
@@ -73,7 +74,11 @@ def _short_text(value: str, limit: int = 120) -> str:
     return compact[:limit]
 
 
-def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
+def preview_run(
+    request_file: str,
+    run_id: str,
+    workspace_root: Path | None = None,
+) -> dict[str, Any]:
     """Load, normalize, classify, resolve, package context, route, execute, validate, review, approve, and finalize."""
 
     raw_request = load_request(request_file)
@@ -214,6 +219,39 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
     run_record["finalization"] = finalization_summary
     run_record["close_or_continue"] = close_decision
 
+    decision_state = initial_decision_state()
+    materialization = materialize_run_outputs(
+        run_id=run_id,
+        workspace_root=workspace_root,
+        payloads={
+            "raw_request": raw_request,
+            "normalized_request": normalized_request,
+            "classification": classification,
+            "resolution": resolution,
+            "task_manifest": task_manifest,
+            "product_context": product_context,
+            "manifest_reference": handoff_outputs["manifest_reference"],
+            "run_record": run_record,
+            "prepared_route": prepared_route,
+            "routing_result": routing_result,
+            "execution_result": execution_result,
+            "artifacts": {
+                "items": artifacts,
+                "summary": artifact_summary,
+            },
+            "validation_summary": validation_summary,
+            "review_decision": review_decision,
+            "approval_result": approval_result,
+            "close_or_continue": {
+                "run_id": run_id,
+                "request_id": normalized_request["request_id"],
+                "decision": close_decision,
+            },
+            "decision_state": decision_state,
+            "finalization_summary": finalization_summary,
+        },
+    )
+
     return {
         "request": {
             "request_id": normalized_request["request_id"],
@@ -259,7 +297,8 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
         "finalization": finalization_summary,
         "close_or_continue": close_decision,
         "run": run_record,
-        "decision_state": initial_decision_state(),
+        "decision_state": decision_state,
+        "materialization": materialization,
         "message": "ATP v0 stops at final summary. Human approval UI and production handoff materialization are not implemented.",
     }
 
