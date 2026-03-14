@@ -27,6 +27,7 @@
 5. **Historical close-out:** các freeze close-out reports trong `archive/reports/`
 6. **Roadmap continuity:** `roadmap/README.md` và các roadmap documents theo product/major/version
    Practical lineage map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
+   Milestone templates: `roadmap/templates/milestones/`
 
 Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP ⇄ products`, không chỉ bám release chronology.
 
@@ -38,6 +39,7 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 - Roadmap layer: `roadmap/ATP_Product_Roadmap.md`, `roadmap/majors/`, `roadmap/versions/`
 - Stage roadmap: `roadmap/stages/ATP_Development_Stage_Roadmap.md`
 - Practical milestone map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
+- Milestone template bundle: `roadmap/templates/milestones/`
 
 ---
 
