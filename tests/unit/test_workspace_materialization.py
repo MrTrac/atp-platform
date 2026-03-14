@@ -1,4 +1,4 @@
-"""Unit tests for ATP v0.4 runtime slices plus the v0.5-v0.6 foundational contract chain."""
+"""Unit tests for ATP v0.4 runtime slices plus the v0.5-v0.7 foundational contract chain."""
 
 from __future__ import annotations
 
@@ -380,6 +380,63 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
                 "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
             ],
         },
+        "finalization_closure_record": {
+            "contract_id": "finalization-closure-record-req-1",
+            "contract_version": "v0.7-slice-a",
+            "request_id": "req-1",
+            "run_id": run_id,
+            "record_scope": "finalization_closure_record_only",
+            "product_execution_result_ref": {
+                "contract_id": "product-execution-result-req-1",
+                "execution_id": "execution-req-1",
+                "execution_status": "succeeded",
+            },
+            "post_execution_decision_ref": {
+                "contract_id": "post-execution-decision-req-1",
+                "bounded_outcome": "close",
+            },
+            "decision_to_closure_continuation_handoff_ref": {
+                "contract_id": "decision-to-closure-continuation-handoff-req-1",
+                "bounded_next_path": "close",
+            },
+            "closure_continuation_state_ref": {
+                "contract_id": "closure-continuation-state-req-1",
+                "state_scope": "closure_continuation_state_only",
+                "bounded_path": "close",
+                "state_status": "closed",
+            },
+            "finalization_or_closure_record": {
+                "record_stage": "finalization_closure",
+                "bounded_path": "close",
+                "record_status": "closure_record_finalized",
+                "final_status": "completed",
+                "continuation_required": False,
+            },
+            "record_rationale": {
+                "finalization_id": "finalization-req-1",
+                "validation_status": "passed",
+                "review_status": "accept",
+                "approval_status": "approved",
+                "rationale_codes": [
+                    "finalization_closure_record_contract",
+                    "bounded_finalization_record_only",
+                    "record_derived_from_closure_state_and_finalization_summary",
+                ],
+                "summary": "ATP is recording a bounded finalization or closure record only.",
+            },
+            "traceability": {
+                "finalization_id": "finalization-req-1",
+                "closure_continuation_state_contract_id": "closure-continuation-state-req-1",
+                "decision_to_closure_continuation_handoff_contract_id": "decision-to-closure-continuation-handoff-req-1",
+                "post_execution_decision_contract_id": "post-execution-decision-req-1",
+                "product_execution_result_contract_id": "product-execution-result-req-1",
+                "close_or_continue": "close",
+            },
+            "notes": [
+                "This contract records a bounded finalization or closure record only.",
+                "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
+            ],
+        },
         "task_manifest": {"manifest_id": "task-manifest-req-1", "request_id": "req-1"},
         "product_context": {"product": "ATP", "profile_ref": "profiles/ATP/profile.yaml"},
         "manifest_reference": {"handoff_type": "manifest_reference", "manifest_reference": "task-manifest-req-1"},
@@ -501,6 +558,7 @@ class TestWorkspaceMaterialization(unittest.TestCase):
                 (run_root / "manifests" / "decision-to-closure-continuation-handoff-contract.json").is_file()
             )
             self.assertTrue((run_root / "manifests" / "closure-continuation-state-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "finalization-closure-record-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
@@ -602,6 +660,18 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertEqual(
                 summary["closure_continuation_state"]["decision_to_handoff_contract_id"],
                 "decision-to-closure-continuation-handoff-req-1",
+            )
+            self.assertEqual(
+                summary["finalization_closure_record"]["record_scope"],
+                "finalization_closure_record_only",
+            )
+            self.assertEqual(
+                summary["finalization_closure_record"]["bounded_path"],
+                "close",
+            )
+            self.assertEqual(
+                summary["finalization_closure_record"]["closure_continuation_state_contract_id"],
+                "closure-continuation-state-req-1",
             )
             self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
             projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
@@ -769,6 +839,35 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertNotIn("selected_node", closure_continuation_state_contract)
             self.assertNotIn("recovery_scope", closure_continuation_state_contract)
             self.assertNotIn("approval_mode", closure_continuation_state_contract)
+            finalization_closure_record_contract = json.loads(
+                (run_root / "manifests" / "finalization-closure-record-contract.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(finalization_closure_record_contract["request_id"], "req-1")
+            self.assertEqual(finalization_closure_record_contract["run_id"], "run-slice1-2")
+            self.assertEqual(
+                finalization_closure_record_contract["record_scope"],
+                "finalization_closure_record_only",
+            )
+            self.assertEqual(
+                finalization_closure_record_contract["closure_continuation_state_ref"]["contract_id"],
+                "closure-continuation-state-req-1",
+            )
+            self.assertEqual(
+                finalization_closure_record_contract["finalization_or_closure_record"]["bounded_path"],
+                "close",
+            )
+            self.assertEqual(
+                finalization_closure_record_contract["finalization_or_closure_record"]["record_status"],
+                "closure_record_finalized",
+            )
+            self.assertEqual(
+                finalization_closure_record_contract["finalization_or_closure_record"]["final_status"],
+                "completed",
+            )
+            self.assertNotIn("selected_provider", finalization_closure_record_contract)
+            self.assertNotIn("selected_node", finalization_closure_record_contract)
+            self.assertNotIn("recovery_scope", finalization_closure_record_contract)
+            self.assertNotIn("approval_mode", finalization_closure_record_contract)
 
     def test_authoritative_projection_keeps_traceability_to_run_and_source_stage(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

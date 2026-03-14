@@ -1,4 +1,4 @@
-"""Workspace materialization helpers for ATP v0.2-v0.6 foundational runtime slices."""
+"""Workspace materialization helpers for ATP v0.2-v0.7 foundational runtime slices."""
 
 from __future__ import annotations
 
@@ -244,6 +244,26 @@ def summarize_closure_continuation_state_contract(
         ),
         "decision_to_handoff_contract_id": str(
             contract.get("decision_to_closure_continuation_handoff_ref", {}).get("contract_id", "")
+        ),
+        "traceability": dict(contract.get("traceability", {})),
+    }
+
+
+def summarize_finalization_closure_record_contract(
+    contract: dict[str, Any],
+    contract_path: Path,
+) -> dict[str, Any]:
+    """Summarize the explicit v0.7 Slice A finalization/closure record contract."""
+
+    return {
+        "contract_id": str(contract.get("contract_id", "")),
+        "contract_path": str(contract_path),
+        "record_scope": str(contract.get("record_scope", "")),
+        "bounded_path": str(contract.get("finalization_or_closure_record", {}).get("bounded_path", "")),
+        "record_status": str(contract.get("finalization_or_closure_record", {}).get("record_status", "")),
+        "final_status": str(contract.get("finalization_or_closure_record", {}).get("final_status", "")),
+        "closure_continuation_state_contract_id": str(
+            contract.get("closure_continuation_state_ref", {}).get("contract_id", "")
         ),
         "traceability": dict(contract.get("traceability", {})),
     }
@@ -659,7 +679,7 @@ def materialize_run_outputs(
     repo_root: Path | None = None,
     workspace_root: Path | None = None,
 ) -> dict[str, Any]:
-    """Materialize the approved ATP v0.2-v0.6 foundational run outputs."""
+    """Materialize the approved ATP v0.2-v0.7 foundational run outputs."""
 
     zone_paths = materialize_run_tree(run_id, repo_root=repo_root, workspace_root=workspace_root)
     exchange_summary = materialize_exchange_boundary(
@@ -699,6 +719,9 @@ def materialize_run_outputs(
     closure_continuation_state_contract_path = (
         zone_paths["manifests"] / "closure-continuation-state-contract.json"
     )
+    finalization_closure_record_contract_path = (
+        zone_paths["manifests"] / "finalization-closure-record-contract.json"
+    )
     created_files = {
         "request": [
             _write_json(zone_paths["request"] / "request.raw.json", payloads["raw_request"]),
@@ -719,6 +742,10 @@ def materialize_run_outputs(
             _write_json(
                 closure_continuation_state_contract_path,
                 payloads["closure_continuation_state"],
+            ),
+            _write_json(
+                finalization_closure_record_contract_path,
+                payloads["finalization_closure_record"],
             ),
             _write_json(zone_paths["manifests"] / "task-manifest.json", payloads["task_manifest"]),
             _write_json(zone_paths["manifests"] / "product-context.json", payloads["product_context"]),
@@ -937,6 +964,10 @@ def materialize_run_outputs(
         payloads["closure_continuation_state"],
         closure_continuation_state_contract_path,
     )
+    finalization_closure_record_summary = summarize_finalization_closure_record_contract(
+        payloads["finalization_closure_record"],
+        finalization_closure_record_contract_path,
+    )
 
     return {
         "workspace_root": str(zone_paths["workspace_root"]),
@@ -956,6 +987,7 @@ def materialize_run_outputs(
         "post_execution_decision": post_execution_decision_summary,
         "decision_to_closure_continuation_handoff": decision_to_closure_continuation_handoff_summary,
         "closure_continuation_state": closure_continuation_state_summary,
+        "finalization_closure_record": finalization_closure_record_summary,
         "reference_index": reference_index,
         "authoritative_projection": projections,
         "retention": retention_summary,
