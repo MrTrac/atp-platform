@@ -124,10 +124,14 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
             self.assertTrue((run_root / "handoff" / "manifest-reference.json").is_file())
             self.assertTrue((run_root / "logs" / "materialization.log").is_file())
+            self.assertTrue((run_root / "logs" / "cleanup.log").is_file())
+            self.assertTrue((run_root / "final" / "retention-summary.json").is_file())
             self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
             projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
             self.assertTrue((projection_root / "artifact.json").is_file())
             self.assertTrue((projection_root / "projection-metadata.json").is_file())
+            self.assertEqual(summary["retention"]["cleanup_mode"], "manual_review_only")
+            self.assertEqual(summary["retention"]["cleanup_actions"], [])
             self.assertFalse((run_root / "exchange").exists())
             self.assertFalse((repo_root / "atp-runs").exists())
             self.assertFalse((repo_root / "request").exists())
@@ -149,6 +153,58 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertEqual(metadata["source_stage"], "execution")
             self.assertEqual(metadata["projection_scope"], "authoritative")
             self.assertFalse((projection_root.parent / "artifact-selected-req-1").exists())
+
+    def test_retention_summary_marks_deprecated_artifacts_cleanup_eligible_after_close(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = _build_fake_repo_root(Path(temp_dir))
+            payloads = _sample_payloads("run-slice4-1")
+            payloads["artifacts"]["items"].append(
+                {
+                    "artifact_id": "artifact-deprecated-req-1",
+                    "artifact_type": "execution_output",
+                    "artifact_state": "deprecated",
+                    "source_stage": "execution",
+                    "source_ref": "artifact-authoritative-req-1",
+                    "artifact_freshness": "current",
+                    "authoritative": False,
+                }
+            )
+            payloads["close_or_continue"]["decision"] = "close_rejected"
+
+            summary = materialize_run_outputs("run-slice4-1", payloads, repo_root=repo_root)
+
+            self.assertEqual(summary["retention"]["close_or_continue"], "close_rejected")
+            self.assertEqual(len(summary["retention"]["cleanup_eligible_artifacts"]), 1)
+            self.assertEqual(
+                summary["retention"]["cleanup_eligible_artifacts"][0]["artifact_id"],
+                "artifact-deprecated-req-1",
+            )
+            self.assertEqual(summary["retention"]["cleanup_actions"], [])
+            projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
+            self.assertTrue(projection_root.is_dir())
+
+    def test_continue_pending_retains_deprecated_artifacts_without_cleanup_eligibility(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = _build_fake_repo_root(Path(temp_dir))
+            payloads = _sample_payloads("run-slice4-2")
+            payloads["artifacts"]["items"].append(
+                {
+                    "artifact_id": "artifact-deprecated-req-1",
+                    "artifact_type": "execution_output",
+                    "artifact_state": "deprecated",
+                    "source_stage": "execution",
+                    "source_ref": "artifact-authoritative-req-1",
+                    "artifact_freshness": "current",
+                    "authoritative": False,
+                }
+            )
+            payloads["close_or_continue"]["decision"] = "continue_pending"
+
+            summary = materialize_run_outputs("run-slice4-2", payloads, repo_root=repo_root)
+
+            self.assertEqual(summary["retention"]["retention_mode"], "retain_for_continuation")
+            self.assertEqual(summary["retention"]["cleanup_eligible_artifacts"], [])
+            self.assertEqual(summary["retention"]["cleanup_actions"], [])
 
 
 if __name__ == "__main__":

@@ -10,9 +10,10 @@ Pham vi:
 - materialize run tree toi thieu cua ATP v0.2 duoi `SOURCE_DEV/workspace/atp-runs/<run-id>/`
 - materialize handoff outputs toi thieu trong `handoff/` cua run tree
 - project authoritative artifact toi thieu sang `SOURCE_DEV/workspace/atp-artifacts/<artifact-id>/`
+- ghi retention / cleanup semantics toi thieu ma khong auto-delete runtime artifacts
 
 Deferred:
 
 - artifact persistence thuc te
 - day du artifact lifecycle engine
-- `exchange/`, retention va cleanup engine
+- `exchange/`, retention va cleanup engine rong hon

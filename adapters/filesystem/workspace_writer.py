@@ -162,6 +162,49 @@ def project_authoritative_artifacts(
     }
 
 
+def build_retention_summary(
+    run_id: str,
+    close_decision: str,
+    zone_paths: dict[str, Path],
+    artifacts: list[dict[str, Any]],
+    projections: dict[str, Any],
+) -> dict[str, Any]:
+    """Build explicit minimal retention and cleanup semantics for Slice 4."""
+
+    deprecated_artifacts = [
+        {
+            "artifact_id": str(artifact.get("artifact_id", "")),
+            "artifact_state": str(artifact.get("artifact_state", "")),
+            "source_stage": str(artifact.get("source_stage", "unknown")),
+            "reason": "deprecated artifact may be manually cleaned after close-run traceability review",
+        }
+        for artifact in artifacts
+        if artifact.get("artifact_state") == "deprecated"
+    ]
+    is_closed_run = close_decision in {"close", "close_rejected"}
+    cleanup_candidates = deprecated_artifacts if is_closed_run else []
+
+    retained_projection_roots = [
+        item["projection_root"]
+        for item in projections.get("items", [])
+    ]
+    return {
+        "run_id": run_id,
+        "close_or_continue": close_decision,
+        "retention_mode": "retain_for_continuation" if close_decision == "continue_pending" else "retain_for_traceability",
+        "cleanup_mode": "manual_review_only",
+        "retained_run_zones": {zone: str(zone_paths[zone]) for zone in RUN_TREE_ZONES},
+        "retained_authoritative_projections": retained_projection_roots,
+        "cleanup_eligible_artifacts": cleanup_candidates,
+        "cleanup_actions": [],
+        "policy_notes": [
+            "Slice 4 does not perform automatic deletion of run-local or projected authoritative artifacts.",
+            "Projected authoritative artifacts remain retained under SOURCE_DEV/workspace/atp-artifacts.",
+            "Deprecated artifacts are only marked cleanup-eligible after close or close_rejected decisions.",
+        ],
+    }
+
+
 def materialize_run_outputs(
     run_id: str,
     payloads: dict[str, Any],
@@ -248,10 +291,35 @@ def materialize_run_outputs(
         repo_root=repo_root,
         workspace_root=workspace_root,
     )
+    retention_summary = build_retention_summary(
+        run_id=run_id,
+        close_decision=str(payloads["close_or_continue"]["decision"]),
+        zone_paths=zone_paths,
+        artifacts=list(payloads["artifacts"]["items"]),
+        projections=projections,
+    )
+    created_files["final"].append(_write_json(zone_paths["final"] / "retention-summary.json", retention_summary))
+    created_files["logs"].append(
+        _write_log(
+            zone_paths["logs"] / "cleanup.log",
+            [
+                f"run_id={run_id}",
+                f"close_or_continue={retention_summary['close_or_continue']}",
+                f"cleanup_mode={retention_summary['cleanup_mode']}",
+                f"cleanup_eligible_count={len(retention_summary['cleanup_eligible_artifacts'])}",
+                f"cleanup_actions={len(retention_summary['cleanup_actions'])}",
+                "authoritative_projections_retained=" + str(len(retention_summary["retained_authoritative_projections"])),
+            ],
+        )
+    )
     for item in projections["items"]:
         materialization_lines.append(f"projection={item['projection_root']}")
         materialization_lines.append(f"projection-metadata={item['metadata_path']}")
         materialization_lines.append(f"projection-payload={item['payload_path']}")
+    materialization_lines.append(
+        f"retention-summary={zone_paths['final'] / 'retention-summary.json'}"
+    )
+    materialization_lines.append(f"cleanup-log={zone_paths['logs'] / 'cleanup.log'}")
     created_files["logs"][-1] = _write_log(zone_paths["logs"] / "materialization.log", materialization_lines)
 
     return {
@@ -260,4 +328,5 @@ def materialize_run_outputs(
         "zones": {zone: str(zone_paths[zone]) for zone in RUN_TREE_ZONES},
         "files": {zone: [str(path) for path in files] for zone, files in created_files.items()},
         "authoritative_projection": projections,
+        "retention": retention_summary,
     }

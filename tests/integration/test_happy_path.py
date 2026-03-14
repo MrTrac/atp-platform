@@ -45,6 +45,10 @@ class TestHappyPath(unittest.TestCase):
             projection_root = Path(projection["items"][0]["projection_root"])
             self.assertTrue((projection_root / "artifact.json").is_file())
             self.assertTrue((projection_root / "projection-metadata.json").is_file())
+            self.assertEqual(preview["materialization"]["retention"]["cleanup_mode"], "manual_review_only")
+            self.assertEqual(preview["materialization"]["retention"]["cleanup_actions"], [])
+            self.assertTrue((run_root / "final" / "retention-summary.json").is_file())
+            self.assertTrue((run_root / "logs" / "cleanup.log").is_file())
             self.assertFalse((run_root / "exchange").exists())
 
 
