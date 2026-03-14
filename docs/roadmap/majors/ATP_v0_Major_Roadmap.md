@@ -56,7 +56,18 @@ Nói cách khác, phần còn lại của `v0` không phải chỉ là “thêm 
 
 Nếu `v0.5` không unlock được chuỗi contract nền tảng này một cách coherent, `v0` sẽ tiếp tục có gap giữa resolution semantics và execution/result traceability, làm yếu operating axis của ATP ở mức nền.
 
-## 5. v0 vẫn chưa bao gồm gì
+## 5. v0.6 cần đóng nốt điều gì cho v0 family
+
+Sau `v0.5.0`, `v0` vẫn còn một seam nền tảng chưa đóng đủ rõ: post-execution closure semantics.
+
+`v0.6` nên được hiểu là version của foundational closure và transition-readiness preparation. Nó cần:
+
+- harden bounded decision semantics ngay sau execution result
+- làm rõ decision contract nối execution result với `close`, `close_rejected`, `continue_pending`, và review-escalation bounded semantics
+- chứng minh rằng phần còn lại của `v0` vẫn là seam hardening, chưa đòi hỏi major horizon mới
+- tạo evidence rõ hơn để đánh giá khi nào `v0` thật sự đủ maturity boundary cho `v1`
+
+## 6. v0 vẫn chưa bao gồm gì
 
 `v0` vẫn chưa bao gồm:
 
@@ -69,7 +80,7 @@ Nếu `v0.5` không unlock được chuỗi contract nền tảng này một cá
 
 Những phần này không bị loại bỏ vĩnh viễn, nhưng hiện vẫn nằm ngoài maturity boundary của `v0`.
 
-## 6. Điều gì có thể justify kết thúc v0 và chuyển sang v1
+## 7. Điều gì có thể justify kết thúc v0 và chuyển sang v1
 
 Chuyển từ `v0` sang major family tiếp theo chỉ nên xảy ra khi có evidence rằng:
 
@@ -88,11 +99,18 @@ Nếu chưa có evidence kiểu này, ATP nên tiếp tục ở minor versions t
 
 Nói ngược lại, chỉ việc có thêm ý tưởng implementation chưa đủ để mở `v1`. `v1` chỉ hợp lệ khi next step đòi hỏi một horizon mới thay vì tiếp tục hardening trên current `v0` seams.
 
-## 7. Quan hệ giữa v0 và v0.5
+## 8. Quan hệ giữa v0, v0.5, và v0.6
 
-`v0.5` vì vậy phải được hiểu là:
+`v0.5` phải được hiểu là:
 
 - một guided step trong việc hoàn tất `v0`
 - minor extension của current `v0` capability horizon
 - kế thừa từ `v0.4.0` freeze + close-out + consolidation baseline
 - không phải major reset và không phải architecture rewrite
+
+`v0.6` phải được hiểu là:
+
+- continuation trực tiếp sau `v0.5.0`
+- version của foundational closure, không phải breadth expansion
+- bước dùng để chốt nốt closure semantics còn thiếu trước khi cân nhắc `v1`
+- minor extension cuối hoặc gần cuối của `v0` chỉ khi evidence vẫn cho thấy các seams còn lại là hardening seams, chưa phải horizon mới
