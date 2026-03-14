@@ -1,4 +1,4 @@
-"""Workspace materialization helpers for ATP v0.2-v0.4 runtime slices."""
+"""Workspace materialization helpers for ATP v0.2-v0.5 runtime slices."""
 
 from __future__ import annotations
 
@@ -124,6 +124,21 @@ def _write_json(path: Path, payload: Any) -> Path:
 def _write_log(path: Path, lines: list[str]) -> Path:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
+
+
+def summarize_request_to_product_resolution_contract(contract: dict[str, Any], contract_path: Path) -> dict[str, Any]:
+    """Summarize the explicit v0.5 Slice A request-to-product contract."""
+
+    return {
+        "contract_id": str(contract.get("contract_id", "")),
+        "contract_path": str(contract_path),
+        "resolution_scope": str(contract.get("resolution_scope", "")),
+        "product_target": str(contract.get("product_target", {}).get("product", "")),
+        "capability_target": str(contract.get("capability_target", {}).get("capability", "")),
+        "product_source": str(contract.get("resolution_rationale", {}).get("product_source", "")),
+        "capability_source": str(contract.get("capability_target", {}).get("source", "")),
+        "traceability": dict(contract.get("traceability", {})),
+    }
 
 
 def project_authoritative_artifacts(
@@ -536,7 +551,7 @@ def materialize_run_outputs(
     repo_root: Path | None = None,
     workspace_root: Path | None = None,
 ) -> dict[str, Any]:
-    """Materialize the approved ATP v0.2-v0.4 run outputs."""
+    """Materialize the approved ATP v0.2-v0.5 run outputs."""
 
     zone_paths = materialize_run_tree(run_id, repo_root=repo_root, workspace_root=workspace_root)
     exchange_summary = materialize_exchange_boundary(
@@ -565,6 +580,7 @@ def materialize_run_outputs(
             "exchange_bundle": payloads["exchange_bundle"],
         },
     )
+    resolution_contract_path = zone_paths["manifests"] / "request-to-product-resolution-contract.json"
     created_files = {
         "request": [
             _write_json(zone_paths["request"] / "request.raw.json", payloads["raw_request"]),
@@ -573,6 +589,7 @@ def materialize_run_outputs(
         ],
         "manifests": [
             _write_json(zone_paths["manifests"] / "resolution.json", payloads["resolution"]),
+            _write_json(resolution_contract_path, payloads["request_to_product_resolution"]),
             _write_json(zone_paths["manifests"] / "task-manifest.json", payloads["task_manifest"]),
             _write_json(zone_paths["manifests"] / "product-context.json", payloads["product_context"]),
             _write_json(zone_paths["manifests"] / "manifest-reference.json", payloads["manifest_reference"]),
@@ -760,6 +777,10 @@ def materialize_run_outputs(
     materialization_lines.append(f"reference-index={reference_index_path}")
     materialization_lines.append(f"cleanup-log={zone_paths['logs'] / 'cleanup.log'}")
     created_files["logs"][-1] = _write_log(zone_paths["logs"] / "materialization.log", materialization_lines)
+    request_to_product_resolution_summary = summarize_request_to_product_resolution_contract(
+        payloads["request_to_product_resolution"],
+        resolution_contract_path,
+    )
 
     return {
         "workspace_root": str(zone_paths["workspace_root"]),
@@ -772,6 +793,7 @@ def materialize_run_outputs(
         "recovery_contract": recovery_contract,
         "current_task_pointer": current_task_pointer,
         "continuation": continuation_state,
+        "request_to_product_resolution": request_to_product_resolution_summary,
         "reference_index": reference_index,
         "authoritative_projection": projections,
         "retention": retention_summary,

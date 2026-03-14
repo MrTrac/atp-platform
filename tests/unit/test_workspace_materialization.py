@@ -28,6 +28,48 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
         "normalized_request": {"request_id": "req-1", "product": "ATP"},
         "classification": {"request_type": "execute", "execution_intent": "run_command"},
         "resolution": {"product": "ATP", "repo_boundary": "SOURCE_DEV/platforms/ATP"},
+        "request_to_product_resolution": {
+            "contract_id": "request-to-product-resolution-req-1",
+            "contract_version": "v0.5-slice-a",
+            "request_id": "req-1",
+            "run_id": run_id,
+            "resolution_scope": "request_to_product_only",
+            "product_target": {
+                "product": "ATP",
+                "product_type": "platform",
+                "repo_boundary": "SOURCE_DEV/platforms/ATP",
+                "status": "active",
+            },
+            "capability_target": {
+                "capability": "product_resolution",
+                "source": "profile.component_scope",
+            },
+            "resolution_rationale": {
+                "product_source": "normalized_request.product",
+                "requested_product": "ATP",
+                "classified_product": "ATP",
+                "profile_ref": "profiles/ATP/profile.yaml",
+                "registry_entry_ref": "registry/products/ATP.yaml",
+                "policy_refs": ["approval_policy", "routing_policy"],
+                "rationale_codes": [
+                    "request_to_product_resolution_contract",
+                    "product_target_resolved_from_registry",
+                    "capability_target_selected_without_routing",
+                ],
+            },
+            "traceability": {
+                "manifest_id": "task-manifest-req-1",
+                "classification_request_type": "execute",
+                "classification_execution_intent": "run_command",
+                "classification_capability": "unspecified",
+                "profile_ref": "profiles/ATP/profile.yaml",
+                "repo_boundary": "SOURCE_DEV/platforms/ATP",
+            },
+            "notes": [
+                "This contract resolves request intent to a product target and capability target only.",
+                "It is distinct from classification, routing, provider selection, and broader orchestration.",
+            ],
+        },
         "task_manifest": {"manifest_id": "task-manifest-req-1", "request_id": "req-1"},
         "product_context": {"product": "ATP", "profile_ref": "profiles/ATP/profile.yaml"},
         "manifest_reference": {"handoff_type": "manifest_reference", "manifest_reference": "task-manifest-req-1"},
@@ -140,6 +182,7 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertEqual(set(Path(path).name for path in run_root.iterdir()), set(RUN_TREE_ZONES))
             self.assertTrue((run_root / "request" / "request.raw.json").is_file())
             self.assertTrue((run_root / "manifests" / "manifest-reference.json").is_file())
+            self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
@@ -158,6 +201,18 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertFalse(summary["continuation"]["continuation_required"])
             self.assertFalse(summary["reference_index"]["exchange_current_task"]["materialized"])
             self.assertEqual(summary["reference_index"]["continuation"]["current_source"], "none")
+            self.assertEqual(
+                summary["request_to_product_resolution"]["resolution_scope"],
+                "request_to_product_only",
+            )
+            self.assertEqual(
+                summary["request_to_product_resolution"]["product_target"],
+                "ATP",
+            )
+            self.assertEqual(
+                summary["request_to_product_resolution"]["capability_target"],
+                "product_resolution",
+            )
             self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
             projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
             self.assertTrue((projection_root / "artifact.json").is_file())
@@ -169,6 +224,18 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertFalse((repo_root / "atp-runs").exists())
             self.assertFalse((repo_root / "request").exists())
             self.assertFalse((repo_root / "atp-artifacts").exists())
+
+            contract = json.loads(
+                (run_root / "manifests" / "request-to-product-resolution-contract.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(contract["request_id"], "req-1")
+            self.assertEqual(contract["run_id"], "run-slice1-2")
+            self.assertEqual(contract["product_target"]["product"], "ATP")
+            self.assertEqual(contract["capability_target"]["capability"], "product_resolution")
+            self.assertEqual(contract["resolution_rationale"]["product_source"], "normalized_request.product")
+            self.assertNotIn("selected_provider", contract)
+            self.assertNotIn("selected_node", contract)
+            self.assertNotIn("reason_codes", contract)
 
     def test_authoritative_projection_keeps_traceability_to_run_and_source_stage(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -46,6 +46,14 @@ class TestContinuePendingPath(unittest.TestCase):
             self.assertTrue(preview["continuation"]["continuation_required"])
             self.assertEqual(preview["continuation"]["continuity_status"], "continuation_pending")
             self.assertEqual(preview["continuation"]["current_source"], "exchange_current_task")
+            self.assertEqual(preview["request_to_product_resolution"]["resolution_scope"], "request_to_product_only")
+            self.assertEqual(preview["request_to_product_resolution"]["product_target"]["product"], "ATP")
+            self.assertEqual(preview["request_to_product_resolution"]["capability_target"]["capability"], "shell_execution")
+            self.assertEqual(preview["request_to_product_resolution"]["capability_target"]["source"], "classification.capability")
+            self.assertEqual(
+                preview["request_to_product_resolution"]["resolution_rationale"]["product_source"],
+                "normalized_request.product",
+            )
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["materialized"])
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["persistence_state_path"].endswith("current-task-state.json"))
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["active_pointer_path"].endswith("active-pointer.json"))
@@ -55,6 +63,7 @@ class TestContinuePendingPath(unittest.TestCase):
 
             run_root = Path(preview["materialization"]["run_root"])
             exchange_root = Path(preview["materialization"]["exchange"]["exchange_root"])
+            self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
             self.assertTrue((run_root / "final" / "continuation-state.json").is_file())
             self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())

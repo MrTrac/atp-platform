@@ -38,7 +38,11 @@ from core.handoff.inline_context import build_inline_context
 from core.handoff.manifest_reference import build_manifest_reference
 from core.intake.loader import RequestLoadError, load_request
 from core.intake.normalizer import normalize_request
-from core.resolution.product_resolver import ProductResolutionError, resolve_product
+from core.resolution.product_resolver import (
+    ProductResolutionError,
+    build_request_to_product_resolution_contract,
+    resolve_product,
+)
 from core.routing.route_prepare import RoutePreparationError, prepare_route
 from core.routing.route_select import RouteSelectionError, select_route
 from core.state.decision_state import initial_decision_state
@@ -87,6 +91,13 @@ def preview_run(
     classification = classify_request(normalized_request)
     resolution = resolve_product(normalized_request, classification)
     task_manifest = build_task_manifest(normalized_request, classification, resolution)
+    request_to_product_resolution = build_request_to_product_resolution_contract(
+        run_id=run_id,
+        normalized_request=normalized_request,
+        classification=classification,
+        resolution=resolution,
+        manifest_id=task_manifest["manifest_id"],
+    )
     product_context = build_product_context(resolution)
     evidence_selection = select_evidence(
         _build_core_artifacts(normalized_request["request_id"], resolution["product"], task_manifest)
@@ -201,6 +212,12 @@ def preview_run(
         "profile_ref": resolution["profile_ref"],
         "policy_names": [policy["policy_name"] for policy in resolution["policies"]],
     }
+    run_record["request_to_product_resolution"] = {
+        "contract_id": request_to_product_resolution["contract_id"],
+        "resolution_scope": request_to_product_resolution["resolution_scope"],
+        "product_target": request_to_product_resolution["product_target"]["product"],
+        "capability_target": request_to_product_resolution["capability_target"]["capability"],
+    }
     run_record["context_package"] = {
         "manifest_id": task_manifest["manifest_id"],
         "product_context_profile": product_context["profile_ref"],
@@ -235,6 +252,7 @@ def preview_run(
             "normalized_request": normalized_request,
             "classification": classification,
             "resolution": resolution,
+            "request_to_product_resolution": request_to_product_resolution,
             "task_manifest": task_manifest,
             "product_context": product_context,
             "manifest_reference": handoff_outputs["manifest_reference"],
@@ -270,6 +288,7 @@ def preview_run(
     recovery_contract = dict(materialization["recovery_contract"])
     current_task_pointer = dict(materialization["current_task_pointer"])
     continuation_state = dict(materialization["continuation"])
+    request_to_product_resolution_summary = dict(materialization["request_to_product_resolution"])
 
     return {
         "request": {
@@ -284,6 +303,10 @@ def preview_run(
             "repo_boundary": resolution["repo_boundary"],
             "loaded_profile": resolution["profile_ref"],
             "loaded_policy_names": [policy["policy_name"] for policy in resolution["policies"]],
+        },
+        "request_to_product_resolution": {
+            **request_to_product_resolution,
+            "contract_path": request_to_product_resolution_summary["contract_path"],
         },
         "context_package": {
             "task_manifest": task_manifest,

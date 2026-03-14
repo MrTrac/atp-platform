@@ -1,4 +1,4 @@
-"""Unit tests for ATP M3-M4 product resolution and context guards."""
+"""Unit tests for ATP M3-M4 resolution plus v0.5 Slice A contract hardening."""
 
 from __future__ import annotations
 
@@ -11,14 +11,18 @@ from core.context.product_context import build_product_context
 from core.intake.loader import load_request
 from core.intake.normalizer import normalize_request
 from core.resolution.policy_loader import load_policies
-from core.resolution.product_resolver import ProductResolutionError, resolve_product
+from core.resolution.product_resolver import (
+    ProductResolutionError,
+    build_request_to_product_resolution_contract,
+    resolve_product,
+)
 
 
 FIXTURE_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "requests"
 
 
 class TestProductResolution(unittest.TestCase):
-    """Cover the M3-M4 file-based resolution flow."""
+    """Cover file-based resolution flow plus the v0.5 Slice A contract."""
 
     def test_resolve_atp_from_explicit_product_field(self) -> None:
         normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
@@ -84,6 +88,59 @@ class TestProductResolution(unittest.TestCase):
         ):
             with self.assertRaisesRegex(ProductResolutionError, "Policy ref not found"):
                 resolve_product(normalized, classification)
+
+    def test_request_to_product_resolution_contract_is_explicit_and_narrow(self) -> None:
+        normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_atp.yaml"))
+        classification = classify_request(normalized)
+        resolution = resolve_product(normalized, classification)
+
+        contract = build_request_to_product_resolution_contract(
+            run_id="run-v0-5-slice-a-1",
+            normalized_request=normalized,
+            classification=classification,
+            resolution=resolution,
+            manifest_id="task-manifest-req-1",
+        )
+
+        self.assertEqual(contract["request_id"], normalized["request_id"])
+        self.assertEqual(contract["run_id"], "run-v0-5-slice-a-1")
+        self.assertEqual(contract["resolution_scope"], "request_to_product_only")
+        self.assertEqual(contract["product_target"]["product"], "ATP")
+        self.assertEqual(contract["capability_target"]["capability"], "shell_execution")
+        self.assertEqual(contract["capability_target"]["source"], "classification.capability")
+        self.assertEqual(
+            contract["resolution_rationale"]["product_source"],
+            "normalized_request.product",
+        )
+        self.assertEqual(contract["traceability"]["classification_capability"], "shell_execution")
+        self.assertIn(
+            "product_target_resolved_from_registry",
+            contract["resolution_rationale"]["rationale_codes"],
+        )
+        self.assertEqual(contract["traceability"]["manifest_id"], "task-manifest-req-1")
+        self.assertEqual(contract["traceability"]["classification_request_type"], "implementation")
+        self.assertEqual(contract["traceability"]["classification_execution_intent"], "preview")
+        self.assertNotIn("selected_provider", contract)
+        self.assertNotIn("selected_node", contract)
+        self.assertNotIn("reason_codes", contract)
+
+    def test_request_to_product_resolution_contract_prefers_classification_capability_when_present(self) -> None:
+        normalized = normalize_request({"request_id": "req-2", "product": "TDF", "metadata": {"capability": "product_surface_read"}})
+        classification = classify_request(normalized)
+        resolution = resolve_product(normalized, classification)
+
+        contract = build_request_to_product_resolution_contract(
+            run_id="run-v0-5-slice-a-2",
+            normalized_request=normalized,
+            classification=classification,
+            resolution=resolution,
+            manifest_id="task-manifest-req-2",
+        )
+
+        self.assertEqual(contract["product_target"]["product"], "TDF")
+        self.assertEqual(contract["capability_target"]["capability"], "product_surface_read")
+        self.assertEqual(contract["capability_target"]["source"], "classification.capability")
+        self.assertEqual(contract["resolution_rationale"]["profile_ref"], "profiles/TDF/profile.yaml")
 
 
 if __name__ == "__main__":
