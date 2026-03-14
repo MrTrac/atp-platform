@@ -1,7 +1,7 @@
 # Governance ATP
 
 - **Mục đích:** Authority path cho governance; quy tắc vận hành cho hoạt động lặp lại, rủi ro cao, đa tác nhân.
-- **Phạm vi:** Git, documentation, coding, release, AI collaboration; framework và reference.
+- **Phạm vi:** Git, documentation, coding, release, roadmap continuity, AI collaboration; framework và reference.
 - **Trạng thái:** Active.
 - **Version:** v1.0
 - **Date:** 2026-03-14
@@ -22,28 +22,44 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 ## Cấu trúc governance hiện hành
 
 - `ATP_3_Role_Workflow.md` - workflow governance cho mô hình Multi-AI của ATP: Architect -> Executor -> Verifier
+- `ATP_Development_Ruleset.md` - ruleset vận hành development bắt buộc xuyên suốt version opening, slice execution, consolidation, freeze, và close-out
+- `framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md` - rule bắt buộc để mọi milestone/version có lineage và documentation continuity rõ
 - `framework/` - governance framework cấp cha
 - `git/` - governance cho Git, branch, wrapper, và thao tác an toàn
 - `documentation/` - governance cho biên soạn, review, promotion, và authority path của tài liệu
 - `coding/` - governance cho triển khai và chỉnh sửa code
 - `release/` - governance cho release, freeze, tag, và merge-to-main
+- roadmap continuity và freeze close-out discipline áp dụng xuyên suốt release governance
 - `ai-collaboration/` - quy tắc cộng tác với AI assistants
 - `reference/` - tài liệu reference dùng chung, bao gồm shorthand và bootstrap template
 
 ## Thứ tự đọc khuyến nghị
 
 1. `framework/Contextual_Project_Governance_Framework.md`
-2. `git/Contextual_Git_Governance_Model.md`
-3. `git/Git_Safety_Charter.md`
-4. `git/Safe_Git_Workflow_Templates.md`
-5. `git/AI_Branch_Operation_Rules.md`
-6. `git/Safe_Git_Wrappers_Spec.md`
-7. `ATP_3_Role_Workflow.md` khi phase liên quan phối hợp nhiều AI hoặc verification workflow
-8. các bundle domain còn lại theo đúng ngữ cảnh công việc
+2. `ATP_Development_Ruleset.md`
+3. `git/Contextual_Git_Governance_Model.md`
+4. `git/Git_Safety_Charter.md`
+5. `git/Safe_Git_Workflow_Templates.md`
+6. `git/AI_Branch_Operation_Rules.md`
+7. `git/Safe_Git_Wrappers_Spec.md`
+8. `ATP_3_Role_Workflow.md` khi phase liên quan phối hợp nhiều AI hoặc verification workflow
+9. các bundle domain còn lại theo đúng ngữ cảnh công việc
 
 ## Quy tắc áp dụng
 
 Mọi phase, process, module, hay workflow mang tính lặp lại, rủi ro, đa tác nhân, hoặc cần approval rõ ràng phải được điều phối bằng governance bundle thuộc đúng domain.
+
+Trong ATP, roadmap cũng là governance artifact bắt buộc:
+
+- product roadmap
+- major roadmap
+- version roadmap
+
+Mỗi version mới phải kế thừa từ previous frozen version và close-out/consolidation evidence của version trước đó.
+
+`ATP_Development_Ruleset.md` là operational ruleset chính để biến các doctrine và roadmap principles này thành gates/checklist áp dụng được trong thực tế.
+
+`framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md` là rule governance chuyên biệt để chuẩn hóa version lineage, documentation continuity, backfill, và authority path của từng milestone.
 
 Các governance artifact trong cây này áp dụng cho:
 

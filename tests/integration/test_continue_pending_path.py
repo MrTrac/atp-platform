@@ -1,4 +1,4 @@
-"""Integration tests for ATP continue-pending continuity behavior."""
+"""Integration tests for ATP continue-pending continuity plus v0.5 Slice A-D contracts."""
 
 from __future__ import annotations
 
@@ -46,6 +46,57 @@ class TestContinuePendingPath(unittest.TestCase):
             self.assertTrue(preview["continuation"]["continuation_required"])
             self.assertEqual(preview["continuation"]["continuity_status"], "continuation_pending")
             self.assertEqual(preview["continuation"]["current_source"], "exchange_current_task")
+            self.assertEqual(preview["request_to_product_resolution"]["resolution_scope"], "request_to_product_only")
+            self.assertEqual(preview["request_to_product_resolution"]["product_target"]["product"], "ATP")
+            self.assertEqual(preview["request_to_product_resolution"]["capability_target"]["capability"], "shell_execution")
+            self.assertEqual(preview["request_to_product_resolution"]["capability_target"]["source"], "classification.capability")
+            self.assertEqual(
+                preview["request_to_product_resolution"]["resolution_rationale"]["product_source"],
+                "normalized_request.product",
+            )
+            self.assertEqual(preview["resolution_to_handoff_intent"]["handoff_scope"], "resolution_to_handoff_only")
+            self.assertEqual(
+                preview["resolution_to_handoff_intent"]["request_to_product_resolution_ref"]["contract_id"],
+                preview["request_to_product_resolution"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["resolution_to_handoff_intent"]["handoff_intent"]["intent"],
+                "prepare_structured_product_handoff",
+            )
+            self.assertEqual(
+                preview["resolution_to_handoff_intent"]["handoff_intent"]["target_capability"],
+                "shell_execution",
+            )
+            self.assertEqual(
+                preview["product_execution_preparation"]["preparation_scope"],
+                "product_execution_preparation_only",
+            )
+            self.assertEqual(
+                preview["product_execution_preparation"]["request_to_product_resolution_ref"]["contract_id"],
+                preview["request_to_product_resolution"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["product_execution_preparation"]["resolution_to_handoff_intent_ref"]["contract_id"],
+                preview["resolution_to_handoff_intent"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["product_execution_preparation"]["execution_preparation"]["preparation_mode"],
+                "pre_routing_pre_provider",
+            )
+            self.assertEqual(preview["product_execution_result"]["result_scope"], "product_execution_result_only")
+            self.assertEqual(
+                preview["product_execution_result"]["request_to_product_resolution_ref"]["contract_id"],
+                preview["request_to_product_resolution"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["product_execution_result"]["resolution_to_handoff_intent_ref"]["contract_id"],
+                preview["resolution_to_handoff_intent"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["product_execution_result"]["product_execution_preparation_ref"]["contract_id"],
+                preview["product_execution_preparation"]["contract_id"],
+            )
+            self.assertEqual(preview["product_execution_result"]["execution_result"]["status"], "succeeded")
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["materialized"])
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["persistence_state_path"].endswith("current-task-state.json"))
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["active_pointer_path"].endswith("active-pointer.json"))
@@ -55,6 +106,10 @@ class TestContinuePendingPath(unittest.TestCase):
 
             run_root = Path(preview["materialization"]["run_root"])
             exchange_root = Path(preview["materialization"]["exchange"]["exchange_root"])
+            self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "resolution-to-handoff-intent-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "product-execution-preparation-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "product-execution-result-contract.json").is_file())
             self.assertTrue((run_root / "final" / "continuation-state.json").is_file())
             self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())

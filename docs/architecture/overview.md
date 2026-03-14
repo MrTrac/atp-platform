@@ -7,6 +7,30 @@
 
 ATP là một `platform repository` điều phối workflow theo mô hình control-plane, provider-agnostic, adapter-first, artifact-centric, và human-gated.
 
+ATP không được hiểu như một closed snapshot architecture và cũng không được hiểu như một ad hoc open architecture.
+
+ATP được duy trì như:
+
+- một stable core
+- với modular boundaries
+- explicit extension seams
+- composable capabilities
+- và controlled evolutionary governance
+
+## Trục vận hành cốt lõi
+
+ATP phải được hiểu trước hết qua trục vận hành:
+
+`requested user ⇄ ATP ⇄ products`
+
+Trong trục này:
+
+- **requested user** là nguồn của intent, request, context, review, và approval
+- **ATP** là orchestration/control/governance layer, chịu trách nhiệm chuẩn hóa flow, artifact discipline, routing, validation, handoff, và continuity
+- **products** là execution/capability surfaces mà ATP resolve và route tới để tạo ra outcome thực tế
+
+ATP không tồn tại chỉ để mở rộng internal mechanisms. Mọi capability horizon và mọi versioned change đều phải giải thích được bằng việc chúng làm mạnh hơn trục `requested user ⇄ ATP ⇄ products` như thế nào.
+
 ## Trạng thái baseline hiện tại
 
 ATP MVP v0 đã hoàn tất baseline repo-local đến M8. Flow chuẩn hiện hành gồm 14 bước:
@@ -31,12 +55,21 @@ ATP MVP v0 đã hoàn tất baseline repo-local đến M8. Flow chuẩn hiện h
 ATP hiện giữ nguyên các nguyên tắc đã được freeze:
 
 - platform-first
+- architecture-first but market-aware
 - provider-agnostic
 - adapter-first
 - artifact-centric
 - human-gated
 - local-first but node-portable
 - single source of contextual truth
+
+Điều này có nghĩa:
+
+- ATP không evolve bằng ad hoc expansion
+- modularization là cần thiết nhưng chưa đủ để được coi là “open”
+- openness của ATP phải là contract-driven, composable, và governance-controlled
+- ATP có thể hấp thụ better modern patterns từ market, nhưng chỉ qua controlled review, planning, verification, consolidation, freeze, close-out, và roadmap inheritance
+- ATP không evolve chỉ để trở thành framework lớn hơn; ATP evolve để mediate tốt hơn giữa requested user và products
 
 ## Năng lực đã có trong ATP v0
 
@@ -56,7 +89,7 @@ Baseline hiện tại đã hỗ trợ:
 
 ATP v0 chưa mở rộng sang:
 
-- production-grade runtime materialization đầy đủ trong `SOURCE_DEV/workspace` vượt quá baseline v0.2 hiện tại
+- production-grade runtime materialization đầy đủ trong `SOURCE_DEV/workspace` vượt quá baseline v0.4 hiện tại
 - approval UI
 - remote orchestration plane hoàn chỉnh
 - advanced scheduling
@@ -87,6 +120,48 @@ ATP v0.4 đã nối tiếp baseline đó bằng:
 - read-only inspect surface hẹp cho current-task state và traceability
 
 Baseline hiện tại nhằm làm rõ runtime model, operational traceability, và recovery-entry clarity ở mức tối thiểu; không phải triển khai full runtime subsystem, production persistence, hay lifecycle automation rộng.
+
+## Doctrine phát triển kiến trúc
+
+ATP được xây trên một architecture baseline đã được tổng hợp và review cẩn thận, không phải trên một snapshot đóng kín tuyệt đối và cũng không phải trên một mô hình mở tùy hứng.
+
+Luật tiến hóa của ATP là:
+
+- giữ rõ trục `requested user ⇄ ATP ⇄ products` như operating purpose
+- giữ stable core của control-plane, repo boundary, artifact lifecycle discipline, và human-gated flow
+- mở extension seams tại các ranh giới rõ như adapters, runtime materialization zones, handoff/exchange contracts, current-task contracts, và inspect surfaces
+- cho phép composable capability growth theo từng versioned slice
+- dùng governance-backed architectural fitness checks để chặn scope drift trước khi integration/freeze
+
+ATP có thể học từ các modern platform/AI builders ở cách gom capability thành capability bundles và capability horizons, nhưng ATP chỉ hấp thụ các bài học đó khi chúng khớp với architecture-first doctrine, artifact-centric flow, human-gated control, và product-oriented mediation.
+
+## Version inheritance và continuity
+
+Mỗi version mới của ATP phải kế thừa từ:
+
+- previous frozen version
+- consolidation baseline của version trước đó
+- freeze close-out của version trước đó nếu đã có
+- roadmap continuity đã được ghi rõ
+
+Điều này cũng kéo theo:
+
+- implementation không nên đi trước planning baseline acceptance
+- freeze không nên diễn ra nếu chưa có consolidation decision
+- sau mỗi version đã freeze, formal freeze close-out là bắt buộc
+- roadmap continuity là một phần của ATP governance, không phải optional writing
+
+## Quan hệ với roadmap
+
+Roadmap của ATP không phải danh sách ý tưởng tự do. Roadmap là lớp điều phối evolution theo ba tầng:
+
+- product roadmap
+- major roadmap
+- version roadmap
+
+Minor versions mở rộng capability horizon của current major family. Major transitions chỉ hợp lệ khi current major family đã đạt một coherent maturity boundary đủ rõ để chuyển sang capability horizon mới.
+
+Trong logic này, roadmap chỉ hợp lệ nếu các bước phát triển tiếp theo vẫn giải thích được bằng việc cải thiện trục `requested user ⇄ ATP ⇄ products`, không phải bằng việc mở thêm cơ chế nội bộ thiếu operating purpose rõ ràng.
 
 ## Quan hệ với snapshot và governance
 

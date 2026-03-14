@@ -2,6 +2,8 @@
 
 `core/` chứa implementation repo-local cho ATP v0 theo flow đã freeze đến M8.
 
+`core/` là nơi giữ stable core của ATP ở mức control-plane logic. Việc mở rộng capability trong cây này phải đi qua modular boundaries và extension seams đã được review, không đi theo ad hoc expansion.
+
 Phạm vi hiện hành:
 
 - request intake
@@ -30,3 +32,4 @@ Nguyên tắc:
 - artifact-centric
 - human-gated
 - local-first but node-portable
+- composable capability growth qua versioned slices có governance

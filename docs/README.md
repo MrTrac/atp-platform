@@ -13,6 +13,7 @@
 | `operators/` | Bootstrap, runbook, workspace layout | Active |
 | `decisions/` | Chỉ mục decision records; authority path tới freeze artifact | Active |
 | `governance/` | Framework, Git, documentation, coding, release, AI collaboration | Active |
+| `roadmap/` | Product roadmap, stage roadmap, major roadmap, version roadmap, và inheritance rules | Active |
 | `archive/` | Tài liệu lịch sử; seed bundle; bản sao cũ không còn authority | Archived (không phải source of truth) |
 
 ## Đọc gì trước
@@ -20,14 +21,25 @@
 1. **Mới vào dự án:** `architecture/overview.md` → `design/artifact_model.md` → `operators/local_bootstrap.md`
 2. **Vận hành:** `operators/runbook_atp_v0.md` → `operators/workspace_layout.md`
 3. **Governance:** `governance/README.md` → `governance/framework/Contextual_Project_Governance_Framework.md` → `governance/ATP_3_Role_Workflow.md` khi phase dùng workflow Multi-AI
+   Rule execution baseline: `governance/ATP_Development_Ruleset.md`
+   Lineage continuity rule: `governance/framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md`
 4. **Freeze / baseline:** `architecture/ATP_MVP_v0_Freeze_Decision_Record.md` và snapshot bundles trong `architecture/`
 5. **Historical close-out:** các freeze close-out reports trong `archive/reports/`
+6. **Roadmap continuity:** `roadmap/README.md` và các roadmap documents theo product/major/version
+   Practical lineage map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
+   Milestone templates: `roadmap/templates/milestones/`
+
+Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP ⇄ products`, không chỉ bám release chronology.
 
 ## Tài liệu liên quan
 
 - `AGENTS.md` — hướng dẫn AI agents cho repo
 - Snapshot bundles: `architecture/ATP_v0_final_snapshot_docs/`, `architecture/ATP_v0_1_hardening_snapshot_docs/` (Frozen)
-- Freeze close-out reports: `archive/reports/ATP_v0_2_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_3_0_Freeze_Closeout.md`
+- Freeze close-out reports: `archive/reports/ATP_v0_2_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_3_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_4_0_Freeze_Closeout.md`
+- Roadmap layer: `roadmap/ATP_Product_Roadmap.md`, `roadmap/majors/`, `roadmap/versions/`
+- Stage roadmap: `roadmap/stages/ATP_Development_Stage_Roadmap.md`
+- Practical milestone map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
+- Milestone template bundle: `roadmap/templates/milestones/`
 
 ---
 
@@ -38,6 +50,7 @@
 - `operators/` — bootstrap, runbook, hướng dẫn vận hành repo-local
 - `decisions/` — chỉ mục cho decision records ngoài các mốc freeze chính
 - `governance/` — governance framework và các bundle đang có hiệu lực
+- `roadmap/` — roadmap layer cho product, major family, và version planning/inheritance
 - `archive/` — tài liệu lịch sử hoặc bản sao cũ đã bị thay thế về authority path (không phải nguồn chuẩn hiện hành)
 
 ## Quy tắc authority và placement
@@ -51,6 +64,6 @@
 
 - viết bằng tiếng Việt Unicode có dấu rõ ràng
 - giữ các English technical terms cần thiết ở nguyên dạng khi điều đó giúp chính xác hơn
-- phản ánh ATP MVP v0 như baseline đã hoàn tất đến M8, không dùng future tense cho phần đã triển khai
+- phản ánh đúng active baseline và frozen baselines hiện có; không dùng future tense cho phần đã freeze hoặc đã được consolidation xác nhận
 - self-review ít nhất 2 pass trước khi coi là hoàn tất
 - dùng terminology ổn định: `artifact`, `authoritative`, `approval gate`, `finalization`, `evidence bundle`, `exchange bundle`, `manifest reference`

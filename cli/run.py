@@ -38,7 +38,14 @@ from core.handoff.inline_context import build_inline_context
 from core.handoff.manifest_reference import build_manifest_reference
 from core.intake.loader import RequestLoadError, load_request
 from core.intake.normalizer import normalize_request
-from core.resolution.product_resolver import ProductResolutionError, resolve_product
+from core.resolution.product_resolver import (
+    ProductResolutionError,
+    build_product_execution_preparation_contract,
+    build_product_execution_result_contract,
+    build_request_to_product_resolution_contract,
+    build_resolution_to_handoff_intent_contract,
+    resolve_product,
+)
 from core.routing.route_prepare import RoutePreparationError, prepare_route
 from core.routing.route_select import RouteSelectionError, select_route
 from core.state.decision_state import initial_decision_state
@@ -87,6 +94,20 @@ def preview_run(
     classification = classify_request(normalized_request)
     resolution = resolve_product(normalized_request, classification)
     task_manifest = build_task_manifest(normalized_request, classification, resolution)
+    request_to_product_resolution = build_request_to_product_resolution_contract(
+        run_id=run_id,
+        normalized_request=normalized_request,
+        classification=classification,
+        resolution=resolution,
+        manifest_id=task_manifest["manifest_id"],
+    )
+    resolution_to_handoff_intent = build_resolution_to_handoff_intent_contract(
+        run_id=run_id,
+        normalized_request=normalized_request,
+        classification=classification,
+        resolution_contract=request_to_product_resolution,
+        manifest_id=task_manifest["manifest_id"],
+    )
     product_context = build_product_context(resolution)
     evidence_selection = select_evidence(
         _build_core_artifacts(normalized_request["request_id"], resolution["product"], task_manifest)
@@ -96,6 +117,15 @@ def preview_run(
         product=resolution["product"],
         evidence_selection=evidence_selection,
         manifest_reference=task_manifest["manifest_id"],
+    )
+    product_execution_preparation = build_product_execution_preparation_contract(
+        run_id=run_id,
+        normalized_request=normalized_request,
+        resolution_contract=request_to_product_resolution,
+        handoff_intent_contract=resolution_to_handoff_intent,
+        task_manifest=task_manifest,
+        product_context=product_context,
+        evidence_bundle=evidence_bundle,
     )
     prepared_route = prepare_route(
         normalized_request,
@@ -121,6 +151,15 @@ def preview_run(
     authoritative_artifact = mark_authoritative(selected_artifact)
     artifacts = [raw_artifact, filtered_artifact, selected_artifact, authoritative_artifact]
     artifact_summary = summarize_artifacts(artifacts)
+    product_execution_result = build_product_execution_result_contract(
+        run_id=run_id,
+        normalized_request=normalized_request,
+        resolution_contract=request_to_product_resolution,
+        handoff_intent_contract=resolution_to_handoff_intent,
+        execution_preparation_contract=product_execution_preparation,
+        execution_result=execution_result,
+        artifact_summary=artifact_summary,
+    )
     continuity_artifacts = [
         {"artifact_id": selected_artifact["artifact_id"], "artifact_type": selected_artifact["artifact_type"]}
     ]
@@ -201,6 +240,33 @@ def preview_run(
         "profile_ref": resolution["profile_ref"],
         "policy_names": [policy["policy_name"] for policy in resolution["policies"]],
     }
+    run_record["request_to_product_resolution"] = {
+        "contract_id": request_to_product_resolution["contract_id"],
+        "resolution_scope": request_to_product_resolution["resolution_scope"],
+        "product_target": request_to_product_resolution["product_target"]["product"],
+        "capability_target": request_to_product_resolution["capability_target"]["capability"],
+    }
+    run_record["resolution_to_handoff_intent"] = {
+        "contract_id": resolution_to_handoff_intent["contract_id"],
+        "handoff_scope": resolution_to_handoff_intent["handoff_scope"],
+        "handoff_intent": resolution_to_handoff_intent["handoff_intent"]["intent"],
+        "target_product": resolution_to_handoff_intent["handoff_intent"]["target_product"],
+        "target_capability": resolution_to_handoff_intent["handoff_intent"]["target_capability"],
+    }
+    run_record["product_execution_preparation"] = {
+        "contract_id": product_execution_preparation["contract_id"],
+        "preparation_scope": product_execution_preparation["preparation_scope"],
+        "preparation_mode": product_execution_preparation["execution_preparation"]["preparation_mode"],
+        "task_manifest_id": product_execution_preparation["execution_preparation"]["task_manifest_id"],
+        "evidence_bundle_id": product_execution_preparation["execution_preparation"]["evidence_bundle_id"],
+    }
+    run_record["product_execution_result"] = {
+        "contract_id": product_execution_result["contract_id"],
+        "result_scope": product_execution_result["result_scope"],
+        "execution_id": product_execution_result["execution_result"]["execution_id"],
+        "status": product_execution_result["execution_result"]["status"],
+        "exit_code": product_execution_result["execution_result"]["exit_code"],
+    }
     run_record["context_package"] = {
         "manifest_id": task_manifest["manifest_id"],
         "product_context_profile": product_context["profile_ref"],
@@ -235,6 +301,10 @@ def preview_run(
             "normalized_request": normalized_request,
             "classification": classification,
             "resolution": resolution,
+            "request_to_product_resolution": request_to_product_resolution,
+            "resolution_to_handoff_intent": resolution_to_handoff_intent,
+            "product_execution_preparation": product_execution_preparation,
+            "product_execution_result": product_execution_result,
             "task_manifest": task_manifest,
             "product_context": product_context,
             "manifest_reference": handoff_outputs["manifest_reference"],
@@ -270,6 +340,10 @@ def preview_run(
     recovery_contract = dict(materialization["recovery_contract"])
     current_task_pointer = dict(materialization["current_task_pointer"])
     continuation_state = dict(materialization["continuation"])
+    request_to_product_resolution_summary = dict(materialization["request_to_product_resolution"])
+    resolution_to_handoff_intent_summary = dict(materialization["resolution_to_handoff_intent"])
+    product_execution_preparation_summary = dict(materialization["product_execution_preparation"])
+    product_execution_result_summary = dict(materialization["product_execution_result"])
 
     return {
         "request": {
@@ -284,6 +358,22 @@ def preview_run(
             "repo_boundary": resolution["repo_boundary"],
             "loaded_profile": resolution["profile_ref"],
             "loaded_policy_names": [policy["policy_name"] for policy in resolution["policies"]],
+        },
+        "request_to_product_resolution": {
+            **request_to_product_resolution,
+            "contract_path": request_to_product_resolution_summary["contract_path"],
+        },
+        "resolution_to_handoff_intent": {
+            **resolution_to_handoff_intent,
+            "contract_path": resolution_to_handoff_intent_summary["contract_path"],
+        },
+        "product_execution_preparation": {
+            **product_execution_preparation,
+            "contract_path": product_execution_preparation_summary["contract_path"],
+        },
+        "product_execution_result": {
+            **product_execution_result,
+            "contract_path": product_execution_result_summary["contract_path"],
         },
         "context_package": {
             "task_manifest": task_manifest,
