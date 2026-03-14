@@ -1,4 +1,4 @@
-"""Unit tests for ATP v0.2 Slice 1 runtime materialization."""
+"""Unit tests for ATP v0.2 Slice 1-4 runtime materialization baseline."""
 
 from __future__ import annotations
 
@@ -86,7 +86,7 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
 
 
 class TestWorkspaceMaterialization(unittest.TestCase):
-    """Cover runtime root resolution and Slice 1-2 run tree creation."""
+    """Cover runtime root resolution and Slice 1-4 materialization semantics."""
 
     def test_workspace_root_resolves_from_repo_boundary(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

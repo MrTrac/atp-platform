@@ -56,12 +56,23 @@ Baseline hiện tại đã hỗ trợ:
 
 ATP v0 chưa mở rộng sang:
 
-- production workspace materialization đầy đủ trong `SOURCE_DEV/workspace`
+- production-grade runtime materialization đầy đủ trong `SOURCE_DEV/workspace` vượt quá baseline v0.2 hiện tại
 - approval UI
 - remote orchestration plane hoàn chỉnh
 - advanced scheduling
 - multi-provider arbitration engine
 - persistence layer ở mức production
+
+## Trạng thái runtime materialization v0.2
+
+ATP v0.2 hiện đã có baseline runtime materialization tối thiểu, bám đúng boundary `SOURCE_DEV/workspace`, gồm:
+
+- run tree materialization dưới `atp-runs/<run-id>/`
+- handoff materialization tối thiểu trong `handoff/`
+- authoritative projection tối thiểu dưới `atp-artifacts/<artifact-id>/`
+- retention / cleanup semantics tối thiểu ở mức explicit, không có automatic deletion
+
+Baseline này nhằm làm rõ runtime model, không phải triển khai full runtime subsystem hay production lifecycle automation.
 
 ## Quan hệ với snapshot và governance
 
