@@ -256,6 +256,7 @@ def preview_run(
             },
             "decision_state": decision_state,
             "exchange_boundary_decision": exchange_boundary_decision,
+            "exchange_bundle": handoff_outputs["exchange_bundle"],
             "handoff_outputs": {
                 "inline_context": handoff_outputs["inline_context"],
                 "evidence_bundle": handoff_outputs["evidence_bundle"],
@@ -264,6 +265,7 @@ def preview_run(
             "finalization_summary": finalization_summary,
         },
     )
+    exchange_boundary_decision = dict(materialization["exchange_boundary"])
 
     return {
         "request": {

@@ -35,9 +35,11 @@ class TestHappyPath(unittest.TestCase):
             )
             self.assertFalse(preview["exchange_boundary"]["requires_exchange_boundary"])
             self.assertEqual(preview["exchange_boundary"]["boundary_mode"], "run_local_handoff")
+            self.assertEqual(preview["exchange_boundary"]["exchange_materialization_status"], "not_required")
             self.assertEqual(preview["close_or_continue"], "close")
             self.assertEqual(preview["run"]["current_stage"], "CLOSED")
             run_root = Path(preview["materialization"]["run_root"])
+            workspace_root = Path(preview["materialization"]["workspace_root"])
             self.assertTrue(run_root.is_dir())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
@@ -53,6 +55,7 @@ class TestHappyPath(unittest.TestCase):
             self.assertTrue((run_root / "final" / "retention-summary.json").is_file())
             self.assertTrue((run_root / "logs" / "cleanup.log").is_file())
             self.assertFalse((run_root / "exchange").exists())
+            self.assertFalse((workspace_root / "exchange").exists())
 
 
 if __name__ == "__main__":

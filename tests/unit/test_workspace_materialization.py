@@ -84,6 +84,14 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
             "evidence_bundle_id": "handoff-evidence-req-1",
             "reason_codes": ["closed_run_keeps_handoff_inside_current_run"],
         },
+        "exchange_bundle": {
+            "handoff_type": "exchange_bundle",
+            "exchange_id": "exchange-req-1",
+            "request_id": "req-1",
+            "artifacts": ["artifact-authoritative-req-1"],
+            "provider": "non_llm_execution",
+            "adapter": "local_subprocess",
+        },
         "handoff_outputs": {
             "inline_context": {"handoff_type": "inline_context", "summary": "done", "authoritative": True},
             "evidence_bundle": {"handoff_type": "evidence_bundle", "bundle_id": "handoff-evidence-req-1"},
@@ -140,6 +148,8 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertTrue((run_root / "logs" / "cleanup.log").is_file())
             self.assertTrue((run_root / "final" / "retention-summary.json").is_file())
             self.assertFalse(summary["exchange_boundary"]["requires_exchange_boundary"])
+            self.assertEqual(summary["exchange_boundary"]["exchange_materialization_status"], "not_required")
+            self.assertFalse(summary["exchange"]["materialized"])
             self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
             projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
             self.assertTrue((projection_root / "artifact.json").is_file())
@@ -147,6 +157,7 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertEqual(summary["retention"]["cleanup_mode"], "manual_review_only")
             self.assertEqual(summary["retention"]["cleanup_actions"], [])
             self.assertFalse((run_root / "exchange").exists())
+            self.assertFalse((Path(summary["workspace_root"]) / "exchange").exists())
             self.assertFalse((repo_root / "atp-runs").exists())
             self.assertFalse((repo_root / "request").exists())
             self.assertFalse((repo_root / "atp-artifacts").exists())
@@ -226,6 +237,12 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertEqual(summary["retention"]["cleanup_eligible_artifacts"], [])
             self.assertEqual(summary["retention"]["cleanup_actions"], [])
             self.assertTrue(summary["exchange_boundary"]["requires_exchange_boundary"])
+            self.assertEqual(summary["exchange_boundary"]["exchange_materialization_status"], "materialized_current_task")
+            self.assertTrue(summary["exchange"]["materialized"])
+            exchange_root = Path(summary["exchange"]["exchange_root"])
+            self.assertTrue((exchange_root / "exchange-bundle.json").is_file())
+            self.assertTrue((exchange_root / "exchange-metadata.json").is_file())
+            self.assertFalse((repo_root / "exchange").exists())
 
 
 if __name__ == "__main__":

@@ -68,6 +68,20 @@ def resolve_artifact_projection_root(
     return runtime_root / "atp-artifacts" / artifact_id
 
 
+def resolve_exchange_current_task_root(
+    run_id: str,
+    repo_root: Path | None = None,
+    workspace_root: Path | None = None,
+) -> Path:
+    """Resolve the minimal current-task exchange root for a run."""
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for exchange materialization.")
+
+    runtime_root = workspace_root.resolve() if workspace_root is not None else resolve_workspace_root(repo_root)
+    return runtime_root / "exchange" / "current-task" / run_id
+
+
 def workspace_path(run_id: str, area: str) -> str:
     """Return the approved runtime workspace path for a run area."""
 
@@ -205,6 +219,53 @@ def build_retention_summary(
     }
 
 
+def materialize_exchange_boundary(
+    run_id: str,
+    exchange_boundary_decision: dict[str, Any],
+    exchange_bundle: dict[str, Any],
+    handoff_outputs: dict[str, Any],
+    repo_root: Path | None = None,
+    workspace_root: Path | None = None,
+) -> dict[str, Any]:
+    """Materialize the minimal external exchange payload only when required."""
+
+    decision = dict(exchange_boundary_decision)
+    if not decision.get("requires_exchange_boundary"):
+        decision["exchange_materialization_status"] = "not_required"
+        return {
+            "materialized": False,
+            "exchange_root": "",
+            "files": [],
+            "decision": decision,
+        }
+
+    exchange_root = resolve_exchange_current_task_root(
+        run_id,
+        repo_root=repo_root,
+        workspace_root=workspace_root,
+    )
+    exchange_root.mkdir(parents=True, exist_ok=True)
+    metadata = {
+        "run_id": run_id,
+        "request_id": decision.get("request_id", ""),
+        "decision_id": decision.get("decision_id", ""),
+        "boundary_mode": decision.get("boundary_mode", ""),
+        "source_manifest_reference": handoff_outputs.get("manifest_reference", {}).get("manifest_reference", ""),
+        "source_evidence_bundle_id": handoff_outputs.get("evidence_bundle", {}).get("bundle_id", ""),
+        "source_exchange_bundle_id": exchange_bundle.get("exchange_id", ""),
+        "source_handoff_type": exchange_bundle.get("handoff_type", ""),
+    }
+    bundle_path = _write_json(exchange_root / "exchange-bundle.json", exchange_bundle)
+    metadata_path = _write_json(exchange_root / "exchange-metadata.json", metadata)
+    decision["exchange_materialization_status"] = "materialized_current_task"
+    return {
+        "materialized": True,
+        "exchange_root": str(exchange_root),
+        "files": [str(bundle_path), str(metadata_path)],
+        "decision": decision,
+    }
+
+
 def materialize_run_outputs(
     run_id: str,
     payloads: dict[str, Any],
@@ -214,6 +275,15 @@ def materialize_run_outputs(
     """Materialize the approved ATP v0.2 run tree outputs."""
 
     zone_paths = materialize_run_tree(run_id, repo_root=repo_root, workspace_root=workspace_root)
+    exchange_summary = materialize_exchange_boundary(
+        run_id=run_id,
+        exchange_boundary_decision=payloads["exchange_boundary_decision"],
+        exchange_bundle=payloads["exchange_bundle"],
+        handoff_outputs=payloads["handoff_outputs"],
+        repo_root=repo_root,
+        workspace_root=workspace_root,
+    )
+    exchange_boundary_decision = exchange_summary["decision"]
     created_files = {
         "request": [
             _write_json(zone_paths["request"] / "request.raw.json", payloads["raw_request"]),
@@ -245,7 +315,7 @@ def materialize_run_outputs(
             _write_json(zone_paths["decisions"] / "decision-state.json", payloads["decision_state"]),
             _write_json(
                 zone_paths["decisions"] / "exchange-boundary-decision.json",
-                payloads["exchange_boundary_decision"],
+                exchange_boundary_decision,
             ),
         ],
         "handoff": [
@@ -320,6 +390,10 @@ def materialize_run_outputs(
         materialization_lines.append(f"projection={item['projection_root']}")
         materialization_lines.append(f"projection-metadata={item['metadata_path']}")
         materialization_lines.append(f"projection-payload={item['payload_path']}")
+    if exchange_summary["materialized"]:
+        materialization_lines.append(f"exchange={exchange_summary['exchange_root']}")
+        for path in exchange_summary["files"]:
+            materialization_lines.append(f"exchange-file={path}")
     materialization_lines.append(
         f"retention-summary={zone_paths['final'] / 'retention-summary.json'}"
     )
@@ -331,7 +405,8 @@ def materialize_run_outputs(
         "run_root": str(zone_paths["run_root"]),
         "zones": {zone: str(zone_paths[zone]) for zone in RUN_TREE_ZONES},
         "files": {zone: [str(path) for path in files] for zone, files in created_files.items()},
-        "exchange_boundary": dict(payloads["exchange_boundary_decision"]),
+        "exchange_boundary": exchange_boundary_decision,
+        "exchange": exchange_summary,
         "authoritative_projection": projections,
         "retention": retention_summary,
     }
