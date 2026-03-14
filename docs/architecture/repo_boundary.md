@@ -1,13 +1,33 @@
-# Repo Boundary
+# Boundary repo của ATP
 
-ATP la standalone platform repo tai `SOURCE_DEV/platforms/ATP`.
+ATP là một `standalone platform repo` tại:
 
-Quy tac boundary:
+```text
+SOURCE_DEV/platforms/ATP
+```
 
-- Khong treat `SOURCE_DEV` la monorepo coding root cho ATP task thong thuong.
-- Khong luu runtime output trong repo ATP.
-- Product repo ma ATP v0 resolve toi thieu:
-  - `ATP`
-  - `TDF`
+## Boundary authoritative
 
-Moi thay doi scope architecture can duoc decision ro rang truoc.
+ATP phải luôn được hiểu với ba vùng tách biệt:
+
+- `SOURCE_DEV/platforms/ATP` - source repo của ATP
+- `SOURCE_DEV/products/TDF` - product repo riêng, không phải repo root của ATP
+- `SOURCE_DEV/workspace` - runtime workspace zone, không phải coding root của ATP
+
+## Nguyên tắc boundary đang có hiệu lực
+
+- Không coi `SOURCE_DEV/` là monorepo coding root của ATP
+- Không lưu runtime artifact chính thức trong repo ATP
+- Không trộn vai trò giữa source repo, product repo, và workspace runtime zone
+- Mọi handoff sang runtime zone phải giữ authority rõ ràng về source và artifact
+
+## Phạm vi product resolution tối thiểu của ATP v0
+
+ATP v0 hiện hỗ trợ product resolution tối thiểu cho:
+
+- `ATP`
+- `TDF`
+
+## Quy tắc thay đổi boundary
+
+Mọi thay đổi liên quan đến boundary repo, boundary workspace, hoặc boundary kiến trúc phải được chốt bằng decision artifact phù hợp trước khi áp dụng vào repo.

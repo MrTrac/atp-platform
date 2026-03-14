@@ -1,27 +1,68 @@
-# Overview
+# Tổng quan ATP
 
-ATP la platform repo dieu phoi ATP v0 theo mo hinh control-plane, provider-agnostic, artifact-centric.
+- **Mục đích:** Tổng quan ATP, baseline M8, đặc tính kiến trúc đã khóa.
+- **Phạm vi:** ATP MVP v0; flow 14 bước; năng lực hiện có; phần deferred.
+- **Trạng thái:** Active.
+- **Tài liệu liên quan:** `layered_architecture.md`, `orchestration_flow.md`, `design/artifact_model.md`.
 
-Pham vi da seed den M6:
+ATP là một `platform repository` điều phối workflow theo mô hình control-plane, provider-agnostic, adapter-first, artifact-centric, và human-gated.
 
-- nhan request
-- normalize
-- classify
-- resolve `ATP` hoac `TDF`
-- package context
-- prepare/select route
-- thuc thi local non-LLM path khi route ho tro
+## Trạng thái baseline hiện tại
 
-Adapter contracts trong M6 co muc tieu tach:
+ATP MVP v0 đã hoàn tất baseline repo-local đến M8. Flow chuẩn hiện hành gồm 14 bước:
 
-- contract: interface dict-based
-- adapter: noi thuc thi cu the
-- executor: map route sang adapter
-- orchestrator: dieu phoi execution stage va normalize output
+1. Request Intake
+2. Normalize
+3. Input Classification
+4. Product Resolution
+5. Context Packaging
+6. Routing Preparation
+7. Route Selection
+8. Execution via Adapter
+9. Capture Output
+10. Validation / Review
+11. Approval Gate
+12. Finalization
+13. Handoff to Next Step
+14. Close Run or Continue
 
-Nhung phan sau van defer:
+## Đặc tính kiến trúc đã khóa
 
-- validation/review
-- approval gate runtime
-- finalization
-- production workspace materialization
+ATP hiện giữ nguyên các nguyên tắc đã được freeze:
+
+- platform-first
+- provider-agnostic
+- adapter-first
+- artifact-centric
+- human-gated
+- local-first but node-portable
+- single source of contextual truth
+
+## Năng lực đã có trong ATP v0
+
+Baseline hiện tại đã hỗ trợ:
+
+- request intake và normalization
+- input classification
+- product resolution tối thiểu cho ATP và TDF
+- context packaging
+- deterministic routing chuẩn hóa theo capability và provider
+- local execution qua adapter được hỗ trợ
+- artifact capture và authoritative selection ở mức summary
+- validation, review, approval gate, finalization, và handoff summary
+- quyết định `close-run` hoặc `continue-run`
+
+## Phần còn deferred sau ATP v0
+
+ATP v0 chưa mở rộng sang:
+
+- production workspace materialization đầy đủ trong `SOURCE_DEV/workspace`
+- approval UI
+- remote orchestration plane hoàn chỉnh
+- advanced scheduling
+- multi-provider arbitration engine
+- persistence layer ở mức production
+
+## Quan hệ với snapshot và governance
+
+Tài liệu này là overview active. Authority chi tiết cho baseline và hardening snapshot nằm dưới `docs/architecture/`, còn governance authoritative nằm dưới `docs/governance/`.

@@ -1,19 +1,33 @@
-# Workspace Artifact Handoff
+# Handoff artifact sang workspace
 
-ATP tach source va runtime:
+- **Mục đích:** Tóm tắt handoff artifact sang workspace; source vs runtime.
+- **Phạm vi:** ATP v0; bốn cơ chế handoff.
+- **Trạng thái:** Active.
+- **Tài liệu chi tiết:** `ATP_Workspace_Artifact_Handoff_Model.md` (reference freeze).
 
-- source code o `platforms/ATP`
-- runtime artifacts o `SOURCE_DEV/workspace`
+ATP tách rõ `source` và `runtime`:
 
-ATP v0 ho tro 4 co che handoff:
+- source code nằm ở `platforms/ATP`
+- runtime artifact thuộc `SOURCE_DEV/workspace`
 
-- Inline Context
-- Evidence Bundle
-- Exchange Bundle
-- Manifest Reference
+## Các cơ chế handoff trong ATP v0
 
-Trong M8:
+ATP v0 dùng bốn cơ chế handoff ổn định:
 
-- handoff duoc tao o dang summary dict-based
-- finalization chi tro ra handoff refs
-- khong co production workspace materialization hay external transport
+- `inline_context`
+- `evidence_bundle`
+- `exchange_bundle`
+- `manifest_reference`
+
+## Trạng thái đang có trong M8
+
+Trong baseline hiện tại:
+
+- handoff được tạo ở dạng summary dict-based
+- `finalization` chỉ ra các handoff reference phù hợp cho bước tiếp theo
+- ATP chưa materialize đầy đủ runtime artifact vào `SOURCE_DEV/workspace`
+- ATP chưa có transport hoặc handoff engine ở mức production
+
+## Ý nghĩa kiến trúc
+
+ATP đã chốt đúng hình thái handoff về mặt kiến trúc và vocabulary. Phần còn deferred là persistence, transport, và workspace materialization ở mức vận hành production-grade.

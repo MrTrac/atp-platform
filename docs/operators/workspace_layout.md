@@ -1,6 +1,6 @@
-# Workspace Layout
+# Bố cục workspace
 
-Runtime workspace chinh thuc:
+Runtime workspace chính thức của ATP được mô hình hóa quanh các vùng sau:
 
 - `SOURCE_DEV/workspace/atp-runs`
 - `SOURCE_DEV/workspace/atp-artifacts`
@@ -8,4 +8,6 @@ Runtime workspace chinh thuc:
 - `SOURCE_DEV/workspace/atp-staging`
 - `SOURCE_DEV/workspace/exchange`
 
-Repo ATP chi reference runtime zone nay, khong chua artifact runtime.
+## Quy tắc
+
+Repo ATP chỉ `reference` runtime zone này. ATP source repo không phải nơi chứa runtime artifact production.

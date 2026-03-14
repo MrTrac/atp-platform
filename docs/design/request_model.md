@@ -1,8 +1,17 @@
-# Request Model
+# Mô hình request
 
-Request la input control-plane cua ATP. Trong M4, request model van giu field shape cua M1-M3 va tro thanh dau vao cho Context Packaging.
+`request` là input control-plane của ATP.
 
-Top-level fields toi thieu sau normalize:
+Trong ATP v0 hiện tại, request model là đầu vào nền cho:
+
+- intake
+- normalization
+- classification
+- context packaging
+- routing
+- execution orchestration
+
+## Các trường top-level tối thiểu sau normalize
 
 - `request_id`
 - `product`
@@ -11,13 +20,18 @@ Top-level fields toi thieu sau normalize:
 - `payload`
 - `metadata`
 
-M4 su dung request da normalize de:
+## Vai trò của request đã normalize
 
-- tao `task_manifest`
-- gan `request_id` va `product` cho artifact context
-- ghi nhan artifact refs dau vao cho continuity cua buoc tiep theo
+Request đã normalize được dùng để:
 
-Task Manifest v0 chua:
+- tạo `task_manifest`
+- gắn `request_id` và `product` cho các artifact/context liên quan
+- làm input cho routing và execution
+- giữ continuity cho các bước sau
+
+## `task_manifest` trong v0
+
+Task Manifest tối thiểu chứa:
 
 - `manifest_id`
 - `request_id`
@@ -29,4 +43,6 @@ Task Manifest v0 chua:
 - `input_artifacts`
 - `notes`
 
-M4 chua lam request enrichment sau context packaging, routing, hay execution decisions.
+## Ghi chú
+
+ATP v0 vẫn giữ request model theo hướng nhẹ, deterministic, và file-based; chưa mở rộng sang request enrichment engine phức tạp sau routing hoặc execution.

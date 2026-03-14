@@ -1,21 +1,24 @@
 # ATP v0.1 Hardening Snapshot Docs
 
-This documentation bundle is the documentation-first baseline for **ATP v0.1 hardening**.
+- **Trạng thái:** **Frozen** — gói tham chiếu cố định, không sửa nội dung.
 
-## Positioning
+Bundle này là snapshot tài liệu authoritative cho **ATP v0.1 hardening**.
+
+## Vị trí trong cây tài liệu
 
 - **Track:** Hardening
 - **Parent baseline:** ATP MVP v0 implemented baseline
-- **Intent:** strengthen ATP v0 without expanding architecture scope
+- **Intent:** hardening ATP v0 mà không mở rộng scope kiến trúc
+- **Authority path:** `docs/architecture/ATP_v0_1_hardening_snapshot_docs/`
 
-## Recommended reading order
+## Thứ tự đọc khuyến nghị
 
 1. `ATP_v0_1_Hardening_Freeze_Decision_Record.md`
 2. `ATP_v0_1_Hardening_Implementation_Plan.md`
 3. `ATP_v0_1_Hardening_Backlog.md`
 4. `ATP_v0_1_Hardening_Runbook.md`
 
-## Scope summary
+## Tóm tắt scope
 
 ATP v0.1 hardening focuses on:
 
@@ -35,3 +38,7 @@ ATP v0.1 hardening does **not** include:
 - advanced scheduling
 - multi-provider arbitration
 - new orchestration layers
+
+## Ghi chú authority
+
+Nếu còn tồn tại bản sao lịch sử của bundle này ở path khác trong `docs/`, path dưới `docs/architecture/` mới là path authoritative. Bản sao cũ chỉ nên được giữ lại trong `docs/archive/` để tham chiếu lịch sử.

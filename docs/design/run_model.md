@@ -1,8 +1,10 @@
-# Run Model
+# Mô hình run
 
-Run model dai dien cho mot lan ATP orchestration. Trong M8, run model du de the hien full ATP v0 flow.
+`run model` đại diện cho một lần ATP orchestration.
 
-Run fields toi thieu:
+Trong ATP v0 hiện tại, run model đã đủ để thể hiện full repo-local flow đến M8.
+
+## Các trường run tối thiểu
 
 - `run_id`
 - `request_id`
@@ -11,7 +13,7 @@ Run fields toi thieu:
 - `created_at`
 - `updated_at`
 
-Run co the mang them thong tin seed:
+## Thông tin mà run có thể mang theo
 
 - `product`
 - `resolution`
@@ -26,7 +28,7 @@ Run co the mang them thong tin seed:
 - `close_or_continue`
 - `latest_transition`
 
-State duoc khoa cho ATP v0:
+## Trạng thái run trong ATP v0
 
 - `RECEIVED`
 - `NORMALIZED`
@@ -43,8 +45,14 @@ State duoc khoa cho ATP v0:
 - `CONTINUE_PENDING`
 - `FAILED`
 
-`close_or_continue` trong M8 phan biet:
+## `close_or_continue` trong M8
+
+Phân biệt tối thiểu:
 
 - `close`
 - `continue_pending`
 - `close_rejected`
+
+## Ghi chú
+
+Run model trong ATP v0 vẫn thiên về summary và state representation; chưa phải runtime model có persistence-backed đầy đủ ở mức production.

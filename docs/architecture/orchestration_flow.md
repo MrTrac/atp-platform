@@ -1,8 +1,8 @@
-# Orchestration Flow
+# Flow orchestration
 
-Flow ATP v0 van giu day du theo architecture da khoa, nhung implementation hien tai bao phu den M8.
+ATP v0 giữ nguyên flow orchestration đã được khóa ở mức kiến trúc, và baseline hiện tại đã bao phủ trọn 14 bước đến M8.
 
-Flow chuan:
+## Flow chuẩn đang có hiệu lực
 
 1. Request Intake
 2. Normalize
@@ -19,15 +19,29 @@ Flow chuan:
 13. Handoff to Next Step
 14. Close Run or Continue
 
-Trang thai implementation hien tai:
+## Trạng thái implementation hiện tại
 
-- Implemented shallow: 1-14
+ATP MVP v0 đã có baseline repo-local cho toàn bộ flow trên. Điều này có nghĩa là ATP đã đi hết chuỗi điều phối logic, dù một số phần vẫn dừng ở mức summary hoặc placeholder thay vì production side effect.
 
-M8 thuc hien:
+## Vai trò của M8 trong baseline
 
-- approval gate summary `approved` / `rejected` / `needs_attention`
-- handoff outputs: inline context, evidence bundle, exchange bundle, manifest reference
-- finalization summary
-- close-run / continue-run decision
+M8 chốt phần cuối của flow bằng cách bổ sung:
 
-ATP van chua co human approval UI, production workspace materialization, hay orchestration plane ngoai repo nay.
+- `approval gate` summary với các trạng thái như `approved`, `rejected`, `needs_attention`
+- các handoff output chuẩn:
+  - `inline_context`
+  - `evidence_bundle`
+  - `exchange_bundle`
+  - `manifest_reference`
+- `finalization` summary
+- quyết định `close-run` hoặc `continue-run`
+
+## Các giới hạn còn giữ nguyên sau M8
+
+ATP v0 vẫn chưa có:
+
+- human approval UI
+- production workspace materialization
+- remote orchestration plane đầy đủ
+- advanced scheduling
+- inspect plane backed bởi persistence ở mức production

@@ -12,7 +12,7 @@
 
 1. `ATP_AI_Workspace_Open_Rules.md`
 2. `ATP_Drawio_Style_Structure.md`
-3. `ATP_Glossary_VI_Refined_for_V1_3_1_Draft_R2.md`
+3. `ATP_Glossary_VI.md`
 4. `ATP_So_do_gop_kien_truc_hien_tai_Super_Tree.md`
 5. `ATP_So_do_phan_lop_va_flow_truc_quan.md`
 6. `ATP_Workspace_Artifact_Handoff_Model.md`

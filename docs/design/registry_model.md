@@ -1,8 +1,8 @@
-# Registry Model
+# Mô hình registry
 
-M5 mo rong file-based registry cua ATP de phuc vu routing capability-based, van giu nhe va deterministic.
+ATP dùng file-based registry để phục vụ resolution, routing, và policy lookup theo hướng nhẹ, deterministic, và dễ kiểm soát authority.
 
-Registry phuc vu M5:
+## Các registry chính trong ATP v0
 
 - Product Registry trong `registry/products`
 - Policy Registry trong `registry/policies`
@@ -11,7 +11,9 @@ Registry phuc vu M5:
 - Provider Registry trong `registry/providers`
 - Node Registry trong `registry/nodes`
 
-Capability registry v0 chua:
+## Capability registry trong v0
+
+Tối thiểu chứa:
 
 - `capability`
 - `description`
@@ -19,7 +21,9 @@ Capability registry v0 chua:
 - `supported_provider_types`
 - `notes`
 
-Provider registry v0 chua:
+## Provider registry trong v0
+
+Tối thiểu chứa:
 
 - `provider`
 - `provider_type`
@@ -28,7 +32,9 @@ Provider registry v0 chua:
 - `interaction_pattern`
 - `cost_profile`
 
-Node registry v0 chua:
+## Node registry trong v0
+
+Tối thiểu chứa:
 
 - `node`
 - `node_type`
@@ -36,7 +42,9 @@ Node registry v0 chua:
 - `supported_provider_types`
 - `status`
 
-Route preparation se doc registry de tao:
+## Route preparation lấy gì từ registry
+
+Để tạo ra:
 
 - `required_capabilities`
 - `candidate_providers`
@@ -44,4 +52,6 @@ Route preparation se doc registry de tao:
 - `routing_policy_refs`
 - `cost_policy_refs`
 
-Route selection v0 chi dung luat don gian, local-first, khong co dynamic arbitration.
+## Ghi chú
+
+Route selection trong ATP v0 vẫn là rule-based, local-first, và chưa có arbitration engine động.

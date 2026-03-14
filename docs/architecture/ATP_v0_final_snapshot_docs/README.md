@@ -1,48 +1,26 @@
-# ATP
+# ATP v0 Final Snapshot Docs
 
-ATP is a platform repository for architecture-locked orchestration work inside the `SOURCE_DEV` workspace model.
+- **Trạng thái:** **Frozen** — gói tham chiếu cố định, không sửa nội dung.
 
-## Repository boundary
+Bundle này là snapshot tài liệu authoritative cho **ATP MVP v0 baseline**.
 
-ATP lives at:
+## Vị trí trong cây tài liệu
 
-```text
-SOURCE_DEV/platforms/ATP
-```
+- **Track:** MVP v0 Final
+- **Intent:** baseline đã hoàn tất đến M8, architecture-locked
+- **Authority path:** `docs/architecture/ATP_v0_final_snapshot_docs/`
 
-This repository is intentionally separate from:
+## Thứ tự đọc khuyến nghị
 
-- `SOURCE_DEV/products/TDF` — product repository
-- `SOURCE_DEV/workspace` — runtime workspace zone
+1. `ATP_MVP_v0_Freeze_Decision_Record.md`
+2. `ATP_MVP_v0_Implementation_Plan.md`
+3. `local_bootstrap.md`
+4. `runbook_atp_v0.md`
 
-`SOURCE_DEV/` is a logical workspace root, not a monorepo root.
+## Tóm tắt scope
 
-## ATP MVP v0 status
+ATP MVP v0 đã triển khai đầy đủ flow 14 bước repo-local. Snapshot này freeze baseline và implementation plan.
 
-ATP MVP v0 is now implemented as an implemented baseline and should be understood as a shape-correct MVP.
+## Ghi chú authority
 
-## Current baseline
-
-ATP v0 currently supports:
-
-1. request intake
-2. normalization
-3. classification
-4. product resolution
-5. context packaging
-6. routing preparation and deterministic route selection
-7. local non-LLM execution path
-8. artifact capture
-9. validation and minimal review
-10. approval gate summary
-11. handoff outputs
-12. finalization
-13. close-run / continue-run decision
-
-## Local bootstrap
-
-```bash
-cd /Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP
-python3 -m compileall cli core tests
-make test
-```
+Đây là frozen reference pack. Bản sao lịch sử nằm trong `docs/archive/legacy-top-level-snapshot-docs/`. Tài liệu active cho vận hành hiện tại nằm dưới `docs/operators/`.

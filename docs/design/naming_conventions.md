@@ -1,6 +1,10 @@
-# Naming Conventions
+# Quy ước đặt tên
 
-ATP v0 giu dung vocabulary da khoa trong Freeze Decision Record. M1-M2 chi duoc dung cac ten sau cho control-plane va schema fields:
+ATP phải giữ đúng vocabulary đã được khóa trong decision artifact và governance document.
+
+## Vocabulary cốt lõi
+
+Các thuật ngữ cốt lõi cần giữ ổn định gồm:
 
 - `product`
 - `provider`
@@ -14,7 +18,7 @@ ATP v0 giu dung vocabulary da khoa trong Freeze Decision Record. M1-M2 chi duoc 
 - `manifest_reference`
 - `approval_gate`
 
-Orchestration stages giu ten on dinh:
+## Các stage của orchestration
 
 1. Request Intake
 2. Normalize
@@ -31,11 +35,18 @@ Orchestration stages giu ten on dinh:
 13. Handoff to Next Step
 14. Close Run or Continue
 
-Quy uoc dat ten cho M1-M2:
+## Quy tắc đặt tên
 
-- Python module va function dung `snake_case`.
-- Schema field dung `snake_case`.
-- Constant state dung `UPPER_CASE`.
-- Handoff type name trong docs giu dang vocabulary: `inline_context`, `evidence_bundle`, `exchange_bundle`, `manifest_reference`.
+- Python modules và functions dùng `snake_case`
+- Schema fields dùng `snake_case`
+- Constant states dùng `UPPER_CASE`
+- Tên `handoff type` phải giữ đúng vocabulary chuẩn: `inline_context`, `evidence_bundle`, `exchange_bundle`, `manifest_reference`
 
-Khong dua vao top-level naming moi nhu `planner`, `dispatcher`, `agent_router`, hoac vocabulary khac chua co decision.
+## Không tự ý thêm top-level vocabulary mới
+
+Không tự ý đưa thêm top-level vocabulary chưa được chốt như:
+- `planner`
+- `dispatcher`
+- `agent_router`
+
+trừ khi có decision hoặc governance artifact mới chấp thuận.

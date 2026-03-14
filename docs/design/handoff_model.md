@@ -1,17 +1,33 @@
-# Handoff Model
+# Mô hình handoff
 
-ATP v0 giu 4 handoff model co dinh:
+- **Mục đích:** Định nghĩa bốn cơ chế handoff trong ATP v0.
+- **Phạm vi:** inline_context, evidence_bundle, exchange_bundle, manifest_reference.
+- **Trạng thái:** Active.
+- **Tài liệu liên quan:** `architecture/workspace_artifact_handoff.md`, `architecture/ATP_Workspace_Artifact_Handoff_Model.md`
+
+---
+
+ATP v0 giữ bốn handoff model cố định:
 
 - `inline_context`
 - `evidence_bundle`
 - `exchange_bundle`
 - `manifest_reference`
 
-Trong M8, 4 handoff co vai tro thuc te cho final summary:
+## Vai trò của từng handoff model trong ATP v0
 
-- Inline Context: tom tat continuity fields quan trong nhat
-- Evidence Bundle: tap artifact duoc chon va authoritative refs
-- Exchange Bundle: summary co the dua cho step tiep theo
-- Manifest Reference: tro den manifest/final artifact co tham chieu on dinh
+### Inline Context
+Tóm tắt các continuity fields quan trọng nhất để bước tiếp theo hiểu đúng ngữ cảnh.
 
-ATP v0 chi ho tro dict-based handoff summaries, khong co production workspace handoff engine.
+### Evidence Bundle
+Tập artifact được chọn cùng các authoritative refs tương ứng.
+
+### Exchange Bundle
+Summary bundle có thể dùng để giao bước tiếp theo trong flow.
+
+### Manifest Reference
+Tham chiếu ổn định đến manifest hoặc final artifact liên quan.
+
+## Ghi chú
+
+ATP v0 hiện chỉ hỗ trợ handoff summary theo kiểu dict-based. ATP chưa có workspace handoff engine đầy đủ ở mức production.

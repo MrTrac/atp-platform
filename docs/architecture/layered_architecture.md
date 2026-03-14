@@ -1,26 +1,56 @@
-# Layered Architecture
+# Kiến trúc phân lớp
 
-ATP v0 giu cac lop chinh:
+ATP v0 giữ các lớp chính sau:
 
 - CLI
-- Core control-plane modules
-- Adapters
-- Registry
-- Schemas
-- Profiles
-- Templates
+- core control-plane modules
+- adapters
+- registry
+- schemas
+- profiles
+- templates
 
-Boundary:
+## Boundary theo lớp
 
-- Source repo: `platforms/ATP`
-- Product repo target toi thieu: `products/TDF`
-- Runtime workspace: `workspace`
+- source repo: `platforms/ATP`
+- product repo tối thiểu được tham chiếu: `products/TDF`
+- runtime workspace: `workspace`
 
-M6 them execution theo lop ro rang:
+## Vai trò của từng lớp trong ATP v0
 
-- `core/routing` chon provider + node
-- `core/execution/executor` map route sang adapter
-- `adapters/subprocess` thuc thi local command ho tro
-- `core/execution/orchestrator` normalize ket qua cho ATP
+### Lớp control-plane
 
-Remote execution van chi la placeholder contract-backed, chua co runtime behavior thuc te.
+Các module core xử lý:
+
+- request intake
+- classification
+- product resolution
+- context packaging
+- routing
+- execution orchestration
+- validation và review
+- approval gate và finalization summary
+
+### Lớp adapter
+
+Lớp adapter tách logic điều phối khỏi logic thực thi cụ thể.
+
+Trong ATP v0:
+
+- `core/routing` chọn provider và node
+- `core/execution/executor` ánh xạ route sang adapter
+- `adapters/subprocess` thực thi local command được hỗ trợ
+- `core/execution/orchestrator` chuẩn hóa execution result thành cấu trúc ATP
+
+### Lớp registry
+
+Registry lưu dữ liệu file-based phục vụ:
+
+- product resolution
+- routing preparation
+- policy lookup
+- capability, provider, và node mapping
+
+## Điều chưa mở rộng trong baseline
+
+Remote execution trong ATP v0 mới dừng ở mức placeholder hoặc contract-backed. ATP chưa có runtime behavior đầy đủ cho remote orchestration path.

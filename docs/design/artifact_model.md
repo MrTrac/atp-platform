@@ -1,8 +1,15 @@
-# Artifact Model
+# Mô hình artifact
 
-Artifact la don vi dau ra/dua vao chinh cua ATP. Trong M7, artifact model bat dau duoc dung cho execution output capture.
+- **Mục đích:** Định nghĩa đơn vị artifact, trường seed, trạng thái.
+- **Phạm vi:** ATP v0; execution output capture và continuity.
+- **Trạng thái:** Active.
+- **Tài liệu liên quan:** `handoff_model.md`, `architecture/workspace_artifact_handoff.md`.
 
-Artifact seed fields:
+`artifact` là đơn vị đầu vào và đầu ra cốt lõi của ATP.
+
+Trong ATP v0, artifact model được dùng rõ hơn từ M7 trở đi cho execution output capture và continuity.
+
+## Các trường seed của artifact
 
 - `artifact_id`
 - `request_id`
@@ -16,12 +23,14 @@ Artifact seed fields:
 - `payload_summary`
 - `notes`
 
-Artifact state trong v0:
+## Trạng thái artifact trong ATP v0
 
-- `raw`: execution output vua duoc capture
-- `filtered`: da trim xuong de phuc vu summary
-- `selected`: da duoc chon cho continuity
-- `authoritative`: artifact dai dien nguon su that hien tai cua run
-- `deprecated`: state model-only de giu compatibility cho phase sau
+- `raw` — execution output vừa được capture
+- `filtered` — đã được trim xuống để phục vụ summary
+- `selected` — đã được chọn cho continuity
+- `authoritative` — artifact đại diện cho nguồn sự thật hiện tại của run
+- `deprecated` — state model-only để giữ compatibility cho phase sau
 
-Artifact capture trong M7 chi la dict-based shaping, khong co production persistence hay retention engine.
+## Ghi chú
+
+Artifact capture trong ATP v0 hiện vẫn là dict-based shaping. ATP chưa có persistence hoặc retention engine đầy đủ ở mức production.
