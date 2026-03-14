@@ -54,6 +54,20 @@ def resolve_run_root(
     return runtime_root / "atp-runs" / run_id
 
 
+def resolve_artifact_projection_root(
+    artifact_id: str,
+    repo_root: Path | None = None,
+    workspace_root: Path | None = None,
+) -> Path:
+    """Resolve the projection root for an authoritative artifact."""
+
+    if not str(artifact_id).strip():
+        raise ValueError("artifact_id is required for authoritative projection.")
+
+    runtime_root = workspace_root.resolve() if workspace_root is not None else resolve_workspace_root(repo_root)
+    return runtime_root / "atp-artifacts" / artifact_id
+
+
 def workspace_path(run_id: str, area: str) -> str:
     """Return the approved runtime workspace path for a run area."""
 
@@ -94,6 +108,58 @@ def _write_json(path: Path, payload: Any) -> Path:
 def _write_log(path: Path, lines: list[str]) -> Path:
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
+
+
+def project_authoritative_artifacts(
+    run_id: str,
+    artifacts: list[dict[str, Any]],
+    repo_root: Path | None = None,
+    workspace_root: Path | None = None,
+) -> dict[str, Any]:
+    """Project authoritative artifacts into SOURCE_DEV/workspace/atp-artifacts."""
+
+    projected: list[dict[str, Any]] = []
+    for artifact in artifacts:
+        if not artifact.get("authoritative"):
+            continue
+
+        artifact_id = str(artifact.get("artifact_id", "")).strip()
+        if not artifact_id:
+            continue
+
+        projection_root = resolve_artifact_projection_root(
+            artifact_id,
+            repo_root=repo_root,
+            workspace_root=workspace_root,
+        )
+        projection_root.mkdir(parents=True, exist_ok=True)
+        payload_path = _write_json(projection_root / "artifact.json", artifact)
+        metadata = {
+            "artifact_id": artifact_id,
+            "run_id": run_id,
+            "artifact_type": artifact.get("artifact_type", "unknown"),
+            "artifact_state": artifact.get("artifact_state", "unknown"),
+            "artifact_freshness": artifact.get("artifact_freshness", "unknown"),
+            "source_stage": artifact.get("source_stage", "unknown"),
+            "source_ref": artifact.get("source_ref", ""),
+            "projection_scope": "authoritative",
+            "projection_path": str(projection_root),
+        }
+        metadata_path = _write_json(projection_root / "projection-metadata.json", metadata)
+        projected.append(
+            {
+                "artifact_id": artifact_id,
+                "projection_root": str(projection_root),
+                "payload_path": str(payload_path),
+                "metadata_path": str(metadata_path),
+                "source_stage": metadata["source_stage"],
+            }
+        )
+
+    return {
+        "projected_count": len(projected),
+        "items": projected,
+    }
 
 
 def materialize_run_outputs(
@@ -176,10 +242,22 @@ def materialize_run_outputs(
         for path in files:
             materialization_lines.append(f"file[{zone_name}]={path}")
     created_files["logs"].append(_write_log(zone_paths["logs"] / "materialization.log", materialization_lines))
+    projections = project_authoritative_artifacts(
+        run_id=run_id,
+        artifacts=list(payloads["artifacts"]["items"]),
+        repo_root=repo_root,
+        workspace_root=workspace_root,
+    )
+    for item in projections["items"]:
+        materialization_lines.append(f"projection={item['projection_root']}")
+        materialization_lines.append(f"projection-metadata={item['metadata_path']}")
+        materialization_lines.append(f"projection-payload={item['payload_path']}")
+    created_files["logs"][-1] = _write_log(zone_paths["logs"] / "materialization.log", materialization_lines)
 
     return {
         "workspace_root": str(zone_paths["workspace_root"]),
         "run_root": str(zone_paths["run_root"]),
         "zones": {zone: str(zone_paths[zone]) for zone in RUN_TREE_ZONES},
         "files": {zone: [str(path) for path in files] for zone, files in created_files.items()},
+        "authoritative_projection": projections,
     }

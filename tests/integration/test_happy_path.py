@@ -40,6 +40,11 @@ class TestHappyPath(unittest.TestCase):
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
             self.assertTrue((run_root / "handoff" / "manifest-reference.json").is_file())
+            projection = preview["materialization"]["authoritative_projection"]
+            self.assertEqual(projection["projected_count"], 1)
+            projection_root = Path(projection["items"][0]["projection_root"])
+            self.assertTrue((projection_root / "artifact.json").is_file())
+            self.assertTrue((projection_root / "projection-metadata.json").is_file())
             self.assertFalse((run_root / "exchange").exists())
 
 

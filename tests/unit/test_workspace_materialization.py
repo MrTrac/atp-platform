@@ -5,11 +5,13 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+import json
 
 from adapters.filesystem.workspace_writer import (
     RUN_TREE_ZONES,
     materialize_run_outputs,
     materialize_run_tree,
+    resolve_artifact_projection_root,
     resolve_workspace_root,
 )
 
@@ -34,13 +36,37 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
         "routing_result": {"route_id": "route-req-1", "status": "selected"},
         "execution_result": {
             "execution_id": "execution-req-1",
+            "request_id": "req-1",
+            "product": "ATP",
             "command": ["echo", "hello"],
             "exit_code": 0,
             "status": "succeeded",
             "stdout": "hello\n",
             "stderr": "",
         },
-        "artifacts": {"items": [], "summary": {"artifact_ids": []}},
+        "artifacts": {
+            "items": [
+                {
+                    "artifact_id": "artifact-selected-req-1",
+                    "artifact_type": "execution_output",
+                    "artifact_state": "selected",
+                    "source_stage": "execution",
+                    "source_ref": "artifact-filtered-req-1",
+                    "artifact_freshness": "current",
+                    "authoritative": False,
+                },
+                {
+                    "artifact_id": "artifact-authoritative-req-1",
+                    "artifact_type": "execution_output",
+                    "artifact_state": "authoritative",
+                    "source_stage": "execution",
+                    "source_ref": "artifact-selected-req-1",
+                    "artifact_freshness": "current",
+                    "authoritative": True,
+                },
+            ],
+            "summary": {"artifact_ids": ["artifact-selected-req-1", "artifact-authoritative-req-1"]},
+        },
         "validation_summary": {"validation_status": "passed"},
         "review_decision": {"review_status": "accept"},
         "approval_result": {"approval_status": "approved"},
@@ -98,9 +124,31 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
             self.assertTrue((run_root / "handoff" / "manifest-reference.json").is_file())
             self.assertTrue((run_root / "logs" / "materialization.log").is_file())
+            self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
+            projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
+            self.assertTrue((projection_root / "artifact.json").is_file())
+            self.assertTrue((projection_root / "projection-metadata.json").is_file())
             self.assertFalse((run_root / "exchange").exists())
             self.assertFalse((repo_root / "atp-runs").exists())
             self.assertFalse((repo_root / "request").exists())
+            self.assertFalse((repo_root / "atp-artifacts").exists())
+
+    def test_authoritative_projection_keeps_traceability_to_run_and_source_stage(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            repo_root = _build_fake_repo_root(Path(temp_dir))
+            summary = materialize_run_outputs("run-slice3-1", _sample_payloads("run-slice3-1"), repo_root=repo_root)
+
+            projection_root = resolve_artifact_projection_root(
+                "artifact-authoritative-req-1",
+                repo_root=repo_root,
+            )
+            metadata = json.loads((projection_root / "projection-metadata.json").read_text(encoding="utf-8"))
+
+            self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
+            self.assertEqual(metadata["run_id"], "run-slice3-1")
+            self.assertEqual(metadata["source_stage"], "execution")
+            self.assertEqual(metadata["projection_scope"], "authoritative")
+            self.assertFalse((projection_root.parent / "artifact-selected-req-1").exists())
 
 
 if __name__ == "__main__":

@@ -9,9 +9,10 @@ Pham vi:
 - gan artifact state nhu `raw`, `filtered`, `selected`, `authoritative`, `deprecated`
 - materialize run tree toi thieu cua ATP v0.2 duoi `SOURCE_DEV/workspace/atp-runs/<run-id>/`
 - materialize handoff outputs toi thieu trong `handoff/` cua run tree
+- project authoritative artifact toi thieu sang `SOURCE_DEV/workspace/atp-artifacts/<artifact-id>/`
 
 Deferred:
 
 - artifact persistence thuc te
 - day du artifact lifecycle engine
-- `exchange/`, `atp-artifacts/`, retention va cleanup engine
+- `exchange/`, retention va cleanup engine
