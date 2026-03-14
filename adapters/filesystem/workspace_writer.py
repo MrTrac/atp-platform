@@ -289,6 +289,32 @@ def summarize_review_approval_gate_contract(
     }
 
 
+def summarize_gate_outcome_operational_followup_contract(
+    contract: dict[str, Any],
+    contract_path: Path,
+) -> dict[str, Any]:
+    """Summarize the explicit v1.0 Slice B gate outcome / operational follow-up contract."""
+
+    return {
+        "contract_id": str(contract.get("contract_id", "")),
+        "contract_path": str(contract_path),
+        "followup_scope": str(contract.get("followup_scope", "")),
+        "bounded_followup": str(
+            contract.get("gate_outcome_or_operational_followup", {}).get("bounded_followup", "")
+        ),
+        "followup_status": str(
+            contract.get("gate_outcome_or_operational_followup", {}).get("followup_status", "")
+        ),
+        "continuity_signal": str(
+            contract.get("gate_outcome_or_operational_followup", {}).get("continuity_signal", "")
+        ),
+        "review_approval_gate_contract_id": str(
+            contract.get("review_approval_gate_ref", {}).get("contract_id", "")
+        ),
+        "traceability": dict(contract.get("traceability", {})),
+    }
+
+
 def project_authoritative_artifacts(
     run_id: str,
     artifacts: list[dict[str, Any]],
@@ -745,6 +771,9 @@ def materialize_run_outputs(
     review_approval_gate_contract_path = (
         zone_paths["manifests"] / "review-approval-gate-contract.json"
     )
+    gate_outcome_operational_followup_contract_path = (
+        zone_paths["manifests"] / "gate-outcome-operational-followup-contract.json"
+    )
     created_files = {
         "request": [
             _write_json(zone_paths["request"] / "request.raw.json", payloads["raw_request"]),
@@ -773,6 +802,10 @@ def materialize_run_outputs(
             _write_json(
                 review_approval_gate_contract_path,
                 payloads["review_approval_gate"],
+            ),
+            _write_json(
+                gate_outcome_operational_followup_contract_path,
+                payloads["gate_outcome_operational_followup"],
             ),
             _write_json(zone_paths["manifests"] / "task-manifest.json", payloads["task_manifest"]),
             _write_json(zone_paths["manifests"] / "product-context.json", payloads["product_context"]),
@@ -999,6 +1032,10 @@ def materialize_run_outputs(
         payloads["review_approval_gate"],
         review_approval_gate_contract_path,
     )
+    gate_outcome_operational_followup_summary = summarize_gate_outcome_operational_followup_contract(
+        payloads["gate_outcome_operational_followup"],
+        gate_outcome_operational_followup_contract_path,
+    )
 
     return {
         "workspace_root": str(zone_paths["workspace_root"]),
@@ -1020,6 +1057,7 @@ def materialize_run_outputs(
         "closure_continuation_state": closure_continuation_state_summary,
         "finalization_closure_record": finalization_closure_record_summary,
         "review_approval_gate": review_approval_gate_summary,
+        "gate_outcome_operational_followup": gate_outcome_operational_followup_summary,
         "reference_index": reference_index,
         "authoritative_projection": projections,
         "retention": retention_summary,

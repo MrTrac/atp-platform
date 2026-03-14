@@ -181,6 +181,20 @@ class TestContinuePendingPath(unittest.TestCase):
                 preview["review_approval_gate"]["review_or_approval_gate"]["gate_decision"],
                 "hold",
             )
+            self.assertEqual(
+                preview["gate_outcome_operational_followup"]["followup_scope"],
+                "gate_outcome_operational_followup_only",
+            )
+            self.assertEqual(
+                preview["gate_outcome_operational_followup"]["review_approval_gate_ref"]["contract_id"],
+                preview["review_approval_gate"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["gate_outcome_operational_followup"]["gate_outcome_or_operational_followup"][
+                    "bounded_followup"
+                ],
+                "held_operational_followup",
+            )
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["materialized"])
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["persistence_state_path"].endswith("current-task-state.json"))
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["active_pointer_path"].endswith("active-pointer.json"))
@@ -201,6 +215,7 @@ class TestContinuePendingPath(unittest.TestCase):
             self.assertTrue((run_root / "manifests" / "closure-continuation-state-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "finalization-closure-record-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "review-approval-gate-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "gate-outcome-operational-followup-contract.json").is_file())
             self.assertTrue((run_root / "final" / "continuation-state.json").is_file())
             self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())
