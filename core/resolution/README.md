@@ -9,6 +9,7 @@ Phạm vi hiện hành:
 - build explicit v0.5 Slice A `request-to-product` resolution contract
 - build explicit v0.5 Slice B `resolution-to-handoff intent` contract
 - build explicit v0.5 Slice C `product execution preparation` contract
+- build explicit v0.5 Slice D `product execution result` contract
 
 Resolution boundary này phải giữ rõ separation với:
 
@@ -44,6 +45,14 @@ Kết quả hiện hành gồm hai lớp:
   - `execution_preparation`
   - `preparation_rationale`
   - `preparation_scope`
+  - `traceability`
+- product execution result contract với:
+  - `request_to_product_resolution_ref`
+  - `resolution_to_handoff_intent_ref`
+  - `product_execution_preparation_ref`
+  - `execution_result`
+  - `result_summary`
+  - `result_scope`
   - `traceability`
 
 Deferred rõ ràng:

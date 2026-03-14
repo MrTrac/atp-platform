@@ -1,4 +1,4 @@
-"""Integration tests for ATP continue-pending continuity behavior."""
+"""Integration tests for ATP continue-pending continuity plus v0.5 Slice A-D contracts."""
 
 from __future__ import annotations
 
@@ -83,6 +83,20 @@ class TestContinuePendingPath(unittest.TestCase):
                 preview["product_execution_preparation"]["execution_preparation"]["preparation_mode"],
                 "pre_routing_pre_provider",
             )
+            self.assertEqual(preview["product_execution_result"]["result_scope"], "product_execution_result_only")
+            self.assertEqual(
+                preview["product_execution_result"]["request_to_product_resolution_ref"]["contract_id"],
+                preview["request_to_product_resolution"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["product_execution_result"]["resolution_to_handoff_intent_ref"]["contract_id"],
+                preview["resolution_to_handoff_intent"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["product_execution_result"]["product_execution_preparation_ref"]["contract_id"],
+                preview["product_execution_preparation"]["contract_id"],
+            )
+            self.assertEqual(preview["product_execution_result"]["execution_result"]["status"], "succeeded")
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["materialized"])
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["persistence_state_path"].endswith("current-task-state.json"))
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["active_pointer_path"].endswith("active-pointer.json"))
@@ -95,6 +109,7 @@ class TestContinuePendingPath(unittest.TestCase):
             self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "resolution-to-handoff-intent-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "product-execution-preparation-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "product-execution-result-contract.json").is_file())
             self.assertTrue((run_root / "final" / "continuation-state.json").is_file())
             self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())

@@ -1,4 +1,4 @@
-"""Integration tests for ATP M8 reject path."""
+"""Integration tests for ATP M8 reject path plus v0.5 Slice A-D contracts."""
 
 from __future__ import annotations
 
@@ -57,11 +57,18 @@ class TestRejectPath(unittest.TestCase):
                 preview["product_execution_preparation"]["resolution_to_handoff_intent_ref"]["contract_id"],
                 preview["resolution_to_handoff_intent"]["contract_id"],
             )
+            self.assertEqual(preview["product_execution_result"]["result_scope"], "product_execution_result_only")
+            self.assertEqual(
+                preview["product_execution_result"]["product_execution_preparation_ref"]["contract_id"],
+                preview["product_execution_preparation"]["contract_id"],
+            )
+            self.assertEqual(preview["product_execution_result"]["execution_result"]["status"], "failed")
             run_root = Path(preview["materialization"]["run_root"])
             workspace_root = Path(preview["materialization"]["workspace_root"])
             self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "resolution-to-handoff-intent-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "product-execution-preparation-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "product-execution-result-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())

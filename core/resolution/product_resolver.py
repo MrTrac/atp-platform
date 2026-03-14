@@ -1,4 +1,4 @@
-"""Resolve ATP products and build the v0.5 Slice A-C preparation contracts."""
+"""Resolve ATP products and build the v0.5 Slice A-D preparation contracts."""
 
 from __future__ import annotations
 
@@ -11,6 +11,11 @@ from core.resolution.registry_io import load_yaml_mapping
 
 class ProductResolutionError(ValueError):
     """Raised when a product cannot be resolved."""
+
+
+def _compact_text(value: str, limit: int = 120) -> str:
+    compact = value.replace("\n", "\\n").strip()
+    return compact[:limit]
 
 
 def _select_product(
@@ -330,5 +335,84 @@ def build_product_execution_preparation_contract(
         "notes": [
             "This contract prepares a product execution package only.",
             "It is distinct from handoff intent, routing, provider selection, execution result, and broader orchestration.",
+        ],
+    }
+
+
+def build_product_execution_result_contract(
+    run_id: str,
+    normalized_request: dict[str, Any],
+    resolution_contract: dict[str, Any],
+    handoff_intent_contract: dict[str, Any],
+    execution_preparation_contract: dict[str, Any],
+    execution_result: dict[str, Any],
+    artifact_summary: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the explicit v0.5 Slice D product execution result contract."""
+
+    request_id = str(normalized_request.get("request_id", "")).strip()
+    if not request_id:
+        raise ValueError("request_id is required for the product execution result contract.")
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for the product execution result contract.")
+
+    resolution_contract_id = str(resolution_contract.get("contract_id", "")).strip()
+    handoff_intent_contract_id = str(handoff_intent_contract.get("contract_id", "")).strip()
+    execution_preparation_contract_id = str(execution_preparation_contract.get("contract_id", "")).strip()
+    if not resolution_contract_id or not handoff_intent_contract_id or not execution_preparation_contract_id:
+        raise ValueError("Slice A-C contracts are required for the product execution result contract.")
+
+    execution_id = str(execution_result.get("execution_id", "")).strip()
+    execution_status = str(execution_result.get("status", "")).strip()
+    if not execution_id or not execution_status:
+        raise ValueError("execution result payload is required for the product execution result contract.")
+
+    return {
+        "contract_id": f"product-execution-result-{request_id}",
+        "contract_version": "v0.5-slice-d",
+        "request_id": request_id,
+        "run_id": run_id,
+        "result_scope": "product_execution_result_only",
+        "request_to_product_resolution_ref": {
+            "contract_id": resolution_contract_id,
+            "product_target": str(resolution_contract.get("product_target", {}).get("product", "")),
+            "capability_target": str(resolution_contract.get("capability_target", {}).get("capability", "")),
+        },
+        "resolution_to_handoff_intent_ref": {
+            "contract_id": handoff_intent_contract_id,
+            "handoff_intent": str(handoff_intent_contract.get("handoff_intent", {}).get("intent", "")),
+        },
+        "product_execution_preparation_ref": {
+            "contract_id": execution_preparation_contract_id,
+            "preparation_mode": str(execution_preparation_contract.get("execution_preparation", {}).get("preparation_mode", "")),
+        },
+        "execution_result": {
+            "execution_id": execution_id,
+            "status": execution_status,
+            "exit_code": int(execution_result.get("exit_code", -1)),
+            "command": list(execution_result.get("command", [])),
+            "stdout_preview": _compact_text(str(execution_result.get("stdout", ""))),
+            "stderr_preview": _compact_text(str(execution_result.get("stderr", ""))),
+        },
+        "result_summary": {
+            "summary": "ATP is recording the bounded result of the prepared product execution step.",
+            "rationale_codes": [
+                "product_execution_result_contract",
+                "bounded_result_recording_only",
+                "post_execution_preparation_pre_review_record",
+            ],
+            "artifact_count": len(list(artifact_summary.get("artifact_ids", []))),
+        },
+        "traceability": {
+            "execution_id": execution_id,
+            "request_to_product_resolution_contract_id": resolution_contract_id,
+            "resolution_to_handoff_intent_contract_id": handoff_intent_contract_id,
+            "product_execution_preparation_contract_id": execution_preparation_contract_id,
+            "artifact_ids": list(artifact_summary.get("artifact_ids", [])),
+        },
+        "notes": [
+            "This contract records a bounded execution result only.",
+            "It is distinct from routing, provider selection, approval, recovery, and broader orchestration.",
         ],
     }
