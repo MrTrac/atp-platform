@@ -1,11 +1,19 @@
 # ATP v0.1 Hardening Backlog
 
 - **Title:** ATP v0.1 Hardening Backlog
-- **Version:** v0.1
+- **Version:** v0.1 R2
 - **Status:** Draft-Baseline
 - **Date:** 2026-03-14
 
+## Priority map
+
+- **P0:** H-01, H-04
+- **P1:** H-02, H-03, H-05
+- **P2:** H-06, H-07
+- **P3:** H-08
+
 ## H-01 — Docs baseline cleanup
+**Priority:** P0  
 **Objective:** make the documentation set match the implemented ATP v0 baseline exactly.
 
 **Scope:**
@@ -21,6 +29,7 @@
 ---
 
 ## H-02 — CLI summary normalization
+**Priority:** P1  
 **Objective:** make `validate`, `run`, and `inspect` summaries more consistent.
 
 **Scope:**
@@ -34,6 +43,7 @@
 ---
 
 ## H-03 — Inspect hardening
+**Priority:** P1  
 **Objective:** make `inspect` more useful within current MVP limits.
 
 **Scope:**
@@ -47,6 +57,7 @@
 ---
 
 ## H-04 — Schema / model consistency pass
+**Priority:** P0  
 **Objective:** improve naming consistency across docs, schemas, core modules, and CLI summaries.
 
 **Scope:**
@@ -60,6 +71,7 @@
 ---
 
 ## H-05 — Error handling & exit behavior
+**Priority:** P1  
 **Objective:** make CLI errors shorter, clearer, and more consistent.
 
 **Scope:**
@@ -75,6 +87,7 @@
 ---
 
 ## H-06 — Fixture cleanup
+**Priority:** P2  
 **Objective:** make fixtures easier to understand and maintain.
 
 **Scope:**
@@ -89,6 +102,7 @@
 ---
 
 ## H-07 — Test coverage hardening
+**Priority:** P2  
 **Objective:** strengthen ATP v0 baseline confidence.
 
 **Scope:**
@@ -104,6 +118,7 @@
 ---
 
 ## H-08 — Artifact / report polish
+**Priority:** P3  
 **Objective:** make artifact-like summaries and final outputs more stable.
 
 **Scope:**

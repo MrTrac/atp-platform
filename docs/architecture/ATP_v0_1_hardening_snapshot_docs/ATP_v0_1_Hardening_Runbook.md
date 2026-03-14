@@ -1,7 +1,7 @@
 # ATP v0.1 Hardening Runbook
 
 - **Title:** ATP v0.1 Hardening Runbook
-- **Version:** v0.1
+- **Version:** v0.1 R2
 - **Status:** Draft-Baseline
 - **Date:** 2026-03-14
 
@@ -44,9 +44,20 @@ ATP v0.1 hardening should focus on:
 - inspect hardening
 - fixture cleanup
 - test coverage improvement
-- artifact/report polish
+- artifact summary / final summary polish
 
-## 5. Non-goals
+## 5. What not to do
+
+ATP v0.1 hardening must not be used for:
+
+- adding new execution providers
+- adding production workspace persistence
+- redesigning approval flow
+- redesigning routing model
+- introducing new orchestration layers
+- adding remote orchestration plane behavior
+
+## 6. Non-goals
 
 ATP v0.1 hardening must not turn into expansion work.
 
@@ -59,14 +70,14 @@ The following remain out of scope:
 - multi-provider arbitration
 - major new execution capability
 
-## 6. Recommended execution order
+## 7. Recommended execution order
 
 1. docs cleanup and naming consistency
 2. CLI and inspect hardening
 3. fixture cleanup and test hardening
 4. artifact/report polish
 
-## 7. Operator interpretation
+## 8. Operator interpretation
 
 If a proposed change:
 - improves clarity
@@ -84,6 +95,6 @@ If a proposed change:
 
 then it likely belongs after ATP v0.1.
 
-## 8. Completion rule
+## 9. Completion rule
 
 ATP v0.1 hardening is complete when the ATP v0 implemented baseline is cleaner, more consistent, easier to operate, and better protected by tests — without changing the MVP boundary.

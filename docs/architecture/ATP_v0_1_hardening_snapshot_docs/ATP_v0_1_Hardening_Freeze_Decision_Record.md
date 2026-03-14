@@ -1,12 +1,13 @@
 # ATP v0.1 Hardening Freeze Decision Record
 
 - **Title:** ATP v0.1 Hardening Freeze Decision Record
-- **Version:** v0.1
+- **Version:** v0.1 R2
 - **Status:** Draft-Baseline
 - **Date:** 2026-03-14
 - **Scope:** ATP v0.1 Hardening
 - **Positioning:** Hardening Track
 - **Parent Baseline:** ATP MVP v0 implemented baseline
+- **Parent baseline status:** Implemented Baseline
 - **Artifact Role:** Authoritative hardening decision artifact
 
 ## 1. Hardening intent
@@ -21,7 +22,7 @@ Its purpose is to strengthen the ATP MVP v0 implemented baseline in the followin
 - inspect hardening
 - fixture cleanup
 - test coverage hardening
-- artifact / report polish
+- artifact summary / final summary polish
 
 ## 2. Boundary rule
 
@@ -61,7 +62,7 @@ ATP v0.1 may improve consistency, operability, and maintainability, but it must 
 - inspect usability improvement
 - fixture set cleanup
 - test coverage improvement
-- artifact/final summary stability
+- artifact summary / final summary stability
 
 ### Out of scope
 - production workspace materialization under `SOURCE_DEV/workspace`
@@ -82,7 +83,28 @@ ATP v0.1 must begin with a documentation-first bundle, located at:
 
 This bundle is the source of truth for the hardening phase before additional implementation begins.
 
-## 6. Expected hardening outcomes
+## 6. Implementation guardrails
+
+ATP v0.1 hardening must not:
+
+- create new top-level modules
+- create new registry domains
+- introduce new provider types
+- introduce new execution modes
+- add new schema groups unless clearly unavoidable
+- change the established M0–M8 orchestration flow
+- reopen ATP MVP v0 architecture decisions
+
+ATP v0.1 hardening may:
+
+- refine existing docs
+- normalize existing CLI output
+- improve existing inspect behavior
+- increase test coverage
+- stabilize existing summary structures
+- clean fixtures and naming
+
+## 7. Expected hardening outcomes
 
 ATP v0.1 should deliver:
 
@@ -92,9 +114,9 @@ ATP v0.1 should deliver:
 - a more useful inspect path
 - clearer operator-facing behavior
 - stronger edge-case test confidence
-- more stable artifact/report summaries
+- more stable artifact summary / final summary outputs
 
-## 7. Acceptance rule
+## 8. Acceptance rule
 
 ATP v0.1 hardening is considered complete when:
 
@@ -103,10 +125,10 @@ ATP v0.1 hardening is considered complete when:
 - inspect is more useful within current MVP limits
 - fixtures are clear and non-redundant
 - tests cover more edge and reject conditions
-- artifact/report outputs are stable and consistent
+- artifact summary / final summary outputs are stable and consistent
 - no scope expansion beyond MVP v0 occurred
 
-## 8. Final note
+## 9. Final note
 
 ATP v0.1 exists to stabilize ATP v0, not to redefine it.
 

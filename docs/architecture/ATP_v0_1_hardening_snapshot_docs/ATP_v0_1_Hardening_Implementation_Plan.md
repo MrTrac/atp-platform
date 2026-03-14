@@ -1,12 +1,13 @@
 # ATP v0.1 Hardening Implementation Plan
 
 - **Title:** ATP v0.1 Hardening Implementation Plan
-- **Version:** v0.1
+- **Version:** v0.1 R2
 - **Status:** Draft-Baseline
 - **Date:** 2026-03-14
 - **Scope:** ATP v0.1 Hardening
 - **Positioning:** Hardening Track
 - **Parent Baseline:** ATP MVP v0 implemented baseline
+- **Parent baseline status:** Implemented Baseline
 
 ## 1. Planning principle
 
@@ -77,7 +78,30 @@ Target outcomes:
 - artifact/report polish completed
 - ATP v0.1 release candidate ready
 
-## 4. Deliverables
+## 4. Verification gates
+
+### After Phase A
+- architecture/design/operator docs use aligned wording
+- schema/model key naming conflicts are reduced or eliminated
+- no new architecture concepts were introduced
+
+### After Phase B
+- `./cli/atp validate ...` summary fields are consistent
+- `./cli/atp run ...` final summary fields are consistent
+- `inspect` is materially more useful than baseline placeholder behavior
+- error messages are shorter and clearer
+
+### After Phase C
+- `make test` passes
+- edge-path and reject-path coverage is stronger than ATP v0 baseline
+- fixtures are easier to distinguish by role and intent
+
+### After Phase D
+- artifact summary / final summary fields are stable
+- happy-path and reject-path summaries do not drift unnecessarily
+- ATP v0.1 remains inside hardening scope
+
+## 5. Deliverables
 
 ATP v0.1 should produce:
 
@@ -86,9 +110,9 @@ ATP v0.1 should produce:
 - better inspect usability
 - cleaner fixtures
 - stronger tests
-- more stable artifact/report summaries
+- more stable artifact summary / final summary outputs
 
-## 5. Deferred items
+## 6. Deferred items
 
 The following remain deferred beyond ATP v0.1:
 
@@ -99,7 +123,7 @@ The following remain deferred beyond ATP v0.1:
 - advanced scheduling
 - multi-provider arbitration
 
-## 6. Exit criteria
+## 7. Exit criteria
 
 ATP v0.1 is complete when:
 
