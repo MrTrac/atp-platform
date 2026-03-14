@@ -5,7 +5,7 @@ ROOT_DIR="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
 case "${1:-help}" in
   help|-h|--help)
-    printf 'ATP v0 M1-M2 CLI\n'
+    printf 'ATP v0 repo-local CLI\n'
     printf 'Usage: %s <command> [args]\n' "$0"
     printf 'Commands: run inspect validate\n'
     ;;

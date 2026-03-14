@@ -1,8 +1,8 @@
 # ATP CLI
 
-CLI nay la skeleton cho ATP v0.
+CLI này là entry surface cho ATP v0 repo-local baseline.
 
 - `atp`: shell entrypoint
-- `run.py`: run orchestration stub
-- `inspect.py`: run inspection stub
-- `validate.py`: validation stub
+- `run.py`: preview đầy đủ flow M1-M8
+- `inspect.py`: inspect summary file ở mức ATP v0
+- `validate.py`: preview flow validate không thực thi execution

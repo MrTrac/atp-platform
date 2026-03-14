@@ -15,7 +15,7 @@ from core.intake.loader import RequestLoadError, load_request
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Inspect ATP run or summary data.")
+    parser = argparse.ArgumentParser(description="Inspect ATP v0 preview summary data.")
     parser.add_argument("input_file", nargs="?", help="Optional JSON or YAML summary file to inspect.")
     return parser
 

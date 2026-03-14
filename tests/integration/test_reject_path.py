@@ -22,7 +22,13 @@ class TestRejectPath(unittest.TestCase):
         self.assertEqual(preview["review"]["review_status"], "reject")
         self.assertEqual(preview["approval"]["approval_status"], "rejected")
         self.assertEqual(preview["finalization"]["final_status"], "rejected")
+        self.assertEqual(preview["handoff"]["inline_context"]["final_status"], "rejected")
+        self.assertEqual(
+            preview["handoff"]["evidence_bundle"]["selected_artifacts"],
+            [{"artifact_id": "artifact-selected-req-atp-m8-exec-fail-0001", "artifact_type": "execution_output"}],
+        )
         self.assertEqual(preview["close_or_continue"], "close_rejected")
+        self.assertEqual(preview["run"]["current_stage"], "CLOSED")
 
 
 if __name__ == "__main__":

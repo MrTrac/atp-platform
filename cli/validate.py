@@ -29,7 +29,7 @@ from core.validation.validation_result import build_validation_result
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Validate an ATP M1-M8 request preview.")
+    parser = argparse.ArgumentParser(description="Preview ATP v0 validation readiness without executing the request.")
     parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
     return parser
 

@@ -5,6 +5,17 @@ from __future__ import annotations
 from typing import Any
 
 
+def derive_final_status(approval_result: dict[str, Any]) -> str:
+    """Map approval status to the stable ATP v0 finalization status."""
+
+    approval_status = str(approval_result.get("approval_status", "needs_attention"))
+    if approval_status == "approved":
+        return "completed"
+    if approval_status == "rejected":
+        return "rejected"
+    return "attention_required"
+
+
 def finalize_run(
     execution_result: dict[str, Any],
     artifact_summary: dict[str, Any],
@@ -17,12 +28,7 @@ def finalize_run(
 
     request_id = str(execution_result.get("request_id", "request-unknown"))
     approval_status = str(approval_result.get("approval_status", "needs_attention"))
-    if approval_status == "approved":
-        final_status = "completed"
-    elif approval_status == "rejected":
-        final_status = "rejected"
-    else:
-        final_status = "attention_required"
+    final_status = derive_final_status(approval_result)
 
     return {
         "finalization_id": f"finalization-{request_id}",

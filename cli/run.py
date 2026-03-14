@@ -29,7 +29,7 @@ from core.context.task_manifest import build_task_manifest
 from core.execution.executor import ExecutionError
 from core.execution.orchestrator import execute_run
 from core.finalization.close_or_continue import close_or_continue
-from core.finalization.finalize import finalize_run
+from core.finalization.finalize import derive_final_status, finalize_run
 from core.handoff.evidence_bundle import build_evidence_bundle
 from core.handoff.exchange_bundle import build_exchange_bundle
 from core.handoff.inline_context import build_inline_context
@@ -115,22 +115,26 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
     authoritative_artifact = mark_authoritative(selected_artifact)
     artifacts = [raw_artifact, filtered_artifact, selected_artifact, authoritative_artifact]
     artifact_summary = summarize_artifacts(artifacts)
+    continuity_artifacts = [
+        {"artifact_id": selected_artifact["artifact_id"], "artifact_type": selected_artifact["artifact_type"]}
+    ]
 
     validation_summary = validate_artifacts(execution_result, artifacts)
     review_decision = build_decision(validation_summary)
     approval_result = require_approval(validation_summary, review_decision, artifact_summary)
+    final_status = derive_final_status(approval_result)
 
     handoff_outputs = {
         "inline_context": build_inline_context(
             summary=f"{resolution['product']} completed ATP v0 flow",
             request_id=normalized_request["request_id"],
             product=resolution["product"],
-            final_status=approval_result["approval_status"],
+            final_status=final_status,
             review_status=review_decision["review_status"],
             authoritative=True,
         ),
         "evidence_bundle": build_evidence_bundle(
-            selected_artifacts=[{"artifact_id": artifact["artifact_id"], "artifact_type": artifact["artifact_type"]} for artifact in artifacts],
+            selected_artifacts=continuity_artifacts,
             request_id=normalized_request["request_id"],
             product=resolution["product"],
             bundle_id=f"handoff-evidence-{normalized_request['request_id']}",
@@ -171,10 +175,6 @@ def preview_run(request_file: str, run_id: str) -> dict[str, Any]:
     run_record = advance_run_state(run_record, RunState.REVIEWED, "review decision created")
     if approval_result["approval_status"] == "approved":
         run_record = advance_run_state(run_record, RunState.APPROVED, "approval granted")
-    elif approval_result["approval_status"] == "needs_attention":
-        run_record = advance_run_state(run_record, RunState.CONTINUE_PENDING, "approval needs attention")
-    else:
-        run_record = advance_run_state(run_record, RunState.CLOSED, "approval rejected")
     run_record = advance_run_state(run_record, RunState.FINALIZED, "finalization summary created")
     if close_decision == "close":
         run_record = advance_run_state(run_record, RunState.CLOSED, "run closed")

@@ -21,6 +21,7 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 
 ## Cấu trúc governance hiện hành
 
+- `ATP_3_Role_Workflow.md` - workflow governance cho mô hình Multi-AI của ATP: Architect -> Executor -> Verifier
 - `framework/` - governance framework cấp cha
 - `git/` - governance cho Git, branch, wrapper, và thao tác an toàn
 - `documentation/` - governance cho biên soạn, review, promotion, và authority path của tài liệu
@@ -37,7 +38,8 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 4. `git/Safe_Git_Workflow_Templates.md`
 5. `git/AI_Branch_Operation_Rules.md`
 6. `git/Safe_Git_Wrappers_Spec.md`
-7. các bundle domain còn lại theo đúng ngữ cảnh công việc
+7. `ATP_3_Role_Workflow.md` khi phase liên quan phối hợp nhiều AI hoặc verification workflow
+8. các bundle domain còn lại theo đúng ngữ cảnh công việc
 
 ## Quy tắc áp dụng
 

@@ -60,6 +60,17 @@ class TestExecutionFlow(unittest.TestCase):
             },
         )
 
+    def test_output_normalizer_marks_non_zero_exit_as_failed(self) -> None:
+        normalized = normalize_output(
+            raw_result={"command": ["python3", "-c", "import sys; sys.exit(1)"], "exit_code": 1, "stdout": "", "stderr": "boom", "notes": []},
+            request_id="req-1",
+            product="ATP",
+            routing_result={"selected_provider": "non_llm_execution", "selected_node": "local_mac"},
+        )
+
+        self.assertEqual(normalized["status"], "failed")
+        self.assertEqual(normalized["exit_code"], 1)
+
     def test_unsupported_route_returns_clear_error(self) -> None:
         normalized = normalize_request(load_request(FIXTURE_DIR / "sample_request_exec_echo.yaml"))
 

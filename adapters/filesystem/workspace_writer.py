@@ -6,9 +6,9 @@ from pathlib import Path
 
 
 def workspace_path(run_id: str, area: str) -> str:
-    """Return a repo-local placeholder path hint only."""
+    """Return the deferred runtime workspace path hint for ATP v0."""
 
-    return f"deferred-workspace/{area}/{run_id}"
+    return f"SOURCE_DEV/workspace/{area}/{run_id}"
 
 
 def repo_local_serialization_path(run_id: str, area: str) -> Path:

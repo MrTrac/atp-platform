@@ -22,7 +22,13 @@ class TestHappyPath(unittest.TestCase):
         self.assertEqual(preview["review"]["review_status"], "accept")
         self.assertEqual(preview["approval"]["approval_status"], "approved")
         self.assertEqual(preview["finalization"]["final_status"], "completed")
+        self.assertEqual(preview["handoff"]["inline_context"]["final_status"], "completed")
+        self.assertEqual(
+            preview["handoff"]["evidence_bundle"]["selected_artifacts"],
+            [{"artifact_id": "artifact-selected-req-atp-m7-exec-echo-0001", "artifact_type": "execution_output"}],
+        )
         self.assertEqual(preview["close_or_continue"], "close")
+        self.assertEqual(preview["run"]["current_stage"], "CLOSED")
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ import unittest
 
 from core.approvals.approval_gate import require_approval
 from core.finalization.close_or_continue import close_or_continue
-from core.finalization.finalize import finalize_run
+from core.finalization.finalize import derive_final_status, finalize_run
 from core.handoff.inline_context import build_inline_context
 from core.handoff.manifest_reference import build_manifest_reference
 
@@ -38,6 +38,11 @@ class TestFinalizationFlow(unittest.TestCase):
         self.assertEqual(close_or_continue({"approval_status": "needs_attention"}), "continue_pending")
         self.assertEqual(close_or_continue({"approval_status": "rejected"}), "close_rejected")
 
+    def test_derive_final_status_keeps_finalization_vocabulary_stable(self) -> None:
+        self.assertEqual(derive_final_status({"approval_status": "approved"}), "completed")
+        self.assertEqual(derive_final_status({"approval_status": "rejected"}), "rejected")
+        self.assertEqual(derive_final_status({"approval_status": "needs_attention"}), "attention_required")
+
     def test_finalization_closes_approved_run(self) -> None:
         approval = require_approval(
             {"request_id": "req-1", "validation_status": "passed"},
@@ -59,6 +64,7 @@ class TestFinalizationFlow(unittest.TestCase):
         )
 
         self.assertEqual(finalization["final_status"], "completed")
+        self.assertEqual(finalization["approval_status"], "approved")
 
 
 if __name__ == "__main__":

@@ -1,27 +1,30 @@
 # Core
 
-`core/` chua seed implementation cho ATP v0 trong pham vi M1-M2.
+`core/` chứa implementation repo-local cho ATP v0 theo flow đã freeze đến M8.
 
-Pham vi dang mo:
+Phạm vi hiện hành:
 
 - request intake
 - normalize
 - rule-based classification
-- run state updates cho early stages
-- handoff model stubs de khoa naming va interface
-
-Pham vi co y de trong:
-
 - product resolution
-- route selection thuc te
-- execution
-- validation/review sau execution
-- approval gate
-- finalization
+- context packaging
+- routing preparation và route selection
+- execution orchestration
+- validation, review, approval, handoff, finalization
+- run state transitions cho preview flow
 
-Nguyen tac:
+Phần vẫn deferred có chủ đích:
+
+- production workspace materialization
+- approval UI
+- remote orchestration plane đầy đủ
+- production persistence và artifact lifecycle engine hoàn chỉnh
+
+Nguyên tắc:
 
 - provider-agnostic
 - adapter-first
 - artifact-centric
-- implementation nong, nhe, de mo rong cho M3+
+- human-gated
+- local-first but node-portable
