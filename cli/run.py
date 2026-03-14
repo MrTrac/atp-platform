@@ -39,6 +39,7 @@ from core.handoff.manifest_reference import build_manifest_reference
 from core.intake.loader import RequestLoadError, load_request
 from core.intake.normalizer import normalize_request
 from core.resolution.product_resolver import (
+    build_decision_to_closure_continuation_handoff_contract,
     ProductResolutionError,
     build_post_execution_decision_contract,
     build_product_execution_preparation_contract,
@@ -220,6 +221,15 @@ def preview_run(
         approval_result=approval_result,
         close_decision=close_decision,
     )
+    decision_to_closure_continuation_handoff = build_decision_to_closure_continuation_handoff_contract(
+        run_id=run_id,
+        normalized_request=normalized_request,
+        resolution_contract=request_to_product_resolution,
+        handoff_intent_contract=resolution_to_handoff_intent,
+        execution_preparation_contract=product_execution_preparation,
+        execution_result_contract=product_execution_result,
+        post_execution_decision_contract=post_execution_decision,
+    )
     exchange_boundary_decision = build_exchange_boundary_decision(
         run_id=run_id,
         request_id=normalized_request["request_id"],
@@ -286,6 +296,19 @@ def preview_run(
         "review_followup_action": post_execution_decision["post_execution_decision"]["review_followup_action"],
         "approval_status": post_execution_decision["post_execution_decision"]["approval_status"],
     }
+    run_record["decision_to_closure_continuation_handoff"] = {
+        "contract_id": decision_to_closure_continuation_handoff["contract_id"],
+        "handoff_scope": decision_to_closure_continuation_handoff["handoff_scope"],
+        "bounded_next_path": decision_to_closure_continuation_handoff["closure_or_continuation_handoff"][
+            "bounded_next_path"
+        ],
+        "next_record_type": decision_to_closure_continuation_handoff["closure_or_continuation_handoff"][
+            "next_record_type"
+        ],
+        "review_escalation_mode": decision_to_closure_continuation_handoff["closure_or_continuation_handoff"][
+            "review_escalation_mode"
+        ],
+    }
     run_record["context_package"] = {
         "manifest_id": task_manifest["manifest_id"],
         "product_context_profile": product_context["profile_ref"],
@@ -325,6 +348,7 @@ def preview_run(
             "product_execution_preparation": product_execution_preparation,
             "product_execution_result": product_execution_result,
             "post_execution_decision": post_execution_decision,
+            "decision_to_closure_continuation_handoff": decision_to_closure_continuation_handoff,
             "task_manifest": task_manifest,
             "product_context": product_context,
             "manifest_reference": handoff_outputs["manifest_reference"],
@@ -365,6 +389,9 @@ def preview_run(
     product_execution_preparation_summary = dict(materialization["product_execution_preparation"])
     product_execution_result_summary = dict(materialization["product_execution_result"])
     post_execution_decision_summary = dict(materialization["post_execution_decision"])
+    decision_to_closure_continuation_handoff_summary = dict(
+        materialization["decision_to_closure_continuation_handoff"]
+    )
 
     return {
         "request": {
@@ -399,6 +426,10 @@ def preview_run(
         "post_execution_decision": {
             **post_execution_decision,
             "contract_path": post_execution_decision_summary["contract_path"],
+        },
+        "decision_to_closure_continuation_handoff": {
+            **decision_to_closure_continuation_handoff,
+            "contract_path": decision_to_closure_continuation_handoff_summary["contract_path"],
         },
         "context_package": {
             "task_manifest": task_manifest,
