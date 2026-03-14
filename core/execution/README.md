@@ -1,21 +1,21 @@
 # Execution
 
-`core/execution` chua implementation M6 cho execution qua adapter.
+`core/execution` chứa implementation M6 cho execution qua adapter.
 
-M6 ho tro mot duong thuc thi that:
+Hiện hành hỗ trợ một đường thực thi thật:
 
 - provider `non_llm_execution`
 - node `local_mac`
 - local command qua subprocess adapter
 
-Phan vai:
+Phân vai:
 
-- contract: khoa shape giua core va adapter
-- adapter: noi truc tiep chay command hoac tra ket qua deferred
+- contract: khóa shape giữa core và adapter
+- adapter: nơi trực tiếp chạy command hoặc trả kết quả deferred
 - executor: map route sang adapter
-- orchestrator: phoi hop execution stage va normalize output
+- orchestrator: phối hợp execution stage và normalize output
 
-Deferred ro rang cho M7+:
+Deferred rõ ràng:
 
 - validation/review
 - approval/finalization

@@ -1,8 +1,14 @@
 # ATP CLI
 
-CLI này là entry surface cho ATP v0 repo-local baseline.
+`cli/` là entry surface cho ATP control-plane baseline trong repo source.
 
 - `atp`: shell entrypoint
-- `run.py`: preview đầy đủ flow M1-M8
-- `inspect.py`: inspect summary file ở mức ATP v0
+- `run.py`: preview flow ATP v0 và materialize runtime outputs theo baseline đã freeze
+- `inspect.py`: inspect summary/runtime references ở mức ATP v0
 - `validate.py`: preview flow validate không thực thi execution
+
+Phạm vi hiện hành:
+
+- local preview/control surface cho ATP
+- không thay thế operators UI
+- không phải orchestration console hay remote control plane

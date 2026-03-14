@@ -1,8 +1,8 @@
 # Context
 
-`core/context` chua implementation M4 cho Context Packaging.
+`core/context` chứa implementation M4 cho Context Packaging.
 
-Input chinh:
+Input chính:
 
 - normalized request
 - classification result
@@ -15,14 +15,14 @@ Output M4:
 - selected evidence list
 - in-memory evidence bundle
 
-Context Packaging trong M4 chi gom:
+Context Packaging trong M4 chỉ gồm:
 
-- chot task manifest shape
-- trich product context can thiet tu resolution
-- chon artifact cot loi cho continuity cua buoc tiep theo
-- tao evidence bundle dict-based
+- chốt task manifest shape
+- trích product context cần thiết từ resolution
+- chọn artifact cốt lõi cho continuity của bước tiếp theo
+- tạo evidence bundle dict-based
 
-Deferred ro rang cho M5+:
+Deferred rõ ràng:
 
 - routing preparation
 - capability/routing decisions thuc te

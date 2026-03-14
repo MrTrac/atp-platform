@@ -1,26 +1,26 @@
 # Resolution
 
-`core/resolution` chua implementation M3 cho Product Resolution.
+`core/resolution` chứa implementation M3 cho Product Resolution.
 
-M3 hien tai resolve:
+Hiện hành resolve:
 
 - `ATP`
 - `TDF`
 
-Nguon resolve:
+Nguồn resolve:
 
 - product registry trong `registry/products`
 - product profile trong `profiles/<product>/profile.yaml`
 - policy registry seed trong `registry/policies`
 
-Ket qua resolve gom:
+Kết quả resolve gồm:
 
 - product da chon
 - `repo_boundary`
 - profile da load
 - danh sach policy da load
 
-Deferred ro rang cho M4+:
+Deferred rõ ràng:
 
 - context packaging
 - routing

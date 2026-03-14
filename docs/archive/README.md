@@ -2,7 +2,7 @@
 
 **Mục đích:** Lưu tài liệu lịch sử, seed bundle, và bản sao cũ để traceability.
 
-**Phạm vi:** Governance seed, snapshot bundle legacy, báo cáo rà soát đã lưu.
+**Phạm vi:** Governance seed, snapshot bundle legacy, báo cáo rà soát, planning, consolidation, và freeze close-out đã lưu.
 
 **Trạng thái:** Archived.
 

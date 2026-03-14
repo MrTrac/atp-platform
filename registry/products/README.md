@@ -1,3 +1,8 @@
 # Products
 
-Product Registry seed cho ATP v0.
+`registry/products` chứa product registry seed cho ATP v0.
+
+Dùng để:
+
+- resolve product target
+- nối product name với profile và repo boundary phù hợp

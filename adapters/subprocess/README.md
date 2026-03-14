@@ -1,11 +1,11 @@
 # Subprocess
 
-`adapters/subprocess` chua local non-LLM execution path cho ATP M6.
+`adapters/subprocess` chứa local non-LLM execution path cho ATP M6.
 
-Pham vi M6:
+Phạm vi:
 
-- chay local command an toan qua `subprocess.run`
-- uu tien `payload.command_argv`
+- chạy local command an toàn qua `subprocess.run`
+- ưu tiên `payload.command_argv`
 - capture `exit_code`, `stdout`, `stderr`, `command`
 
-Khong mo rong sang retry, shell orchestration phuc tap, hay workspace runtime.
+Không mở rộng sang retry, shell orchestration phức tạp, hay remote runtime execution.

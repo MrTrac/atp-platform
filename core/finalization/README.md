@@ -1,14 +1,15 @@
 # Finalization
 
-`core/finalization` chua M8 final summary va close/continue semantics cho ATP v0.
+`core/finalization` chứa final summary và close/continue semantics tối thiểu cho ATP v0.
 
-Pham vi:
+Phạm vi:
 
-- tao finalization summary dict-based
-- quyet dinh `close`, `continue_pending`, hoac `close_rejected`
+- tạo finalization summary dict-based
+- quyết định `close`, `continue_pending`, hoặc `close_rejected`
+- làm đầu vào cho exchange boundary decision và continuation semantics ở baseline v0.3
 
-M8 khong lam:
+Không thuộc scope:
 
 - approval UI
 - external finalization workflow
-- production handoff materialization
+- production handoff / persistence orchestration

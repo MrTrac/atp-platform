@@ -1,15 +1,15 @@
 # Approvals
 
-`core/approvals` chua M8 approval gate summary cho ATP v0.
+`core/approvals` chứa approval gate summary tối thiểu cho ATP v0.
 
-Pham vi:
+Phạm vi:
 
-- nhan validation summary, review decision, artifact summary
-- tao approval result dict-based
-- manual-first, rule-based, khong co UI
+- nhận validation summary, review decision, artifact summary
+- tạo approval result dict-based
+- manual-first, rule-based, không có UI
 
-M8 khong lam:
+Không thuộc scope:
 
 - human approval interface
 - external approval workflow
-- escalation engine day du
+- escalation engine đầy đủ

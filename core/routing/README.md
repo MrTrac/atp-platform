@@ -1,8 +1,8 @@
 # Routing
 
-`core/routing` chua implementation M5 cho Routing Preparation va Route Selection.
+`core/routing` chứa implementation M5 cho Routing Preparation và Route Selection.
 
-Input chinh:
+Input chính:
 
 - normalized request
 - classification result
@@ -18,14 +18,14 @@ Output M5:
 - candidate nodes
 - deterministic routing result
 
-Routing trong M5 chi gom:
+Routing trong M5 chỉ gồm:
 
 - derive required capabilities
 - load capability/provider/node registry data
-- loc provider va node tuong thich
-- chon route local-first va low-cost khi hop le
+- lọc provider và node tương thích
+- chọn route local-first và low-cost khi hợp lệ
 
-Deferred ro rang cho M6+:
+Deferred rõ ràng:
 
 - adapter execution
 - provider interaction runtime

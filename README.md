@@ -4,6 +4,14 @@ ATP là `platform repository` tại `SOURCE_DEV/platforms/ATP`.
 
 ATP MVP v0 là một `shape-correct MVP`: giữ đúng boundary của repo, hình thái control-plane, registry, adapter, artifact lifecycle, và flow human-gated đã được freeze. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
 
+Trạng thái baseline đã freeze:
+
+- `v0.1.0` — hardening baseline
+- `v0.2.0` — consolidated runtime materialization baseline
+- `v0.3.0` — consolidated exchange boundary và continuity baseline
+
+Branch hiện tại có thể đi tiếp sang planning phase mới, nhưng không được ghi đè historical facts của các version đã freeze.
+
 ## Boundary chính
 
 - `SOURCE_DEV/` là `logical workspace root`
@@ -33,6 +41,11 @@ Thứ tự đọc source of truth:
 2. `docs/architecture/ATP_MVP_v0_Implementation_Plan.md`
 3. `docs/README.md`
 4. các tài liệu liên quan trong `docs/design/`, `docs/operators/`, và `docs/governance/`
+
+Nếu cần historical freeze facts:
+
+- `docs/archive/reports/ATP_v0_2_0_Freeze_Closeout.md`
+- `docs/archive/reports/ATP_v0_3_0_Freeze_Closeout.md`
 
 ## Local bootstrap
 
