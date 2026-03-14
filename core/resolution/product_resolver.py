@@ -859,3 +859,147 @@ def build_finalization_closure_record_contract(
             "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
         ],
     }
+
+
+def build_review_approval_gate_contract(
+    run_id: str,
+    normalized_request: dict[str, Any],
+    execution_result_contract: dict[str, Any],
+    post_execution_decision_contract: dict[str, Any],
+    decision_to_handoff_contract: dict[str, Any],
+    closure_continuation_state_contract: dict[str, Any],
+    finalization_closure_record_contract: dict[str, Any],
+    review_decision: dict[str, Any],
+    approval_result: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the explicit v1.0 Slice A review/approval gate contract."""
+
+    request_id = str(normalized_request.get("request_id", "")).strip()
+    if not request_id:
+        raise ValueError("request_id is required for the review/approval gate contract.")
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for the review/approval gate contract.")
+
+    execution_result_contract_id = str(execution_result_contract.get("contract_id", "")).strip()
+    post_execution_decision_contract_id = str(post_execution_decision_contract.get("contract_id", "")).strip()
+    decision_to_handoff_contract_id = str(decision_to_handoff_contract.get("contract_id", "")).strip()
+    closure_continuation_state_contract_id = str(closure_continuation_state_contract.get("contract_id", "")).strip()
+    finalization_closure_record_contract_id = str(finalization_closure_record_contract.get("contract_id", "")).strip()
+    if (
+        not execution_result_contract_id
+        or not post_execution_decision_contract_id
+        or not decision_to_handoff_contract_id
+        or not closure_continuation_state_contract_id
+        or not finalization_closure_record_contract_id
+    ):
+        raise ValueError(
+            "v0.5 Slice D, v0.6 Slice A-C, and v0.7 Slice A contracts are required for the review/approval gate contract."
+        )
+
+    bounded_path = str(
+        finalization_closure_record_contract.get("finalization_or_closure_record", {}).get("bounded_path", "")
+    ).strip()
+    record_status = str(
+        finalization_closure_record_contract.get("finalization_or_closure_record", {}).get("record_status", "unknown")
+    ).strip() or "unknown"
+    final_status = str(
+        finalization_closure_record_contract.get("finalization_or_closure_record", {}).get("final_status", "unknown")
+    ).strip() or "unknown"
+    review_status = str(review_decision.get("review_status", "unknown")).strip() or "unknown"
+    validation_status = str(review_decision.get("validation_status", "unknown")).strip() or "unknown"
+    approval_status = str(approval_result.get("approval_status", "unknown")).strip() or "unknown"
+    review_decision_id = str(review_decision.get("decision_id", "")).strip()
+    approval_id = str(approval_result.get("approval_id", "")).strip()
+    if not bounded_path:
+        raise ValueError("finalization/closure record bounded path is required for the review/approval gate contract.")
+
+    if approval_status == "approved":
+        gate_decision = "approved"
+        gate_status = "passed"
+        resulting_direction = "ready_for_approved_continuation"
+    elif approval_status == "rejected" or review_status == "reject":
+        gate_decision = "rejected"
+        gate_status = "rejected"
+        resulting_direction = "ready_for_rejected_closure"
+    elif approval_status == "needs_attention":
+        gate_decision = "hold"
+        gate_status = "held"
+        resulting_direction = "pending_further_review"
+    else:
+        gate_decision = "deferred"
+        gate_status = "deferred"
+        resulting_direction = "decision_deferred"
+
+    return {
+        "contract_id": f"review-approval-gate-{request_id}",
+        "contract_version": "v1.0-slice-a",
+        "request_id": request_id,
+        "run_id": run_id,
+        "gate_scope": "review_approval_gate_only",
+        "product_execution_result_ref": {
+            "contract_id": execution_result_contract_id,
+            "execution_id": str(execution_result_contract.get("execution_result", {}).get("execution_id", "")),
+            "execution_status": str(execution_result_contract.get("execution_result", {}).get("status", "")),
+        },
+        "post_execution_decision_ref": {
+            "contract_id": post_execution_decision_contract_id,
+            "bounded_outcome": str(
+                post_execution_decision_contract.get("post_execution_decision", {}).get("bounded_outcome", "")
+            ),
+        },
+        "decision_to_closure_continuation_handoff_ref": {
+            "contract_id": decision_to_handoff_contract_id,
+            "bounded_next_path": str(
+                decision_to_handoff_contract.get("closure_or_continuation_handoff", {}).get("bounded_next_path", "")
+            ),
+        },
+        "closure_continuation_state_ref": {
+            "contract_id": closure_continuation_state_contract_id,
+            "bounded_path": str(
+                closure_continuation_state_contract.get("closure_or_continuation_state", {}).get("bounded_path", "")
+            ),
+            "state_status": str(
+                closure_continuation_state_contract.get("closure_or_continuation_state", {}).get("state_status", "")
+            ),
+        },
+        "finalization_closure_record_ref": {
+            "contract_id": finalization_closure_record_contract_id,
+            "record_scope": str(finalization_closure_record_contract.get("record_scope", "")),
+            "bounded_path": bounded_path,
+            "record_status": record_status,
+            "final_status": final_status,
+        },
+        "review_or_approval_gate": {
+            "gate_stage": "post_finalization_review_gate",
+            "gate_subject": "finalization_closure_record",
+            "gate_decision": gate_decision,
+            "gate_status": gate_status,
+            "resulting_direction": resulting_direction,
+        },
+        "gate_rationale": {
+            "validation_status": validation_status,
+            "review_status": review_status,
+            "approval_status": approval_status,
+            "rationale_codes": [
+                "review_approval_gate_contract",
+                "bounded_operational_gate_only",
+                "gate_derived_from_finalization_record_and_review_approval_state",
+            ],
+            "summary": "ATP is recording a bounded review or approval gate only.",
+        },
+        "traceability": {
+            "finalization_closure_record_contract_id": finalization_closure_record_contract_id,
+            "closure_continuation_state_contract_id": closure_continuation_state_contract_id,
+            "decision_to_closure_continuation_handoff_contract_id": decision_to_handoff_contract_id,
+            "post_execution_decision_contract_id": post_execution_decision_contract_id,
+            "product_execution_result_contract_id": execution_result_contract_id,
+            "review_decision_id": review_decision_id,
+            "approval_id": approval_id,
+            "close_or_continue": bounded_path,
+        },
+        "notes": [
+            "This contract records a bounded review or approval gate only.",
+            "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
+        ],
+    }

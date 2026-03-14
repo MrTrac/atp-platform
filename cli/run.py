@@ -42,6 +42,7 @@ from core.resolution.product_resolver import (
     build_closure_continuation_state_contract,
     build_decision_to_closure_continuation_handoff_contract,
     build_finalization_closure_record_contract,
+    build_review_approval_gate_contract,
     ProductResolutionError,
     build_post_execution_decision_contract,
     build_product_execution_preparation_contract,
@@ -251,6 +252,17 @@ def preview_run(
         closure_continuation_state_contract=closure_continuation_state,
         finalization_summary=finalization_summary,
     )
+    review_approval_gate = build_review_approval_gate_contract(
+        run_id=run_id,
+        normalized_request=normalized_request,
+        execution_result_contract=product_execution_result,
+        post_execution_decision_contract=post_execution_decision,
+        decision_to_handoff_contract=decision_to_closure_continuation_handoff,
+        closure_continuation_state_contract=closure_continuation_state,
+        finalization_closure_record_contract=finalization_closure_record,
+        review_decision=review_decision,
+        approval_result=approval_result,
+    )
     exchange_boundary_decision = build_exchange_boundary_decision(
         run_id=run_id,
         request_id=normalized_request["request_id"],
@@ -344,6 +356,13 @@ def preview_run(
         "record_status": finalization_closure_record["finalization_or_closure_record"]["record_status"],
         "final_status": finalization_closure_record["finalization_or_closure_record"]["final_status"],
     }
+    run_record["review_approval_gate"] = {
+        "contract_id": review_approval_gate["contract_id"],
+        "gate_scope": review_approval_gate["gate_scope"],
+        "gate_decision": review_approval_gate["review_or_approval_gate"]["gate_decision"],
+        "gate_status": review_approval_gate["review_or_approval_gate"]["gate_status"],
+        "resulting_direction": review_approval_gate["review_or_approval_gate"]["resulting_direction"],
+    }
     run_record["context_package"] = {
         "manifest_id": task_manifest["manifest_id"],
         "product_context_profile": product_context["profile_ref"],
@@ -386,6 +405,7 @@ def preview_run(
             "decision_to_closure_continuation_handoff": decision_to_closure_continuation_handoff,
             "closure_continuation_state": closure_continuation_state,
             "finalization_closure_record": finalization_closure_record,
+            "review_approval_gate": review_approval_gate,
             "task_manifest": task_manifest,
             "product_context": product_context,
             "manifest_reference": handoff_outputs["manifest_reference"],
@@ -431,6 +451,7 @@ def preview_run(
     )
     closure_continuation_state_summary = dict(materialization["closure_continuation_state"])
     finalization_closure_record_summary = dict(materialization["finalization_closure_record"])
+    review_approval_gate_summary = dict(materialization["review_approval_gate"])
 
     return {
         "request": {
@@ -478,6 +499,10 @@ def preview_run(
             **finalization_closure_record,
             "contract_path": finalization_closure_record_summary["contract_path"],
         },
+        "review_approval_gate": {
+            **review_approval_gate,
+            "contract_path": review_approval_gate_summary["contract_path"],
+        },
         "context_package": {
             "task_manifest": task_manifest,
             "product_context": product_context,
@@ -517,7 +542,7 @@ def preview_run(
         "run": run_record,
         "decision_state": decision_state,
         "materialization": materialization,
-        "message": "ATP v0 stops at final summary. Human approval UI and production handoff materialization are not implemented.",
+        "message": "ATP v1.0 starts bounded review or approval gate recording. Approval UI and production workflow materialization are not implemented.",
     }
 
 
