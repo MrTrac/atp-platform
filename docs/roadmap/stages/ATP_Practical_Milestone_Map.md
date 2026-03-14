@@ -73,12 +73,32 @@ Nếu một field chưa chắc chắn, field đó phải được ghi rõ là:
 2. Nếu recover được chắc hơn, chuẩn hóa branch / integration note cho `v0.1`.
 3. Giữ cập nhật map này cùng lúc khi `v0.5` tiến tới integration review, consolidation, freeze, và close-out.
 
+## Milestone documentation backfill
+
+Bộ tài liệu milestone documentation đầy đủ theo template bundle đã được tạo tại:
+
+- `docs/roadmap/milestones/v0_2/` — `v0.2` runtime materialization baseline (compact merged form)
+  - `ATP_v0_2_Proposal_and_Execution_Plan.md`
+  - `ATP_v0_2_Freeze_and_Closeout.md`
+- `docs/roadmap/milestones/v0_3/` — `v0.3` external boundary / continuation baseline (compact merged form)
+  - `ATP_v0_3_Proposal_and_Execution_Plan.md`
+  - `ATP_v0_3_Freeze_and_Closeout.md`
+- `docs/roadmap/milestones/v0_4/` — `v0.4` current-task persistence / recovery baseline (compact merged form)
+  - `ATP_v0_4_Proposal_and_Execution_Plan.md`
+  - `ATP_v0_4_Freeze_and_Closeout.md`
+- `docs/roadmap/milestones/v0_5/` — `v0.5` continuity completion của v0 (full form — active milestone)
+  - `ATP_v0_5_Proposal.md`
+  - `ATP_v0_5_Execution_Plan.md`
+  - `ATP_v0_5_Freeze_Decision_Record.md` (provisional — chưa freeze)
+  - `ATP_v0_5_Closeout.md` (not applicable yet — chưa freeze)
+
 ## Tài liệu liên quan / nguồn chuẩn liên quan
 
 - `docs/governance/framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md`
 - `docs/governance/ATP_Development_Ruleset.md`
 - `docs/roadmap/stages/ATP_Development_Stage_Roadmap.md`
 - `docs/roadmap/versions/ATP_v0_5_Roadmap.md`
+- `docs/roadmap/milestones/` — milestone documentation backfill (v0.2 → v0.5)
 - `docs/archive/reports/ATP_v0_2_0_Freeze_Closeout.md`
 - `docs/archive/reports/ATP_v0_3_0_Freeze_Closeout.md`
 - `docs/archive/reports/ATP_v0_4_0_Freeze_Closeout.md`

@@ -74,5 +74,6 @@ Roadmap không phải optional writing. Trong ATP:
 - `stages/` — stage-based roadmap cho ATP theo practical development stages
 - `stages/ATP_Practical_Milestone_Map.md` — practical lineage map cho continuity từ `v0.1` tới milestone hiện tại
 - `templates/milestones/` — template bundle cho Proposal, Execution Plan, Freeze Decision Record, và Closeout của từng milestone
+- `milestones/` — milestone documentation backfill cho từng version trong ATP v0 family (`v0.2` → `v0.5`)
 - `majors/` — roadmap cho từng major family
 - `versions/` — roadmap cho từng version cụ thể
