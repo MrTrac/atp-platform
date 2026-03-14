@@ -23,6 +23,7 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 
 - `ATP_3_Role_Workflow.md` - workflow governance cho mô hình Multi-AI của ATP: Architect -> Executor -> Verifier
 - `ATP_Development_Ruleset.md` - ruleset vận hành development bắt buộc xuyên suốt version opening, slice execution, consolidation, freeze, và close-out
+- `framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md` - rule bắt buộc để mọi milestone/version có lineage và documentation continuity rõ
 - `framework/` - governance framework cấp cha
 - `git/` - governance cho Git, branch, wrapper, và thao tác an toàn
 - `documentation/` - governance cho biên soạn, review, promotion, và authority path của tài liệu
@@ -57,6 +58,8 @@ Trong ATP, roadmap cũng là governance artifact bắt buộc:
 Mỗi version mới phải kế thừa từ previous frozen version và close-out/consolidation evidence của version trước đó.
 
 `ATP_Development_Ruleset.md` là operational ruleset chính để biến các doctrine và roadmap principles này thành gates/checklist áp dụng được trong thực tế.
+
+`framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md` là rule governance chuyên biệt để chuẩn hóa version lineage, documentation continuity, backfill, và authority path của từng milestone.
 
 Các governance artifact trong cây này áp dụng cho:
 

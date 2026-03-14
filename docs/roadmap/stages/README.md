@@ -28,6 +28,13 @@ Nó là lớp practical maturity map nằm giữa product roadmap dài hạn và
 - `../majors/` — major-family roadmap
 - `../versions/` — version roadmap theo từng release step
 - `ATP_Development_Stage_Roadmap.md` — stage-based map mô tả ATP trông như thế nào ở từng maturity stage
+- `ATP_Practical_Milestone_Map.md` — lineage map vận hành cho continuity từ `v0.1` tới current milestone
+
+## Quan hệ với governance
+
+- `../../governance/framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md` — rule bắt buộc cho lineage và documentation continuity
+
+Stage docs không thay rule này. Khi cần theo dõi milestone continuity cụ thể, dùng practical milestone map.
 
 ## Quy tắc sử dụng
 

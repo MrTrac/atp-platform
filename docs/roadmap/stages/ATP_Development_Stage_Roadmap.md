@@ -14,6 +14,16 @@ Mục tiêu của stage roadmap là trả lời thực dụng:
 
 Tài liệu này không thay thế architecture doctrine, major roadmap, version roadmap, hay freeze close-out. Nó dùng các lớp đó làm inheritance basis để mô tả ATP theo dạng dễ áp dụng hơn cho planning và expectation-setting.
 
+Version lineage và documentation continuity không được theo dõi chính trong tài liệu này. Việc đó phải bám:
+
+- `docs/governance/framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md`
+- `docs/roadmap/stages/ATP_Practical_Milestone_Map.md`
+
+Nói ngắn gọn:
+
+- stage roadmap theo dõi maturity horizon
+- practical milestone map theo dõi lineage thực dụng và continuity status
+
 ---
 
 ## Giai đoạn 1: Foundational Baseline Horizon (`v0`)
@@ -313,6 +323,13 @@ Stage roadmap này nên được dùng để:
 - hiểu ATP đang ở maturity horizon nào
 - kiểm tra một version hoặc slice đang unlock gì cho horizon lớn hơn
 - đặt kỳ vọng thực tế cho user, operator, và team phát triển
+- kiểm tra stage progression có còn phù hợp với doctrine đang active hay không
+
+Mọi stage progression phải giữ:
+
+- version lineage rõ
+- documentation continuity rõ
+- authority path rõ trước khi coi một milestone đã hoàn tất về mặt governance
 
 Nó không nên được dùng như:
 

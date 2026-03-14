@@ -22,9 +22,11 @@
 2. **Vận hành:** `operators/runbook_atp_v0.md` → `operators/workspace_layout.md`
 3. **Governance:** `governance/README.md` → `governance/framework/Contextual_Project_Governance_Framework.md` → `governance/ATP_3_Role_Workflow.md` khi phase dùng workflow Multi-AI
    Rule execution baseline: `governance/ATP_Development_Ruleset.md`
+   Lineage continuity rule: `governance/framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md`
 4. **Freeze / baseline:** `architecture/ATP_MVP_v0_Freeze_Decision_Record.md` và snapshot bundles trong `architecture/`
 5. **Historical close-out:** các freeze close-out reports trong `archive/reports/`
 6. **Roadmap continuity:** `roadmap/README.md` và các roadmap documents theo product/major/version
+   Practical lineage map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
 
 Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP ⇄ products`, không chỉ bám release chronology.
 
@@ -35,6 +37,7 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 - Freeze close-out reports: `archive/reports/ATP_v0_2_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_3_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_4_0_Freeze_Closeout.md`
 - Roadmap layer: `roadmap/ATP_Product_Roadmap.md`, `roadmap/majors/`, `roadmap/versions/`
 - Stage roadmap: `roadmap/stages/ATP_Development_Stage_Roadmap.md`
+- Practical milestone map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
 
 ---
 

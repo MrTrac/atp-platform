@@ -32,6 +32,10 @@ Roadmap phải kế thừa từ architecture doctrine, không được override 
 
 Operational rules và gates để thi hành doctrine/roadmap không nằm trong cây này; chúng thuộc `docs/governance/ATP_Development_Ruleset.md`.
 
+Version lineage và documentation continuity rule cũng không nằm trong cây này; rule authoritative tương ứng nằm tại:
+
+- `docs/governance/framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md`
+
 ## Roadmap layering
 
 ATP dùng roadmap 3 tầng:
@@ -68,5 +72,6 @@ Roadmap không phải optional writing. Trong ATP:
 
 - `ATP_Product_Roadmap.md` — product-level direction và capability horizon logic
 - `stages/` — stage-based roadmap cho ATP theo practical development stages
+- `stages/ATP_Practical_Milestone_Map.md` — practical lineage map cho continuity từ `v0.1` tới milestone hiện tại
 - `majors/` — roadmap cho từng major family
 - `versions/` — roadmap cho từng version cụ thể
