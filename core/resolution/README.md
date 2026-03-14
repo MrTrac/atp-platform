@@ -10,6 +10,7 @@ Phạm vi hiện hành:
 - build explicit v0.5 Slice B `resolution-to-handoff intent` contract
 - build explicit v0.5 Slice C `product execution preparation` contract
 - build explicit v0.5 Slice D `product execution result` contract
+- build explicit v0.6 Slice A `post-execution decision` contract
 
 Resolution boundary này phải giữ rõ separation với:
 
@@ -54,12 +55,21 @@ Kết quả hiện hành gồm hai lớp:
   - `result_summary`
   - `result_scope`
   - `traceability`
+- post-execution decision contract với:
+  - `request_to_product_resolution_ref`
+  - `resolution_to_handoff_intent_ref`
+  - `product_execution_preparation_ref`
+  - `product_execution_result_ref`
+  - `post_execution_decision`
+  - `decision_rationale`
+  - `decision_scope`
+  - `traceability`
 
 Deferred rõ ràng:
 
 - context packaging
 - routing
 - execution
-- validation/review
-- approval/finalization
+- approval UI
+- recovery execution
 - product portfolio orchestration

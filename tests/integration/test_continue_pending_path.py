@@ -1,4 +1,4 @@
-"""Integration tests for ATP continue-pending continuity plus v0.5 Slice A-D contracts."""
+"""Integration tests for ATP continue-pending continuity plus the v0.5-v0.6 contract chain."""
 
 from __future__ import annotations
 
@@ -97,6 +97,19 @@ class TestContinuePendingPath(unittest.TestCase):
                 preview["product_execution_preparation"]["contract_id"],
             )
             self.assertEqual(preview["product_execution_result"]["execution_result"]["status"], "succeeded")
+            self.assertEqual(preview["post_execution_decision"]["decision_scope"], "post_execution_decision_only")
+            self.assertEqual(
+                preview["post_execution_decision"]["product_execution_result_ref"]["contract_id"],
+                preview["product_execution_result"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["post_execution_decision"]["post_execution_decision"]["bounded_outcome"],
+                "continue_pending",
+            )
+            self.assertEqual(
+                preview["post_execution_decision"]["post_execution_decision"]["review_followup_action"],
+                "escalate_review",
+            )
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["materialized"])
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["persistence_state_path"].endswith("current-task-state.json"))
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["active_pointer_path"].endswith("active-pointer.json"))
@@ -110,6 +123,7 @@ class TestContinuePendingPath(unittest.TestCase):
             self.assertTrue((run_root / "manifests" / "resolution-to-handoff-intent-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "product-execution-preparation-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "product-execution-result-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "post-execution-decision-contract.json").is_file())
             self.assertTrue((run_root / "final" / "continuation-state.json").is_file())
             self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())

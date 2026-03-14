@@ -1,4 +1,4 @@
-"""Resolve ATP products and build the v0.5 Slice A-D preparation contracts."""
+"""Resolve ATP products and build the v0.5-v0.6 contract chain."""
 
 from __future__ import annotations
 
@@ -414,5 +414,99 @@ def build_product_execution_result_contract(
         "notes": [
             "This contract records a bounded execution result only.",
             "It is distinct from routing, provider selection, approval, recovery, and broader orchestration.",
+        ],
+    }
+
+
+def build_post_execution_decision_contract(
+    run_id: str,
+    normalized_request: dict[str, Any],
+    resolution_contract: dict[str, Any],
+    handoff_intent_contract: dict[str, Any],
+    execution_preparation_contract: dict[str, Any],
+    execution_result_contract: dict[str, Any],
+    review_decision: dict[str, Any],
+    approval_result: dict[str, Any],
+    close_decision: str,
+) -> dict[str, Any]:
+    """Build the explicit v0.6 Slice A post-execution decision contract."""
+
+    request_id = str(normalized_request.get("request_id", "")).strip()
+    if not request_id:
+        raise ValueError("request_id is required for the post-execution decision contract.")
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for the post-execution decision contract.")
+
+    resolution_contract_id = str(resolution_contract.get("contract_id", "")).strip()
+    handoff_intent_contract_id = str(handoff_intent_contract.get("contract_id", "")).strip()
+    execution_preparation_contract_id = str(execution_preparation_contract.get("contract_id", "")).strip()
+    execution_result_contract_id = str(execution_result_contract.get("contract_id", "")).strip()
+    if (
+        not resolution_contract_id
+        or not handoff_intent_contract_id
+        or not execution_preparation_contract_id
+        or not execution_result_contract_id
+    ):
+        raise ValueError("Slice A-D contracts are required for the post-execution decision contract.")
+
+    review_status = str(review_decision.get("review_status", "unknown")).strip() or "unknown"
+    approval_status = str(approval_result.get("approval_status", "unknown")).strip() or "unknown"
+    if not str(close_decision).strip():
+        raise ValueError("close_decision is required for the post-execution decision contract.")
+
+    review_followup_action = "escalate_review" if close_decision == "continue_pending" else "none"
+    return {
+        "contract_id": f"post-execution-decision-{request_id}",
+        "contract_version": "v0.6-slice-a",
+        "request_id": request_id,
+        "run_id": run_id,
+        "decision_scope": "post_execution_decision_only",
+        "request_to_product_resolution_ref": {
+            "contract_id": resolution_contract_id,
+            "product_target": str(resolution_contract.get("product_target", {}).get("product", "")),
+            "capability_target": str(resolution_contract.get("capability_target", {}).get("capability", "")),
+        },
+        "resolution_to_handoff_intent_ref": {
+            "contract_id": handoff_intent_contract_id,
+            "handoff_intent": str(handoff_intent_contract.get("handoff_intent", {}).get("intent", "")),
+        },
+        "product_execution_preparation_ref": {
+            "contract_id": execution_preparation_contract_id,
+            "preparation_mode": str(execution_preparation_contract.get("execution_preparation", {}).get("preparation_mode", "")),
+        },
+        "product_execution_result_ref": {
+            "contract_id": execution_result_contract_id,
+            "execution_id": str(execution_result_contract.get("execution_result", {}).get("execution_id", "")),
+            "execution_status": str(execution_result_contract.get("execution_result", {}).get("status", "")),
+        },
+        "post_execution_decision": {
+            "decision_stage": "post_execution",
+            "bounded_outcome": close_decision,
+            "review_followup_action": review_followup_action,
+            "review_status": review_status,
+            "approval_status": approval_status,
+        },
+        "decision_rationale": {
+            "validation_status": str(review_decision.get("validation_status", "unknown")),
+            "review_status": review_status,
+            "approval_status": approval_status,
+            "continue_recommended": bool(approval_result.get("continue_recommended", False)),
+            "rationale_codes": [
+                "post_execution_decision_contract",
+                "bounded_post_execution_decision_only",
+                "decision_derived_from_review_approval_close_semantics",
+            ],
+            "summary": "ATP is recording the bounded post-execution decision only.",
+        },
+        "traceability": {
+            "product_execution_result_contract_id": execution_result_contract_id,
+            "review_decision_id": str(review_decision.get("decision_id", "")),
+            "approval_id": str(approval_result.get("approval_id", "")),
+            "close_or_continue": close_decision,
+        },
+        "notes": [
+            "This contract records a bounded post-execution decision only.",
+            "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
         ],
     }

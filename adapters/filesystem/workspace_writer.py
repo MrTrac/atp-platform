@@ -1,4 +1,4 @@
-"""Workspace materialization helpers for ATP v0.2-v0.5 runtime slices."""
+"""Workspace materialization helpers for ATP v0.2-v0.6 runtime slices."""
 
 from __future__ import annotations
 
@@ -183,6 +183,20 @@ def summarize_product_execution_result_contract(contract: dict[str, Any], contra
         "status": str(contract.get("execution_result", {}).get("status", "")),
         "exit_code": int(contract.get("execution_result", {}).get("exit_code", -1)),
         "execution_preparation_contract_id": str(contract.get("product_execution_preparation_ref", {}).get("contract_id", "")),
+        "traceability": dict(contract.get("traceability", {})),
+    }
+
+
+def summarize_post_execution_decision_contract(contract: dict[str, Any], contract_path: Path) -> dict[str, Any]:
+    """Summarize the explicit v0.6 Slice A post-execution decision contract."""
+
+    return {
+        "contract_id": str(contract.get("contract_id", "")),
+        "contract_path": str(contract_path),
+        "decision_scope": str(contract.get("decision_scope", "")),
+        "bounded_outcome": str(contract.get("post_execution_decision", {}).get("bounded_outcome", "")),
+        "review_followup_action": str(contract.get("post_execution_decision", {}).get("review_followup_action", "")),
+        "execution_result_contract_id": str(contract.get("product_execution_result_ref", {}).get("contract_id", "")),
         "traceability": dict(contract.get("traceability", {})),
     }
 
@@ -597,7 +611,7 @@ def materialize_run_outputs(
     repo_root: Path | None = None,
     workspace_root: Path | None = None,
 ) -> dict[str, Any]:
-    """Materialize the approved ATP v0.2-v0.5 run outputs."""
+    """Materialize the approved ATP v0.2-v0.6 run outputs."""
 
     zone_paths = materialize_run_tree(run_id, repo_root=repo_root, workspace_root=workspace_root)
     exchange_summary = materialize_exchange_boundary(
@@ -630,6 +644,7 @@ def materialize_run_outputs(
     handoff_intent_contract_path = zone_paths["manifests"] / "resolution-to-handoff-intent-contract.json"
     execution_preparation_contract_path = zone_paths["manifests"] / "product-execution-preparation-contract.json"
     execution_result_contract_path = zone_paths["manifests"] / "product-execution-result-contract.json"
+    post_execution_decision_contract_path = zone_paths["manifests"] / "post-execution-decision-contract.json"
     created_files = {
         "request": [
             _write_json(zone_paths["request"] / "request.raw.json", payloads["raw_request"]),
@@ -642,6 +657,7 @@ def materialize_run_outputs(
             _write_json(handoff_intent_contract_path, payloads["resolution_to_handoff_intent"]),
             _write_json(execution_preparation_contract_path, payloads["product_execution_preparation"]),
             _write_json(execution_result_contract_path, payloads["product_execution_result"]),
+            _write_json(post_execution_decision_contract_path, payloads["post_execution_decision"]),
             _write_json(zone_paths["manifests"] / "task-manifest.json", payloads["task_manifest"]),
             _write_json(zone_paths["manifests"] / "product-context.json", payloads["product_context"]),
             _write_json(zone_paths["manifests"] / "manifest-reference.json", payloads["manifest_reference"]),
@@ -845,6 +861,10 @@ def materialize_run_outputs(
         payloads["product_execution_result"],
         execution_result_contract_path,
     )
+    post_execution_decision_summary = summarize_post_execution_decision_contract(
+        payloads["post_execution_decision"],
+        post_execution_decision_contract_path,
+    )
 
     return {
         "workspace_root": str(zone_paths["workspace_root"]),
@@ -861,6 +881,7 @@ def materialize_run_outputs(
         "resolution_to_handoff_intent": resolution_to_handoff_intent_summary,
         "product_execution_preparation": product_execution_preparation_summary,
         "product_execution_result": product_execution_result_summary,
+        "post_execution_decision": post_execution_decision_summary,
         "reference_index": reference_index,
         "authoritative_projection": projections,
         "retention": retention_summary,

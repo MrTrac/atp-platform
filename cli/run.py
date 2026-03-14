@@ -40,6 +40,7 @@ from core.intake.loader import RequestLoadError, load_request
 from core.intake.normalizer import normalize_request
 from core.resolution.product_resolver import (
     ProductResolutionError,
+    build_post_execution_decision_contract,
     build_product_execution_preparation_contract,
     build_product_execution_result_contract,
     build_request_to_product_resolution_contract,
@@ -208,6 +209,17 @@ def preview_run(
         handoff_outputs=handoff_outputs,
     )
     close_decision = close_or_continue(approval_result)
+    post_execution_decision = build_post_execution_decision_contract(
+        run_id=run_id,
+        normalized_request=normalized_request,
+        resolution_contract=request_to_product_resolution,
+        handoff_intent_contract=resolution_to_handoff_intent,
+        execution_preparation_contract=product_execution_preparation,
+        execution_result_contract=product_execution_result,
+        review_decision=review_decision,
+        approval_result=approval_result,
+        close_decision=close_decision,
+    )
     exchange_boundary_decision = build_exchange_boundary_decision(
         run_id=run_id,
         request_id=normalized_request["request_id"],
@@ -267,6 +279,13 @@ def preview_run(
         "status": product_execution_result["execution_result"]["status"],
         "exit_code": product_execution_result["execution_result"]["exit_code"],
     }
+    run_record["post_execution_decision"] = {
+        "contract_id": post_execution_decision["contract_id"],
+        "decision_scope": post_execution_decision["decision_scope"],
+        "bounded_outcome": post_execution_decision["post_execution_decision"]["bounded_outcome"],
+        "review_followup_action": post_execution_decision["post_execution_decision"]["review_followup_action"],
+        "approval_status": post_execution_decision["post_execution_decision"]["approval_status"],
+    }
     run_record["context_package"] = {
         "manifest_id": task_manifest["manifest_id"],
         "product_context_profile": product_context["profile_ref"],
@@ -305,6 +324,7 @@ def preview_run(
             "resolution_to_handoff_intent": resolution_to_handoff_intent,
             "product_execution_preparation": product_execution_preparation,
             "product_execution_result": product_execution_result,
+            "post_execution_decision": post_execution_decision,
             "task_manifest": task_manifest,
             "product_context": product_context,
             "manifest_reference": handoff_outputs["manifest_reference"],
@@ -344,6 +364,7 @@ def preview_run(
     resolution_to_handoff_intent_summary = dict(materialization["resolution_to_handoff_intent"])
     product_execution_preparation_summary = dict(materialization["product_execution_preparation"])
     product_execution_result_summary = dict(materialization["product_execution_result"])
+    post_execution_decision_summary = dict(materialization["post_execution_decision"])
 
     return {
         "request": {
@@ -374,6 +395,10 @@ def preview_run(
         "product_execution_result": {
             **product_execution_result,
             "contract_path": product_execution_result_summary["contract_path"],
+        },
+        "post_execution_decision": {
+            **post_execution_decision,
+            "contract_path": post_execution_decision_summary["contract_path"],
         },
         "context_package": {
             "task_manifest": task_manifest,

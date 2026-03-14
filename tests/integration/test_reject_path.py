@@ -1,4 +1,4 @@
-"""Integration tests for ATP M8 reject path plus v0.5 Slice A-D contracts."""
+"""Integration tests for ATP M8 reject path plus the v0.5-v0.6 contract chain."""
 
 from __future__ import annotations
 
@@ -63,12 +63,26 @@ class TestRejectPath(unittest.TestCase):
                 preview["product_execution_preparation"]["contract_id"],
             )
             self.assertEqual(preview["product_execution_result"]["execution_result"]["status"], "failed")
+            self.assertEqual(preview["post_execution_decision"]["decision_scope"], "post_execution_decision_only")
+            self.assertEqual(
+                preview["post_execution_decision"]["product_execution_result_ref"]["contract_id"],
+                preview["product_execution_result"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["post_execution_decision"]["post_execution_decision"]["bounded_outcome"],
+                "close_rejected",
+            )
+            self.assertEqual(
+                preview["post_execution_decision"]["post_execution_decision"]["review_followup_action"],
+                "none",
+            )
             run_root = Path(preview["materialization"]["run_root"])
             workspace_root = Path(preview["materialization"]["workspace_root"])
             self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "resolution-to-handoff-intent-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "product-execution-preparation-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "product-execution-result-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "post-execution-decision-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
