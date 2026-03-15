@@ -36,8 +36,8 @@
 | Semantic boundary stability | Slice C vs Slice D rõ, không drift | Đạt |
 | Integration review outcome | Coherent, ready for consolidation | Đạt |
 | Consolidation outcome | Approved | Đạt |
-| Implementation evidence status | Runtime contract shape, artifact materialization | **Chưa có** |
-| Test/validation evidence status | Targeted tests cho contract, authority, traceability | **Chưa có** |
+| Implementation evidence status | Runtime contract shape, artifact materialization | **Đạt** (core/decision_control) |
+| Test/validation evidence status | Targeted tests cho contract, authority, traceability | **Đạt** (tests/unit/test_slice_d_contract.py) |
 | Traceability/governance sufficiency | Traceability model đủ, docs rõ | Đạt (ở mức docs) |
 | Close-out suitability | Có basis để tạo close-out record | Đạt (provisional) |
 
@@ -65,13 +65,13 @@ Kết luận: coherent, ready for consolidation, không blocker.
 
 Kết luận: approved như consolidated baseline candidate.
 
-### 4.6 Implementation evidence — Chưa đạt
+### 4.6 Implementation evidence — Đạt
 
-Execution Plan yêu cầu implementation baseline (Step D3): materialize runtime contract shape, linkage tới Slice C continuity-state contract, artifact trong `SOURCE_DEV/workspace`. Repo hiện chưa chứng minh runtime implementation cho Slice D decision/transition contract.
+Runtime contract shape đã materialize trong `core/decision_control` (decision/transition record, validation, Slice C linkage). Compatibility layer tại `core/resolution/slice_d_contract` re-export từ authority. Artifact materialization trong workspace vẫn optional theo execution plan.
 
-### 4.7 Test/validation evidence — Chưa đạt
+### 4.7 Test/validation evidence — Đạt
 
-Execution Plan yêu cầu test baseline (Step D4): targeted tests cho contract shape, authority/qualification semantics, transition classes, traceability, boundary separation. Repo hiện chưa chứng minh tests cho Slice D.
+Targeted tests đã có trong `tests/unit/test_slice_d_contract.py`, bám authority `core.decision_control`, cover contract shape, Slice C linkage, semantic guards, traceability, decision_result/transition_class alignment.
 
 ### 4.8 Traceability/governance — Đạt (mức docs)
 
@@ -87,46 +87,42 @@ Có basis để tạo close-out document phản ánh trạng thái hiện tại:
 
 **Docs evidence:** Đủ. Integration review + consolidation decision đã chốt coherence và approval.
 
-**Runtime evidence:** Chưa đủ. Slice D contract chưa được materialize trong workspace theo execution plan.
+**Runtime evidence:** Đủ. Slice D runtime contract shape trong `core/decision_control`, linkage Slice C rõ.
 
-**Test evidence:** Chưa đủ. Chưa có targeted tests cho Slice D.
+**Test evidence:** Đủ. Targeted tests trong `tests/unit/test_slice_d_contract.py` pass, cover authority implementation.
 
 ---
 
 ## 6. Gaps / limitations
 
-- **Implementation gap:** Slice D chưa có runtime contract materialization.
-- **Test gap:** Slice D chưa có targeted tests.
-- **Freeze-readiness dependency:** Theo ATP doctrine và Execution Plan, freeze-ready đòi hỏi implementation + tests đạt theo contract.
+- **Implementation:** Đã có trong `core/decision_control`.
+- **Tests:** Đã có, aligned với authority.
+- **Freeze-readiness:** Readiness đã tăng; full freeze-ready có thể còn phụ thuộc điều kiện bổ sung (vd. workspace artifact materialization nếu yêu cầu).
 
 ---
 
 ## 7. Readiness conclusion
 
-**Slice D chưa freeze-ready ở mức đầy đủ.**
+**Slice D đã có implementation và test evidence; readiness tăng.**
 
-Lý do: thiếu implementation evidence và test evidence theo execution plan. Docs baseline đã coherent và consolidated; nhưng freeze-readiness theo ATP discipline đòi hỏi runtime và tests chứng minh.
+Runtime và targeted tests đã có, bám contract. Full freeze-ready có thể còn phụ thuộc điều kiện bổ sung (vd. workspace artifact). Merge/tag vẫn cần explicit human approval.
 
 ---
 
 ## 8. Conditions to proceed
 
-Slice D có thể đi tiếp sang freeze-readiness đầy đủ khi:
-
-1. Implementation baseline hoàn tất: runtime contract shape materialize trong workspace, linkage explicit.
-2. Test baseline hoàn tất: targeted tests pass, chứng minh contract semantics và boundary.
-3. Verification run được ghi nhận: tests pass.
+Slice D đã đạt implementation baseline và test baseline. Điều kiện tiếp theo nếu cần full freeze: (1) verification run ghi nhận tests pass, (2) điều kiện bổ sung theo Execution Plan (vd. workspace artifact) nếu có, (3) explicit human approval cho merge/tag.
 
 ---
 
 ## 9. Recommendation
 
-1. **Ngắn hạn:** Tạo freeze close-out document với framing **provisional / documentation governance closure** — chốt rõ docs phase hoàn tất, implementation/test phase pending.
-2. **Tiếp theo:** Khi implementation và tests hoàn tất, thực hiện freeze-readiness assessment lại và close-out full freeze nếu đạt.
-3. **Không:** Claim freeze-ready ngay; claim merge/tag đã xảy ra; bịa implementation/tests evidence.
+1. **Hiện trạng:** Runtime và tests đã có; docs phản ánh đúng.
+2. **Tiếp theo:** Freeze-readiness re-assessment nếu cần; close-out full freeze khi đủ điều kiện; merge/tag chỉ sau explicit human approval.
+3. **Không:** Claim merge/tag đã xảy ra nếu chưa.
 
 ---
 
 ## 10. Conclusion
 
-Slice D documentation baseline đã consolidated. Freeze-readiness đầy đủ chưa đạt do thiếu implementation và test evidence. Close-out nên dùng framing provisional/documentation closure, không claim freeze hoàn tất.
+Slice D documentation baseline đã consolidated. Runtime và targeted tests đã có; freeze-readiness assessment phản ánh readiness tăng. Close-out có thể cập nhật framing khi full freeze đạt; merge/tag cần explicit human approval.

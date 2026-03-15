@@ -6,7 +6,7 @@
 - Version target: `ATP v1.0.3`
 - Slice: `Slice D`
 - Trạng thái: proposed baseline for implementation, review, consolidation, và freeze path
-- Branch baseline: `v1.0-planning`
+- Branch baseline: `v1.0-slice-d`
 
 ## 2. Version / lineage context
 

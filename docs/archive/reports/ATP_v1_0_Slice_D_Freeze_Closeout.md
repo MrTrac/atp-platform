@@ -9,7 +9,7 @@
 - **Branch context:** `v1.0-slice-d`
 - **Close-out date:** 2026-03-15
 
-**Framing quan trọng:** Close-out này là **documentation governance closure** cho giai đoạn docs của Slice D. Nó **không** claim freeze hoàn tất ở mức implementation, **không** claim merge/tag đã xảy ra, và **không** claim Slice D đã freeze-ready đầy đủ. Implementation và test baseline theo Execution Plan vẫn là bước tiếp theo khi được mở.
+**Framing quan trọng:** Close-out này là **documentation governance closure** cho giai đoạn docs của Slice D. Runtime implementation (core/decision_control) và targeted tests (tests/unit/test_slice_d_contract.py) đã có và aligned với authority. Nó **không** claim merge/tag đã xảy ra; merge/tag cần explicit human approval.
 
 ---
 
@@ -54,10 +54,9 @@ Trong close-out documentation governance này, scope đã đóng gồm:
 
 ## 4. Scope not included
 
-Close-out documentation này **không** bao gồm:
+Close-out documentation này **không** claim merge/tag. Đã có: runtime (core/decision_control), compatibility layer (core/resolution/slice_d_contract), targeted tests (tests/unit/test_slice_d_contract.py). Không bao gồm:
 
-- Runtime implementation của Slice D decision/transition contract
-- Targeted tests cho Slice D
+
 - Merge vào `main`
 - Release tag `v1.0.3`
 - Approval UI, workflow engine, recovery engine, routing, orchestration
