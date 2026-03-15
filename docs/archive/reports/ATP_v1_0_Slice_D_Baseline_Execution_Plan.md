@@ -64,6 +64,7 @@ Sau docs baseline, Slice D còn phải đi qua các deliverables kế tiếp cù
 - bảo đảm explicit linkage tới Slice C continuity-state contract
 - giữ artifact trong `SOURCE_DEV/workspace`
 - không làm workflow engine hoặc recovery executor
+- *(D3.1)* Runtime contract shape đã materialize trong `core/decision_control` (decision/transition record + validation; tests trong `tests/unit/test_slice_d_contract.py`).
 
 ### Step D4 — Test baseline
 - bổ sung targeted tests cho:

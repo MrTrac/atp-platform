@@ -34,6 +34,15 @@ def _minimal_slice_c_contract(request_id: str = "req-1", run_id: str = "run-1") 
     }
 
 
+def _valid_source_state_ref() -> dict:
+    """Source state ref that passes Slice C contract_id/state_scope/continuity_state validation."""
+    return {
+        "contract_id": "operational-continuity-gate-followup-state-req-1",
+        "state_scope": "operational_continuity_gate_followup_state_only",
+        "continuity_state": "approved_continuity_ready",
+    }
+
+
 class TestSliceDDecisionRecord(unittest.TestCase):
     """Decision record shape and validation."""
 
@@ -99,7 +108,7 @@ class TestSliceDDecisionRecord(unittest.TestCase):
     def test_validate_decision_record_rejects_invalid_decision_class(self) -> None:
         rec = {
             "record_id": "dec-1",
-            "source_state_ref": {"contract_id": "oc-req-1"},
+            "source_state_ref": _valid_source_state_ref(),
             "decision_actor": "a",
             "decision_authority": "b",
             "decision_class": "invalid_class",
@@ -115,7 +124,7 @@ class TestSliceDDecisionRecord(unittest.TestCase):
     def test_validate_decision_record_rejects_invalid_decision_result(self) -> None:
         rec = {
             "record_id": "dec-1",
-            "source_state_ref": {"contract_id": "oc-req-1"},
+            "source_state_ref": _valid_source_state_ref(),
             "decision_actor": "a",
             "decision_authority": "b",
             "decision_class": "blocking_decision",
@@ -218,7 +227,7 @@ class TestSliceDTransitionRecord(unittest.TestCase):
     def test_validate_transition_record_rejects_missing_decision_record_ref(self) -> None:
         trans = {
             "record_id": "t-1",
-            "source_state_ref": {"contract_id": "oc-1"},
+            "source_state_ref": _valid_source_state_ref(),
             "transition_class": "blocked_transition",
             "permission_block_basis": "block",
             "resulting_state_or_move": "no_move",
@@ -231,8 +240,12 @@ class TestSliceDTransitionRecord(unittest.TestCase):
     def test_validate_transition_record_rejects_invalid_transition_class(self) -> None:
         trans = {
             "record_id": "t-1",
-            "source_state_ref": {"contract_id": "oc-1"},
-            "decision_record_ref": {"record_id": "dec-1"},
+            "source_state_ref": _valid_source_state_ref(),
+            "decision_record_ref": {
+                "record_id": "dec-1",
+                "decision_class": "conditional_binding_decision",
+                "decision_result": "allow",
+            },
             "transition_class": "invalid_transition",
             "permission_block_basis": "basis",
             "resulting_state_or_move": "state",
