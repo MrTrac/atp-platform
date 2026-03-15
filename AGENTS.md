@@ -67,3 +67,31 @@ Runtime artifacts, run outputs, exchange bundles, logs, and similar operational 
 ## Working principle
 
 Preserve boundaries strictly. Follow the source of truth in order. Make the smallest justified change. Keep ATP human-gated.
+
+<!-- AI_OS:BEGIN project=ATP target=agents -->
+This repository is governed by an external AI operating context at:
+/Users/nguyenthanhthu/AI_OS
+
+Mandatory read order:
+1. /Users/nguyenthanhthu/AI_OS/20_PROJECTS/ATP/AI_NEXT_STEP.md
+2. /Users/nguyenthanhthu/AI_OS/20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
+3. /Users/nguyenthanhthu/AI_OS/20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
+
+Continuity handoff source:
+- /Users/nguyenthanhthu/AI_OS/20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
+
+Global rules:
+- /Users/nguyenthanhthu/AI_OS/00_GLOBAL/Global_AI_Assisted_Development_Rules_and_Working_Procedures.md
+- /Users/nguyenthanhthu/AI_OS/00_GLOBAL/Global_Safe_Git_Branch_Guard_Rule.md
+- /Users/nguyenthanhthu/AI_OS/00_GLOBAL/Global_Shorthand_Agreements.md
+- /Users/nguyenthanhthu/AI_OS/00_GLOBAL/Global_Chat_Handoff_Rule.md
+
+Approval gates:
+- merge main
+- push main
+- tag release
+
+If any conflict appears between repo-local governance and AI_OS, do not guess. Surface the conflict.
+<!-- AI_OS:END project=ATP target=agents -->
+
+
