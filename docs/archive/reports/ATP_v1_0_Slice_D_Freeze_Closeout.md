@@ -44,7 +44,7 @@ Trong close-out documentation governance này, scope đã đóng gồm:
 
 - Integration review → coherent, ready for consolidation
 - Consolidation decision → approved
-- Freeze-readiness assessment → documentation consolidated; implementation/test evidence pending
+- Freeze-readiness assessment → documentation consolidated; runtime authority và targeted tests hiện đã có trong repo, nhưng close-out này vẫn chưa claim full freeze / merge / tag
 
 **Chain logic được chốt:**
 
@@ -80,9 +80,9 @@ Slice D là control-contract slice: decision discipline + state transition contr
 Documentation governance closure được chốt vì:
 
 - Docs baseline đầy đủ, coherent, đã qua integration review và consolidation decision.
-- Freeze-readiness assessment xác nhận docs consolidated; implementation/test evidence chưa có.
+- Freeze-readiness assessment xác nhận docs consolidated; runtime authority tại `core/decision_control/contract.py` và targeted tests tại `tests/unit/test_slice_d_contract.py` hiện đã tồn tại và aligned với authority.
 - Không có blocker thật sự ở mức documentation.
-- Trạng thái hiện tại: docs phase closed; implementation/test phase pending theo execution plan.
+- Trạng thái hiện tại: docs phase closed; runtime/test evidence đã có trong repo, nhưng pass close-out này vẫn chỉ đóng ở mức documentation governance closure.
 
 ---
 
@@ -93,11 +93,11 @@ Documentation governance closure được chốt vì:
 - Docs coherence qua 5 file baseline + integration review + consolidation.
 - Lineage consistency, semantic boundary, transition control logic, traceability model.
 - Scope discipline, anti-drift wording.
+- Runtime authority đã được materialize tại `core/decision_control/contract.py`, với shim compatibility bounded tại `core/decision_control/slice_d_contract.py` và `core/resolution/slice_d_contract.py`.
+- Targeted tests hiện có tại `tests/unit/test_slice_d_contract.py`.
 
 **Chưa chứng minh:**
 
-- Runtime contract materialization.
-- Targeted tests cho Slice D.
 - Freeze-ready đầy đủ theo ATP doctrine.
 
 ---
@@ -106,7 +106,7 @@ Documentation governance closure được chốt vì:
 
 **Documentation governance closure:** Đạt.
 
-**Full freeze (implementation + tests):** Chưa. Cần implementation baseline và test baseline theo Execution Plan trước khi claim freeze-ready đầy đủ.
+**Full freeze (implementation + tests):** Chưa được claim trong tài liệu này. Runtime authority và targeted tests đã có, nhưng close-out này không tự động nâng trạng thái lên final freeze, merge, hay tag.
 
 ---
 
@@ -114,7 +114,7 @@ Documentation governance closure được chốt vì:
 
 - Implementation baseline (Step D3 trong Execution Plan)
 - Test baseline (Step D4)
-- Freeze-readiness reassessment khi implementation/tests có
+- Freeze-readiness / freeze-decision reassessment trên basis runtime/tests hiện có, nếu muốn đi tiếp
 - Merge/tag (cần explicit human approval)
 
 Deferred không block documentation closure: approval UI, workflow engine, recovery, routing, orchestration, v1.1.
@@ -130,12 +130,12 @@ Deferred không block documentation closure: approval UI, workflow engine, recov
 ## 11. Recommended follow-on action
 
 1. **Khi được mở:** Implementation baseline (materialize Slice D decision/transition contract trong workspace).
-2. **Tiếp theo:** Test baseline (targeted tests cho contract, authority, traceability).
-3. **Sau đó:** Freeze-readiness reassessment khi có implementation + tests evidence.
+2. **Tiếp theo:** Dùng runtime authority và targeted tests hiện có như basis cho freeze-decision-prep nếu governance chain cần đi tiếp.
+3. **Sau đó:** Freeze-readiness / freeze-decision reassessment trên evidence runtime/tests hiện tại.
 4. **Cuối:** Merge/tag khi có human approval và freeze-ready đạt.
 
 ---
 
 ## 12. Close-out conclusion
 
-ATP v1.0 Slice D documentation governance closure hoàn tất trên branch `v1.0-slice-d`. Docs bundle đầy đủ, coherent, consolidated. Implementation và test phase là bước tiếp theo. Close-out này không claim freeze hoàn tất, merge, hay tag.
+ATP v1.0 Slice D documentation governance closure hoàn tất trên branch `v1.0-slice-d`. Docs bundle đầy đủ, coherent, consolidated. Runtime authority và targeted tests hiện đã có trong repo và aligned với Slice D intent, nhưng close-out này vẫn không claim final freeze hoàn tất, merge, hay tag.
