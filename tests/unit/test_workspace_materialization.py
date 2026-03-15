@@ -550,6 +550,61 @@ def _sample_payloads(run_id: str) -> dict[str, object]:
                 "It is distinct from approval UI, workflow engines, recovery execution, routing, provider selection, and broader orchestration.",
             ],
         },
+        "operational_continuity_gate_followup_state": {
+            "contract_id": "operational-continuity-gate-followup-state-req-1",
+            "contract_version": "v1.0-slice-c",
+            "request_id": "req-1",
+            "run_id": run_id,
+            "state_scope": "operational_continuity_gate_followup_state_only",
+            "finalization_closure_record_ref": {
+                "contract_id": "finalization-closure-record-req-1",
+                "record_scope": "finalization_closure_record_only",
+                "bounded_path": "close",
+                "final_status": "completed",
+            },
+            "review_approval_gate_ref": {
+                "contract_id": "review-approval-gate-req-1",
+                "gate_scope": "review_approval_gate_only",
+                "gate_decision": "approved",
+                "gate_status": "passed",
+            },
+            "gate_outcome_operational_followup_ref": {
+                "contract_id": "gate-outcome-operational-followup-req-1",
+                "followup_scope": "gate_outcome_operational_followup_only",
+                "bounded_followup": "approved_operational_followup",
+                "followup_status": "operationally_ready",
+            },
+            "operational_continuity_state": {
+                "state_stage": "post_gate_operational_continuity",
+                "continuity_state": "approved_continuity_ready",
+                "state_status": "continuity_ready",
+                "continuity_signal": "approved_continuation_available",
+                "close_or_continue": "close",
+            },
+            "state_rationale": {
+                "validation_status": "passed",
+                "review_status": "accept",
+                "approval_status": "approved",
+                "rationale_codes": [
+                    "operational_continuity_gate_followup_state_contract",
+                    "bounded_operational_continuity_state_only",
+                    "state_derived_from_gate_followup_and_gate_traceability",
+                ],
+                "summary": "ATP is recording a bounded operational continuity or gate follow-up state only.",
+            },
+            "traceability": {
+                "gate_outcome_operational_followup_contract_id": "gate-outcome-operational-followup-req-1",
+                "review_approval_gate_contract_id": "review-approval-gate-req-1",
+                "finalization_closure_record_contract_id": "finalization-closure-record-req-1",
+                "review_decision_id": "review-req-1",
+                "approval_id": "approval-req-1",
+                "close_or_continue": "close",
+            },
+            "notes": [
+                "This contract records a bounded operational continuity or gate follow-up state only.",
+                "It is distinct from approval UI, workflow engines, recovery execution, routing, provider selection, and broader orchestration.",
+            ],
+        },
         "task_manifest": {"manifest_id": "task-manifest-req-1", "request_id": "req-1"},
         "product_context": {"product": "ATP", "profile_ref": "profiles/ATP/profile.yaml"},
         "manifest_reference": {"handoff_type": "manifest_reference", "manifest_reference": "task-manifest-req-1"},
@@ -674,6 +729,9 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertTrue((run_root / "manifests" / "finalization-closure-record-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "review-approval-gate-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "gate-outcome-operational-followup-contract.json").is_file())
+            self.assertTrue(
+                (run_root / "manifests" / "operational-continuity-gate-followup-state-contract.json").is_file()
+            )
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())
@@ -811,6 +869,18 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertEqual(
                 summary["gate_outcome_operational_followup"]["review_approval_gate_contract_id"],
                 "review-approval-gate-req-1",
+            )
+            self.assertEqual(
+                summary["operational_continuity_gate_followup_state"]["state_scope"],
+                "operational_continuity_gate_followup_state_only",
+            )
+            self.assertEqual(
+                summary["operational_continuity_gate_followup_state"]["continuity_state"],
+                "approved_continuity_ready",
+            )
+            self.assertEqual(
+                summary["operational_continuity_gate_followup_state"]["gate_outcome_operational_followup_contract_id"],
+                "gate-outcome-operational-followup-req-1",
             )
             self.assertEqual(summary["authoritative_projection"]["projected_count"], 1)
             projection_root = Path(summary["authoritative_projection"]["items"][0]["projection_root"])
@@ -1063,6 +1133,39 @@ class TestWorkspaceMaterialization(unittest.TestCase):
             self.assertNotIn("selected_node", gate_outcome_operational_followup_contract)
             self.assertNotIn("recovery_scope", gate_outcome_operational_followup_contract)
             self.assertNotIn("approval_mode", gate_outcome_operational_followup_contract)
+            operational_continuity_gate_followup_state_contract = json.loads(
+                (
+                    run_root / "manifests" / "operational-continuity-gate-followup-state-contract.json"
+                ).read_text(encoding="utf-8")
+            )
+            self.assertEqual(operational_continuity_gate_followup_state_contract["request_id"], "req-1")
+            self.assertEqual(operational_continuity_gate_followup_state_contract["run_id"], "run-slice1-2")
+            self.assertEqual(
+                operational_continuity_gate_followup_state_contract["state_scope"],
+                "operational_continuity_gate_followup_state_only",
+            )
+            self.assertEqual(
+                operational_continuity_gate_followup_state_contract["gate_outcome_operational_followup_ref"][
+                    "contract_id"
+                ],
+                "gate-outcome-operational-followup-req-1",
+            )
+            self.assertEqual(
+                operational_continuity_gate_followup_state_contract["operational_continuity_state"][
+                    "continuity_state"
+                ],
+                "approved_continuity_ready",
+            )
+            self.assertEqual(
+                operational_continuity_gate_followup_state_contract["operational_continuity_state"][
+                    "state_status"
+                ],
+                "continuity_ready",
+            )
+            self.assertNotIn("selected_provider", operational_continuity_gate_followup_state_contract)
+            self.assertNotIn("selected_node", operational_continuity_gate_followup_state_contract)
+            self.assertNotIn("recovery_scope", operational_continuity_gate_followup_state_contract)
+            self.assertNotIn("approval_mode", operational_continuity_gate_followup_state_contract)
 
     def test_authoritative_projection_keeps_traceability_to_run_and_source_stage(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

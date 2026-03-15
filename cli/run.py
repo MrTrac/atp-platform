@@ -43,6 +43,7 @@ from core.resolution.product_resolver import (
     build_decision_to_closure_continuation_handoff_contract,
     build_finalization_closure_record_contract,
     build_gate_outcome_operational_followup_contract,
+    build_operational_continuity_gate_followup_state_contract,
     build_review_approval_gate_contract,
     ProductResolutionError,
     build_post_execution_decision_contract,
@@ -270,6 +271,13 @@ def preview_run(
         finalization_closure_record_contract=finalization_closure_record,
         review_approval_gate_contract=review_approval_gate,
     )
+    operational_continuity_gate_followup_state = build_operational_continuity_gate_followup_state_contract(
+        run_id=run_id,
+        normalized_request=normalized_request,
+        finalization_closure_record_contract=finalization_closure_record,
+        review_approval_gate_contract=review_approval_gate,
+        gate_outcome_operational_followup_contract=gate_outcome_operational_followup,
+    )
     exchange_boundary_decision = build_exchange_boundary_decision(
         run_id=run_id,
         request_id=normalized_request["request_id"],
@@ -383,6 +391,17 @@ def preview_run(
             "continuity_signal"
         ],
     }
+    run_record["operational_continuity_gate_followup_state"] = {
+        "contract_id": operational_continuity_gate_followup_state["contract_id"],
+        "state_scope": operational_continuity_gate_followup_state["state_scope"],
+        "continuity_state": operational_continuity_gate_followup_state["operational_continuity_state"][
+            "continuity_state"
+        ],
+        "state_status": operational_continuity_gate_followup_state["operational_continuity_state"]["state_status"],
+        "continuity_signal": operational_continuity_gate_followup_state["operational_continuity_state"][
+            "continuity_signal"
+        ],
+    }
     run_record["context_package"] = {
         "manifest_id": task_manifest["manifest_id"],
         "product_context_profile": product_context["profile_ref"],
@@ -427,6 +446,7 @@ def preview_run(
             "finalization_closure_record": finalization_closure_record,
             "review_approval_gate": review_approval_gate,
             "gate_outcome_operational_followup": gate_outcome_operational_followup,
+            "operational_continuity_gate_followup_state": operational_continuity_gate_followup_state,
             "task_manifest": task_manifest,
             "product_context": product_context,
             "manifest_reference": handoff_outputs["manifest_reference"],
@@ -474,6 +494,9 @@ def preview_run(
     finalization_closure_record_summary = dict(materialization["finalization_closure_record"])
     review_approval_gate_summary = dict(materialization["review_approval_gate"])
     gate_outcome_operational_followup_summary = dict(materialization["gate_outcome_operational_followup"])
+    operational_continuity_gate_followup_state_summary = dict(
+        materialization["operational_continuity_gate_followup_state"]
+    )
 
     return {
         "request": {
@@ -528,6 +551,10 @@ def preview_run(
         "gate_outcome_operational_followup": {
             **gate_outcome_operational_followup,
             "contract_path": gate_outcome_operational_followup_summary["contract_path"],
+        },
+        "operational_continuity_gate_followup_state": {
+            **operational_continuity_gate_followup_state,
+            "contract_path": operational_continuity_gate_followup_state_summary["contract_path"],
         },
         "context_package": {
             "task_manifest": task_manifest,
