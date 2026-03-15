@@ -2,6 +2,16 @@
 
 `core/decision_control` chứa runtime contract shape cho **Operational Decision / State Transition Control Contract** (Slice D, v1.0.3).
 
+Authority runtime module hiện tại là:
+
+- `core/decision_control/contract.py`
+
+Compatibility layer hiện còn được giữ tại:
+
+- `core/decision_control/slice_d_contract.py`
+
+Compatibility file này chỉ re-export authority API để tránh làm vỡ imports cũ trong branch hiện tại. Nó không còn là authority implementation.
+
 Phạm vi:
 
 - Decision record shape: `record_id`, `source_state_ref`, `decision_actor`, `decision_authority`, `decision_class`, `rationale_summary`, `evidence_summary`, `requested_transition`, `decision_result`, linkage tới Slice C continuity state.

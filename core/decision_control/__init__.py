@@ -4,7 +4,7 @@ Bounded runtime model for decision record and transition record shape.
 Source-of-truth: docs/archive/reports/ATP_v1_0_Slice_D_*.md
 """
 
-from core.decision_control.slice_d_contract import (
+from core.decision_control.contract import (
     DECISION_CLASSES,
     DECISION_RESULTS,
     TRANSITION_CLASSES,

@@ -1,10 +1,8 @@
-"""ATP v1.0 Slice D — Operational Decision / State Transition Control Contract.
+"""ATP v1.0 Slice D — Compatibility layer.
 
-Materializes runtime contract shape for:
-  source state -> decision -> permission/block -> transition -> resulting state
-
-Slice D là control-contract slice. Không phải workflow engine, execution engine,
-approval UI, hay recovery engine.
+Authority implementation: core.decision_control.contract.
+This module re-exports from authority and provides build_decision_transition_control_contract
+for callers that need the composite contract shape. Do not add duplicate authority logic here.
 """
 
 from __future__ import annotations
@@ -12,67 +10,28 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-DECISION_CLASSES = (
-    "observational_decision",
-    "advisory_decision",
-    "conditional_binding_decision",
-    "blocking_decision",
-)
-DECISION_RESULTS = ("allow", "conditional", "defer", "block", "loop_back")
-TRANSITION_CLASSES = (
-    "allowed_transition",
-    "conditional_transition",
-    "deferred_transition",
-    "blocked_transition",
-    "loop_back_transition",
+from core.decision_control.contract import (
+    DECISION_CLASSES,
+    DECISION_RESULTS,
+    TRANSITION_CLASSES,
+    SliceDContractError,
+    build_decision_record,
+    build_transition_record,
+    validate_decision_record,
+    validate_transition_record,
 )
 
-
-def validate_decision_record(record: dict[str, Any]) -> None:
-    """Validate decision record has required fields. Raises ValueError if invalid."""
-    required = (
-        "record_id",
-        "source_state_ref",
-        "decision_actor",
-        "decision_authority",
-        "decision_class",
-        "rationale_summary",
-        "evidence_summary",
-        "requested_transition",
-        "decision_result",
-    )
-    for field in required:
-        val = record.get(field)
-        if val is None or (isinstance(val, str) and not str(val).strip()):
-            raise ValueError(f"Decision record missing required field: {field}")
-
-    dc = str(record.get("decision_class", "")).strip()
-    if dc not in DECISION_CLASSES:
-        raise ValueError(f"Invalid decision_class: {dc}. Must be one of {DECISION_CLASSES}")
-
-    dr = str(record.get("decision_result", "")).strip()
-    if dr not in DECISION_RESULTS:
-        raise ValueError(f"Invalid decision_result: {dr}. Must be one of {DECISION_RESULTS}")
-
-
-def validate_transition_record(record: dict[str, Any]) -> None:
-    """Validate transition record has required fields. Raises ValueError if invalid."""
-    required = (
-        "record_id",
-        "source_state_ref",
-        "decision_record_ref",
-        "transition_class",
-        "permission_block_basis",
-        "resulting_state",
-    )
-    for field in required:
-        val = record.get(field)
-        if val is None or (isinstance(val, str) and not str(val).strip()):
-            raise ValueError(f"Transition record missing required field: {field}")
-
-    tc = str(record.get("transition_class", "")).strip()
-    if tc not in TRANSITION_CLASSES:
-        raise ValueError(f"Invalid transition_class: {tc}. Must be one of {TRANSITION_CLASSES}")
+__all__ = [
+    "DECISION_CLASSES",
+    "DECISION_RESULTS",
+    "TRANSITION_CLASSES",
+    "SliceDContractError",
+    "build_decision_record",
+    "build_transition_record",
+    "build_decision_transition_control_contract",
+    "validate_decision_record",
+    "validate_transition_record",
+]
 
 
 def _derive_decision_and_transition_from_continuity(
@@ -99,73 +58,55 @@ def build_decision_transition_control_contract(
     normalized_request: dict[str, Any],
     operational_continuity_gate_followup_state_contract: dict[str, Any],
 ) -> dict[str, Any]:
-    """Build the explicit v1.0 Slice D decision / transition control contract.
-
-    Source state comes from Slice C operational continuity contract.
-    Decision and transition are derived from continuity state semantics.
-    """
+    """Build composite Slice D contract. Uses authority core.decision_control."""
     request_id = str(normalized_request.get("request_id", "")).strip()
     if not request_id:
-        raise ValueError("request_id is required for the decision transition control contract.")
+        raise SliceDContractError("request_id is required for the decision transition control contract.")
 
     if not str(run_id).strip():
-        raise ValueError("run_id is required for the decision transition control contract.")
+        raise SliceDContractError("run_id is required for the decision transition control contract.")
 
     oc_contract = operational_continuity_gate_followup_state_contract
-    oc_contract_id = str(oc_contract.get("contract_id", "")).strip()
-    if not oc_contract_id:
-        raise ValueError(
-            "operational_continuity_gate_followup_state_contract is required for Slice D decision transition control."
-        )
-
-    oc_state = oc_contract.get("operational_continuity_state", {})
-    continuity_state = str(oc_state.get("continuity_state", "")).strip()
-    state_status = str(oc_state.get("state_status", "")).strip()
-    continuity_signal = str(oc_state.get("continuity_signal", "")).strip()
-
     decision_class, decision_result, transition_class = _derive_decision_and_transition_from_continuity(
         oc_contract
     )
 
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    actor = "conditional_binding_authority" if decision_class != "observational_decision" else "observational_authority"
+    oc_state = oc_contract.get("operational_continuity_state", {})
+    continuity_state = str(oc_state.get("continuity_state", "")).strip()
 
-    decision_record_id = f"decision-{request_id}-{run_id}"
-    transition_record_id = f"transition-{request_id}-{run_id}"
+    decision_record = build_decision_record(
+        request_id=request_id,
+        run_id=run_id,
+        operational_continuity_state_contract=oc_contract,
+        decision_actor="atp_control_contract",
+        decision_authority=actor,
+        decision_class=decision_class,
+        rationale_summary=f"Decision derived from Slice C continuity state '{continuity_state}'.",
+        evidence_summary="operational_continuity_gate_followup_state_contract",
+        requested_transition=transition_class,
+        decision_result=decision_result,
+        created_at=ts,
+    )
 
-    decision_record = {
-        "record_id": decision_record_id,
-        "source_state_ref": {
-            "contract_id": oc_contract_id,
-            "continuity_state": continuity_state,
-            "state_status": state_status,
-        },
-        "decision_actor": "atp_control_contract",
-        "decision_authority": "conditional_binding_authority" if decision_class != "observational_decision" else "observational_authority",
-        "decision_class": decision_class,
-        "rationale_summary": f"Decision derived from Slice C continuity state '{continuity_state}'.",
-        "evidence_summary": "operational_continuity_gate_followup_state_contract",
-        "requested_transition": transition_class,
-        "decision_result": decision_result,
-        "created_at": ts,
-    }
-    validate_decision_record(decision_record)
+    source_state_ref = decision_record["source_state_ref"]
+    resulting_state_or_move = continuity_state if decision_result in ("allow", "conditional") else f"{continuity_state}_transition_{decision_result}"
 
-    resulting_state = continuity_state if decision_result in ("allow", "conditional") else f"{continuity_state}_transition_{decision_result}"
+    transition_record = build_transition_record(
+        request_id=request_id,
+        run_id=run_id,
+        source_state_ref=source_state_ref,
+        decision_record=decision_record,
+        transition_class=transition_class,
+        permission_block_basis="continuity_state_derived",
+        resulting_state_or_move=resulting_state_or_move,
+        status_summary=f"{transition_class} from {continuity_state}",
+        created_at=ts,
+    )
 
-    transition_record = {
-        "record_id": transition_record_id,
-        "source_state_ref": {
-            "contract_id": oc_contract_id,
-            "continuity_state": continuity_state,
-        },
-        "decision_record_ref": decision_record_id,
-        "transition_class": transition_class,
-        "permission_block_basis": "continuity_state_derived",
-        "resulting_state": resulting_state,
-        "status_summary": f"{transition_class} from {continuity_state}",
-        "created_at": ts,
-    }
-    validate_transition_record(transition_record)
+    transition_record_compat = dict(transition_record)
+    transition_record_compat["resulting_state"] = transition_record["resulting_state_or_move"]
 
     return {
         "contract_id": f"decision-transition-control-{request_id}",
@@ -174,16 +115,16 @@ def build_decision_transition_control_contract(
         "run_id": run_id,
         "scope": "operational_decision_transition_control_only",
         "operational_continuity_gate_followup_state_ref": {
-            "contract_id": oc_contract_id,
+            "contract_id": oc_contract.get("contract_id", ""),
             "continuity_state": continuity_state,
-            "state_status": state_status,
+            "state_status": str(oc_state.get("state_status", "")).strip(),
         },
         "decision_record": decision_record,
-        "transition_record": transition_record,
+        "transition_record": transition_record_compat,
         "traceability": {
-            "source_state_contract_id": oc_contract_id,
-            "decision_record_id": decision_record_id,
-            "transition_record_id": transition_record_id,
+            "source_state_contract_id": oc_contract.get("contract_id", ""),
+            "decision_record_id": decision_record["record_id"],
+            "transition_record_id": transition_record["record_id"],
             "chain": "source_state -> decision -> permission_block -> transition -> resulting_state",
         },
         "notes": [
