@@ -13,6 +13,7 @@ Use handoff continuity from:
 Global rules:
 - /Users/nguyenthanhthu/AI_OS/00_GLOBAL/Global_AI_Assisted_Development_Rules_and_Working_Procedures.md
 - /Users/nguyenthanhthu/AI_OS/00_GLOBAL/Global_Safe_Git_Branch_Guard_Rule.md
+- /Users/nguyenthanhthu/AI_OS/00_GLOBAL/Global_AI_Git_Command_Completion_Rule.md
 - /Users/nguyenthanhthu/AI_OS/00_GLOBAL/Global_Shorthand_Agreements.md
 - /Users/nguyenthanhthu/AI_OS/00_GLOBAL/Global_Chat_Handoff_Rule.md
 
@@ -23,5 +24,7 @@ Approval gates:
 
 When AI_OS conflicts with authority docs in the repo, stop and report the conflict.
 <!-- AI_OS:END project=ATP target=copilot -->
+
+
 
 
