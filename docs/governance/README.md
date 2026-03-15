@@ -23,6 +23,7 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 
 - `ATP_3_Role_Workflow.md` - workflow governance cho mô hình Multi-AI của ATP: Architect -> Executor -> Verifier
 - `ATP_Development_Ruleset.md` - ruleset vận hành development bắt buộc xuyên suốt version opening, slice execution, consolidation, freeze, và close-out
+- `Global_Safe_Git_Branch_Guard_Rule.md` - global safe Git governance rule cho branch guard pattern `Check -> Switch -> Re-check -> Execute` trước mọi Git combo quan trọng
 - `framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md` - rule bắt buộc để mọi milestone/version có lineage và documentation continuity rõ
 - `framework/` - governance framework cấp cha
 - `git/` - governance cho Git, branch, wrapper, và thao tác an toàn
@@ -37,13 +38,14 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 
 1. `framework/Contextual_Project_Governance_Framework.md`
 2. `ATP_Development_Ruleset.md`
-3. `git/Contextual_Git_Governance_Model.md`
-4. `git/Git_Safety_Charter.md`
-5. `git/Safe_Git_Workflow_Templates.md`
-6. `git/AI_Branch_Operation_Rules.md`
-7. `git/Safe_Git_Wrappers_Spec.md`
-8. `ATP_3_Role_Workflow.md` khi phase liên quan phối hợp nhiều AI hoặc verification workflow
-9. các bundle domain còn lại theo đúng ngữ cảnh công việc
+3. `Global_Safe_Git_Branch_Guard_Rule.md` cho branch guard toàn cục trước mọi Git combo quan trọng
+4. `git/Contextual_Git_Governance_Model.md`
+5. `git/Git_Safety_Charter.md`
+6. `git/Safe_Git_Workflow_Templates.md`
+7. `git/AI_Branch_Operation_Rules.md`
+8. `git/Safe_Git_Wrappers_Spec.md`
+9. `ATP_3_Role_Workflow.md` khi phase liên quan phối hợp nhiều AI hoặc verification workflow
+10. các bundle domain còn lại theo đúng ngữ cảnh công việc
 
 ## Quy tắc áp dụng
 
