@@ -32,7 +32,7 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 - `release/` - governance cho release, freeze, tag, và merge-to-main
 - roadmap continuity và freeze close-out discipline áp dụng xuyên suốt release governance
 - `ai-collaboration/` - quy tắc cộng tác với AI assistants
-- `reference/` - tài liệu reference dùng chung, bao gồm shorthand và bootstrap template
+- `reference/` - tài liệu reference dùng chung, bao gồm shorthand/alias authority reference và bootstrap template
 
 ## Thứ tự đọc khuyến nghị
 
@@ -46,6 +46,7 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 8. `git/Safe_Git_Wrappers_Spec.md`
 9. `ATP_3_Role_Workflow.md` khi phase liên quan phối hợp nhiều AI hoặc verification workflow
 10. các bundle domain còn lại theo đúng ngữ cảnh công việc
+11. `reference/ATP_Global_Shorthand_and_Alias_Rules.md` khi cần diễn giải shorthand / alias đang dùng trong ATP
 
 ## Quy tắc áp dụng
 
