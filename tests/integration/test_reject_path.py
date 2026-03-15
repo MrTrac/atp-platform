@@ -140,6 +140,20 @@ class TestRejectPath(unittest.TestCase):
                 preview["review_approval_gate"]["review_or_approval_gate"]["gate_decision"],
                 "rejected",
             )
+            self.assertEqual(
+                preview["gate_outcome_operational_followup"]["followup_scope"],
+                "gate_outcome_operational_followup_only",
+            )
+            self.assertEqual(
+                preview["gate_outcome_operational_followup"]["review_approval_gate_ref"]["contract_id"],
+                preview["review_approval_gate"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["gate_outcome_operational_followup"]["gate_outcome_or_operational_followup"][
+                    "bounded_followup"
+                ],
+                "rejected_operational_followup",
+            )
             run_root = Path(preview["materialization"]["run_root"])
             workspace_root = Path(preview["materialization"]["workspace_root"])
             self.assertTrue((run_root / "manifests" / "request-to-product-resolution-contract.json").is_file())
@@ -153,6 +167,7 @@ class TestRejectPath(unittest.TestCase):
             self.assertTrue((run_root / "manifests" / "closure-continuation-state-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "finalization-closure-record-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "review-approval-gate-contract.json").is_file())
+            self.assertTrue((run_root / "manifests" / "gate-outcome-operational-followup-contract.json").is_file())
             self.assertTrue((run_root / "decisions" / "exchange-boundary-decision.json").is_file())
             self.assertTrue((run_root / "handoff" / "inline-context.json").is_file())
             self.assertTrue((run_root / "handoff" / "evidence-bundle.json").is_file())

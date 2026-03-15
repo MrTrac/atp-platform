@@ -32,7 +32,7 @@
 
 ## 3. Version goal
 
-Mục tiêu của `v1.0` là mở major family `v1` như operational maturity baseline đầu tiên của ATP, bằng cách contract hóa một review / approval gate layer bounded trên nền lifecycle chain đã hoàn tất ở `v0`.
+Mục tiêu của `v1.0` là mở major family `v1` như operational maturity baseline đầu tiên của ATP, bằng cách contract hóa một review / approval gate layer bounded và một post-gate operational follow-up layer bounded trên nền lifecycle chain đã hoàn tất ở `v0`.
 
 `v1.0` vì vậy là version của controlled operationalization, không phải breadth expansion.
 
@@ -71,7 +71,7 @@ Nói ngắn gọn:
 
 ## 7. Capability gap mà `v1.0` cần address
 
-Capability gap của `v1.0` là thiếu một `review / approval gate` layer rõ, bounded, file-based, và traceable sau finalization / closure record.
+Capability gap của `v1.0` là thiếu một `review / approval gate` layer rõ, bounded, file-based, và traceable sau finalization / closure record, cùng với một `gate outcome / operational follow-up` layer bounded ngay sau gate đó.
 
 Gap này nằm ở vùng semantics giữa:
 
@@ -93,6 +93,7 @@ Gap này không phải:
 
 - một operational gate boundary rõ hơn sau finalization layer
 - một review / approval gate contract đủ bounded để nối lifecycle continuity với operational gate semantics
+- một gate outcome / operational follow-up contract đủ bounded để nối gate semantics với post-gate operational continuity
 - cơ sở rõ hơn để harden operational maturity mà không mở breadth mới
 - evidence rằng `v1` có thể tăng độ tin cậy vận hành trên stable core của `v0`
 
@@ -127,11 +128,12 @@ Vẫn defer beyond `v1.0` nếu chưa có evidence đủ mạnh:
 
 ## 12. Slice structure
 
-`v1.0` mở với một first slice rõ ràng:
+`v1.0` hiện gồm các slices đã được mở theo controlled operationalization:
 
 1. Slice A: Review / Approval Gate Contract
+2. Slice B: Gate Outcome / Operational Follow-up Contract
 
-Các slices tiếp theo, nếu có, chỉ nên được mở sau khi Slice A được implement và review, và chỉ khi chúng vẫn chứng minh được là controlled operationalization của `v1`, không phải breadth expansion.
+Các slices tiếp theo, nếu có, chỉ nên được mở sau khi Slice B được implement và review, và chỉ khi chúng vẫn chứng minh được là controlled operationalization của `v1`, không phải breadth expansion.
 
 ## 13. Slice A — Review / Approval Gate Contract
 
@@ -157,10 +159,10 @@ Nó chỉ nên harden một `review / approval gate contract`, không biến ATP
 `v1.0` chỉ nên được coi là freeze-ready nếu:
 
 - scope thực tế vẫn nằm trong operational maturity horizon của current `v1`
-- `Review / Approval Gate Contract` đủ bounded, explicit, và file-based
+- `Review / Approval Gate Contract` và `Gate Outcome / Operational Follow-up Contract` đều đủ bounded, explicit, và file-based
 - docs và implementation vẫn bám stable core + controlled evolutionary governance doctrine
-- có integration review / consolidation pass rõ ràng
-- có consolidation decision rõ ràng
+- có integration review / consolidation pass rõ ràng cho current baseline
+- có consolidation decision rõ ràng cho current baseline
 - README alignment được xử lý ở đúng level đã thay đổi
 
 ## 15. Integration criteria

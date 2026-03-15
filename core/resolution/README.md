@@ -15,6 +15,7 @@ Phạm vi hiện hành:
 - build explicit v0.6 Slice C `closure / continuation state` contract
 - build explicit v0.7 Slice A `finalization / closure record` contract
 - build explicit v1.0 Slice A `review / approval gate` contract
+- build explicit v1.0 Slice B `gate outcome / operational follow-up` contract
 
 Resolution boundary này phải giữ rõ separation với:
 
@@ -107,6 +108,13 @@ Kết quả hiện hành gồm hai lớp:
   - `review_or_approval_gate`
   - `gate_rationale`
   - `gate_scope`
+  - `traceability`
+- gate outcome / operational follow-up contract với:
+  - `finalization_closure_record_ref`
+  - `review_approval_gate_ref`
+  - `gate_outcome_or_operational_followup`
+  - `followup_rationale`
+  - `followup_scope`
   - `traceability`
 
 Deferred rõ ràng:

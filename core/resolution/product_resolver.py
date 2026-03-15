@@ -1003,3 +1003,124 @@ def build_review_approval_gate_contract(
             "It is distinct from approval UI, recovery execution, routing, provider selection, and broader orchestration.",
         ],
     }
+
+
+def build_gate_outcome_operational_followup_contract(
+    run_id: str,
+    normalized_request: dict[str, Any],
+    finalization_closure_record_contract: dict[str, Any],
+    review_approval_gate_contract: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the explicit v1.0 Slice B gate outcome / operational follow-up contract."""
+
+    request_id = str(normalized_request.get("request_id", "")).strip()
+    if not request_id:
+        raise ValueError("request_id is required for the gate outcome / operational follow-up contract.")
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for the gate outcome / operational follow-up contract.")
+
+    finalization_closure_record_contract_id = str(finalization_closure_record_contract.get("contract_id", "")).strip()
+    review_approval_gate_contract_id = str(review_approval_gate_contract.get("contract_id", "")).strip()
+    if not finalization_closure_record_contract_id or not review_approval_gate_contract_id:
+        raise ValueError(
+            "v0.7 Slice A and v1.0 Slice A contracts are required for the gate outcome / operational follow-up contract."
+        )
+
+    bounded_path = str(
+        finalization_closure_record_contract.get("finalization_or_closure_record", {}).get("bounded_path", "")
+    ).strip()
+    final_status = str(
+        finalization_closure_record_contract.get("finalization_or_closure_record", {}).get("final_status", "unknown")
+    ).strip() or "unknown"
+    gate_decision = str(
+        review_approval_gate_contract.get("review_or_approval_gate", {}).get("gate_decision", "unknown")
+    ).strip() or "unknown"
+    gate_status = str(
+        review_approval_gate_contract.get("review_or_approval_gate", {}).get("gate_status", "unknown")
+    ).strip() or "unknown"
+    resulting_direction = str(
+        review_approval_gate_contract.get("review_or_approval_gate", {}).get("resulting_direction", "unknown")
+    ).strip() or "unknown"
+    validation_status = str(
+        review_approval_gate_contract.get("gate_rationale", {}).get("validation_status", "unknown")
+    ).strip() or "unknown"
+    review_status = str(
+        review_approval_gate_contract.get("gate_rationale", {}).get("review_status", "unknown")
+    ).strip() or "unknown"
+    approval_status = str(
+        review_approval_gate_contract.get("gate_rationale", {}).get("approval_status", "unknown")
+    ).strip() or "unknown"
+    review_decision_id = str(review_approval_gate_contract.get("traceability", {}).get("review_decision_id", "")).strip()
+    approval_id = str(review_approval_gate_contract.get("traceability", {}).get("approval_id", "")).strip()
+    if not bounded_path:
+        raise ValueError(
+            "finalization/closure record bounded path is required for the gate outcome / operational follow-up contract."
+        )
+
+    if gate_decision == "approved":
+        bounded_followup = "approved_operational_followup"
+        followup_status = "operationally_ready"
+        continuity_signal = "approved_continuation_available"
+    elif gate_decision == "rejected":
+        bounded_followup = "rejected_operational_followup"
+        followup_status = "operationally_closed"
+        continuity_signal = "rejected_closure_confirmed"
+    elif gate_decision == "hold":
+        bounded_followup = "held_operational_followup"
+        followup_status = "operationally_pending"
+        continuity_signal = "followup_pending_review"
+    else:
+        bounded_followup = "deferred_operational_followup"
+        followup_status = "operationally_deferred"
+        continuity_signal = "followup_deferred"
+
+    return {
+        "contract_id": f"gate-outcome-operational-followup-{request_id}",
+        "contract_version": "v1.0-slice-b",
+        "request_id": request_id,
+        "run_id": run_id,
+        "followup_scope": "gate_outcome_operational_followup_only",
+        "finalization_closure_record_ref": {
+            "contract_id": finalization_closure_record_contract_id,
+            "record_scope": str(finalization_closure_record_contract.get("record_scope", "")),
+            "bounded_path": bounded_path,
+            "final_status": final_status,
+        },
+        "review_approval_gate_ref": {
+            "contract_id": review_approval_gate_contract_id,
+            "gate_scope": str(review_approval_gate_contract.get("gate_scope", "")),
+            "gate_decision": gate_decision,
+            "gate_status": gate_status,
+            "resulting_direction": resulting_direction,
+        },
+        "gate_outcome_or_operational_followup": {
+            "followup_stage": "post_gate_operational_followup",
+            "bounded_followup": bounded_followup,
+            "followup_status": followup_status,
+            "continuity_signal": continuity_signal,
+            "close_or_continue": bounded_path,
+        },
+        "followup_rationale": {
+            "validation_status": validation_status,
+            "review_status": review_status,
+            "approval_status": approval_status,
+            "rationale_codes": [
+                "gate_outcome_operational_followup_contract",
+                "bounded_operational_followup_only",
+                "followup_derived_from_gate_decision_and_finalization_record",
+            ],
+            "summary": "ATP is recording a bounded gate outcome or operational follow-up only.",
+        },
+        "traceability": {
+            "review_approval_gate_contract_id": review_approval_gate_contract_id,
+            "finalization_closure_record_contract_id": finalization_closure_record_contract_id,
+            "review_decision_id": review_decision_id,
+            "approval_id": approval_id,
+            "close_or_continue": bounded_path,
+        },
+        "notes": [
+            "This contract records a bounded gate outcome or operational follow-up only.",
+            "It is distinct from approval UI, workflow engines, recovery execution, routing, provider selection, and broader orchestration.",
+        ],
+    }
