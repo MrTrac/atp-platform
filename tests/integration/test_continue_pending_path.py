@@ -195,6 +195,22 @@ class TestContinuePendingPath(unittest.TestCase):
                 ],
                 "held_operational_followup",
             )
+            self.assertEqual(
+                preview["operational_continuity_gate_followup_state"]["state_scope"],
+                "operational_continuity_gate_followup_state_only",
+            )
+            self.assertEqual(
+                preview["operational_continuity_gate_followup_state"]["gate_outcome_operational_followup_ref"][
+                    "contract_id"
+                ],
+                preview["gate_outcome_operational_followup"]["contract_id"],
+            )
+            self.assertEqual(
+                preview["operational_continuity_gate_followup_state"]["operational_continuity_state"][
+                    "continuity_state"
+                ],
+                "held_continuity_pending",
+            )
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["materialized"])
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["persistence_state_path"].endswith("current-task-state.json"))
             self.assertTrue(preview["reference_index"]["exchange_current_task"]["active_pointer_path"].endswith("active-pointer.json"))
@@ -216,6 +232,9 @@ class TestContinuePendingPath(unittest.TestCase):
             self.assertTrue((run_root / "manifests" / "finalization-closure-record-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "review-approval-gate-contract.json").is_file())
             self.assertTrue((run_root / "manifests" / "gate-outcome-operational-followup-contract.json").is_file())
+            self.assertTrue(
+                (run_root / "manifests" / "operational-continuity-gate-followup-state-contract.json").is_file()
+            )
             self.assertTrue((run_root / "final" / "continuation-state.json").is_file())
             self.assertTrue((run_root / "final" / "reference-index.json").is_file())
             self.assertTrue((exchange_root / "exchange-bundle.json").is_file())

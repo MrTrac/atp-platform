@@ -1124,3 +1124,151 @@ def build_gate_outcome_operational_followup_contract(
             "It is distinct from approval UI, workflow engines, recovery execution, routing, provider selection, and broader orchestration.",
         ],
     }
+
+
+def build_operational_continuity_gate_followup_state_contract(
+    run_id: str,
+    normalized_request: dict[str, Any],
+    finalization_closure_record_contract: dict[str, Any],
+    review_approval_gate_contract: dict[str, Any],
+    gate_outcome_operational_followup_contract: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the explicit v1.0 Slice C operational continuity / gate follow-up state contract."""
+
+    request_id = str(normalized_request.get("request_id", "")).strip()
+    if not request_id:
+        raise ValueError("request_id is required for the operational continuity / gate follow-up state contract.")
+
+    if not str(run_id).strip():
+        raise ValueError("run_id is required for the operational continuity / gate follow-up state contract.")
+
+    finalization_closure_record_contract_id = str(finalization_closure_record_contract.get("contract_id", "")).strip()
+    review_approval_gate_contract_id = str(review_approval_gate_contract.get("contract_id", "")).strip()
+    gate_outcome_operational_followup_contract_id = str(
+        gate_outcome_operational_followup_contract.get("contract_id", "")
+    ).strip()
+    if (
+        not finalization_closure_record_contract_id
+        or not review_approval_gate_contract_id
+        or not gate_outcome_operational_followup_contract_id
+    ):
+        raise ValueError(
+            "v0.7 Slice A, v1.0 Slice A, and v1.0 Slice B contracts are required for the operational continuity / gate follow-up state contract."
+        )
+
+    bounded_path = str(
+        gate_outcome_operational_followup_contract.get("gate_outcome_or_operational_followup", {}).get(
+            "close_or_continue", ""
+        )
+    ).strip()
+    bounded_followup = str(
+        gate_outcome_operational_followup_contract.get("gate_outcome_or_operational_followup", {}).get(
+            "bounded_followup", "unknown"
+        )
+    ).strip() or "unknown"
+    followup_status = str(
+        gate_outcome_operational_followup_contract.get("gate_outcome_or_operational_followup", {}).get(
+            "followup_status", "unknown"
+        )
+    ).strip() or "unknown"
+    continuity_signal = str(
+        gate_outcome_operational_followup_contract.get("gate_outcome_or_operational_followup", {}).get(
+            "continuity_signal", "unknown"
+        )
+    ).strip() or "unknown"
+    validation_status = str(
+        gate_outcome_operational_followup_contract.get("followup_rationale", {}).get("validation_status", "unknown")
+    ).strip() or "unknown"
+    review_status = str(
+        gate_outcome_operational_followup_contract.get("followup_rationale", {}).get("review_status", "unknown")
+    ).strip() or "unknown"
+    approval_status = str(
+        gate_outcome_operational_followup_contract.get("followup_rationale", {}).get("approval_status", "unknown")
+    ).strip() or "unknown"
+    review_decision_id = str(
+        gate_outcome_operational_followup_contract.get("traceability", {}).get("review_decision_id", "")
+    ).strip()
+    approval_id = str(
+        gate_outcome_operational_followup_contract.get("traceability", {}).get("approval_id", "")
+    ).strip()
+    if not bounded_path:
+        raise ValueError(
+            "follow-up close_or_continue value is required for the operational continuity / gate follow-up state contract."
+        )
+
+    if bounded_followup == "approved_operational_followup":
+        continuity_state = "approved_continuity_ready"
+        state_status = "continuity_ready"
+    elif bounded_followup == "rejected_operational_followup":
+        continuity_state = "rejected_continuity_closed"
+        state_status = "continuity_closed"
+    elif bounded_followup == "held_operational_followup":
+        continuity_state = "held_continuity_pending"
+        state_status = "continuity_pending"
+    else:
+        continuity_state = "deferred_continuity_deferred"
+        state_status = "continuity_deferred"
+
+    return {
+        "contract_id": f"operational-continuity-gate-followup-state-{request_id}",
+        "contract_version": "v1.0-slice-c",
+        "request_id": request_id,
+        "run_id": run_id,
+        "state_scope": "operational_continuity_gate_followup_state_only",
+        "finalization_closure_record_ref": {
+            "contract_id": finalization_closure_record_contract_id,
+            "record_scope": str(finalization_closure_record_contract.get("record_scope", "")),
+            "bounded_path": str(
+                finalization_closure_record_contract.get("finalization_or_closure_record", {}).get("bounded_path", "")
+            ),
+            "final_status": str(
+                finalization_closure_record_contract.get("finalization_or_closure_record", {}).get("final_status", "")
+            ),
+        },
+        "review_approval_gate_ref": {
+            "contract_id": review_approval_gate_contract_id,
+            "gate_scope": str(review_approval_gate_contract.get("gate_scope", "")),
+            "gate_decision": str(
+                review_approval_gate_contract.get("review_or_approval_gate", {}).get("gate_decision", "")
+            ),
+            "gate_status": str(
+                review_approval_gate_contract.get("review_or_approval_gate", {}).get("gate_status", "")
+            ),
+        },
+        "gate_outcome_operational_followup_ref": {
+            "contract_id": gate_outcome_operational_followup_contract_id,
+            "followup_scope": str(gate_outcome_operational_followup_contract.get("followup_scope", "")),
+            "bounded_followup": bounded_followup,
+            "followup_status": followup_status,
+        },
+        "operational_continuity_state": {
+            "state_stage": "post_gate_operational_continuity",
+            "continuity_state": continuity_state,
+            "state_status": state_status,
+            "continuity_signal": continuity_signal,
+            "close_or_continue": bounded_path,
+        },
+        "state_rationale": {
+            "validation_status": validation_status,
+            "review_status": review_status,
+            "approval_status": approval_status,
+            "rationale_codes": [
+                "operational_continuity_gate_followup_state_contract",
+                "bounded_operational_continuity_state_only",
+                "state_derived_from_gate_followup_and_gate_traceability",
+            ],
+            "summary": "ATP is recording a bounded operational continuity or gate follow-up state only.",
+        },
+        "traceability": {
+            "gate_outcome_operational_followup_contract_id": gate_outcome_operational_followup_contract_id,
+            "review_approval_gate_contract_id": review_approval_gate_contract_id,
+            "finalization_closure_record_contract_id": finalization_closure_record_contract_id,
+            "review_decision_id": review_decision_id,
+            "approval_id": approval_id,
+            "close_or_continue": bounded_path,
+        },
+        "notes": [
+            "This contract records a bounded operational continuity or gate follow-up state only.",
+            "It is distinct from approval UI, workflow engines, recovery execution, routing, provider selection, and broader orchestration.",
+        ],
+    }
