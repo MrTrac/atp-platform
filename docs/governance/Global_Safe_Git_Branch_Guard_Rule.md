@@ -1,8 +1,41 @@
-# Global Safe Git Rule (GSGR)
+# Global Safe Git Branch Guard Rule (GSGR)
 
-## 1. Mục đích
+- **Mục đích:** Thiết lập global Git safety framework dùng lâu dài cho ATP, các dự án khác, và mọi AI-assisted Git workflow trên macOS.
+- **Phạm vi:** Tất cả Git action quan trọng, mọi actor, mọi repo, Terminal.app, iTerm2, terminal tương đương.
+- **Trạng thái:** Active.
+- **Loại:** Mandatory.
+- **Version:** v1.0
+- **Date:** 2026-03-15
 
-`Global Safe Git Rule` là rule Git an toàn toàn cục, áp dụng để ngăn các lỗi phổ biến như:
+## 1. Kết luận điều hành
+
+`Global Safe Git Branch Guard Rule` là rule Git an toàn toàn cục của ATP.
+
+Rule này chốt một mô hình vận hành thống nhất gồm hai lớp:
+
+1. **Execution layer**: command thật `gsgr`
+2. **Interaction layer**: alias và AI shorthand để user không phải tự dựng low-level Git command
+
+Mnemonic chính thức:
+
+**GSGR = Check -> Switch -> Re-check -> Execute**
+
+Từ thời điểm này, mọi Git combo quan trọng phải được điều phối theo guard pattern này, thay vì viết lệnh Git rời rạc rồi tự giả định branch/context là đúng.
+
+## 2. Scope áp dụng
+
+Rule này áp dụng cho:
+
+- ATP
+- toàn bộ các dự án khác
+- mọi AI
+- mọi actor có thao tác Git
+- mọi workflow Git có rủi ro branch/history/remote
+- Terminal.app
+- iTerm2
+- terminal tương đương trên macOS
+
+Rule này đặc biệt nhằm giảm các lỗi:
 
 - commit nhầm branch
 - push nhầm branch
@@ -10,266 +43,394 @@
 - tag sai điểm
 - cherry-pick nhầm nơi
 - reset nhầm branch
-- đưa nhầm file ngoài scope vào commit
+- rebase sai branch
+- add nhầm file ngoài scope
 - làm bẩn `main`
-- tạo lệch giữa branch dev và branch release
 
-Rule này được áp dụng như một chuẩn thao tác bắt buộc cho mọi hoạt động Git quan trọng.
+## 3. Core doctrine
 
----
+### 3.1 Check
 
-## 2. Phạm vi áp dụng
+Luôn kiểm tra:
 
-Rule này áp dụng cho:
-
-- ATP
-- toàn bộ các dự án khác
-- mọi combo lệnh Git quan trọng chạy trên terminal Mac:
-  - `Terminal.app`
-  - `iTerm2`
-  - terminal tương đương
-- mọi AI
-- mọi người tham gia thao tác Git
-- mọi tình huống có liên quan đến quản lý Git an toàn
-
----
-
-## 3. Nguyên tắc lõi
-
-## **GSGR = Check → Switch → Re-check → Execute**
-
-Trước mọi combo lệnh Git quan trọng, bắt buộc thực hiện đúng chuỗi sau:
-
-### 3.1. Check
-Kiểm tra trạng thái hiện tại:
-
-- working tree
-- branch hiện tại
-- commit gần nhất
-
-### 3.2. Switch
-Chuyển về đúng branch theo ngữ cảnh hiện tại.
-
-Không được giả định terminal đang đứng đúng branch.
-
-### 3.3. Re-check
-Kiểm tra lại sau khi switch:
-
-- đã ở đúng branch chưa
-- working tree có đúng kỳ vọng không
-- commit head có đúng ngữ cảnh không
-
-### 3.4. Execute
-Chỉ sau đó mới được chạy combo Git chính.
-
----
-
-## 4. Nhóm thao tác bắt buộc áp dụng rule
-
-Rule này bắt buộc áp dụng cho các thao tác:
-
-- `git add`
-- `git commit`
-- `git push`
-- `git pull`
-- `git merge`
-- `git tag`
-- `git cherry-pick`
-- `git reset`
-- `git rebase`
-- `git restore`
-- mọi block lệnh Git có khả năng thay đổi lịch sử, branch, hoặc remote state
-
----
-
-## 5. Template chuẩn toàn cục
-
-### 5.1. Guard tối thiểu
-
-```bash
-git status
-git branch --show-current
-```
-
-### 5.2. Guard chuẩn bắt buộc nên dùng
-
-```bash
-git status
-git branch --show-current
-git log --oneline --decorate -n 3
-```
-
-### 5.3. Template đầy đủ trước mọi combo Git quan trọng
-
-```bash
-git status
-git branch --show-current
-git log --oneline --decorate -n 3
-
-git switch <TARGET_BRANCH>
-
-git status
-git branch --show-current
-git log --oneline --decorate -n 3
-
-# rồi mới chạy combo git chính
-```
-
----
-
-## 6. Template thao tác chuẩn theo ngữ cảnh
-
-### 6.1. Commit / push trên branch phát triển
-
-```bash
-git status
-git branch --show-current
-git log --oneline --decorate -n 3
-
-git switch <DEV_BRANCH>
-
-git status
-git branch --show-current
-git log --oneline --decorate -n 3
-
-git add <đúng file theo scope>
-git commit -m "..."
-git push origin <DEV_BRANCH>
-```
-
-### 6.2. Merge vào `main`
-
-```bash
-git status
-git branch --show-current
-git log --oneline --decorate -n 3
-
-git switch main
-
-git status
-git branch --show-current
-git log --oneline --decorate -n 3
-
-git pull origin main
-git merge --no-ff <SOURCE_BRANCH> -m "merge: ..."
-git push origin main
-```
-
-### 6.3. Tag release
-
-```bash
-git status
-git branch --show-current
-git log --oneline --decorate -n 3
-
-git switch main
-
-git status
-git branch --show-current
-git log --oneline --decorate -n 3
-
-git tag -a <TAG> -m "..."
-git push origin <TAG>
-```
-
-### 6.4. Cherry-pick cứu commit nhầm branch
-
-```bash
-git status
-git branch --show-current
-git log --oneline --decorate -n 5
-
-git switch <CORRECT_BRANCH>
-
-git status
-git branch --show-current
-git log --oneline --decorate -n 3
-
-git cherry-pick <COMMIT_ID>
-git push origin <CORRECT_BRANCH>
-```
-
-### 6.5. Reset an toàn
-
-```bash
-git status
-git branch --show-current
-git log --oneline --decorate -n 5
-
-git switch <TARGET_BRANCH>
-
-git status
-git branch --show-current
-git log --oneline --decorate -n 5
-
-git reset --hard <SAFE_COMMIT>
-git status
-```
-
----
-
-## 7. Quy tắc bổ sung bắt buộc
-
-### 7.1. Không giả định branch
-Dù trước đó terminal đang ở branch nào, vẫn phải check lại.
-
-### 7.2. Không dùng `git add .` trong pass nhạy cảm
-Chỉ add đúng file theo scope hiện tại.
-
-### 7.3. `main` chỉ dùng cho:
-- merge
-- release tag
-- kiểm tra baseline integrated
-
-Không dùng `main` để commit work đang phát triển.
-
-### 7.4. Branch dev chỉ dùng cho work đúng ngữ cảnh
-Ví dụ:
-
-- `v1.0-planning`
-- `v1.1-planning`
-- `feature/...`
-- `hotfix/...`
-
-### 7.5. Trước mọi merge/tag
-Bắt buộc check lại:
-
-- branch hiện tại
-- clean working tree
+- đang ở trong Git repo hay không
+- working tree hiện tại
+- current branch
 - commit head gần nhất
 
----
+### 3.2 Switch
 
-## 8. Quy tắc áp dụng cho AI
+Nếu action có target branch, phải switch về đúng branch theo ngữ cảnh.
 
-Từ nay về sau, trong mọi hỗ trợ của AI liên quan đến Git:
+Không được giả định terminal đang đứng sẵn ở branch đúng.
 
-- AI phải luôn prepend branch guard
-- AI không được giả định branch hiện tại là đúng
-- AI phải chỉ rõ target branch theo ngữ cảnh
-- AI phải ưu tiên block lệnh an toàn
-- AI phải tránh viết block Git có rủi ro commit nhầm branch
+### 3.3 Re-check
 
-Nói cách khác:
+Sau khi switch, phải kiểm tra lại:
 
-## **mọi AI cũng phải tuân thủ Global Safe Git Rule**
+- current branch
+- working tree
+- recent commits
 
----
+### 3.4 Execute
 
-## 9. Chuẩn ngắn gọn để ghi nhớ
+Chỉ sau khi guard pass mới được chạy Git action chính.
 
-## **GSGR = Check → Switch → Re-check → Execute**
+## 4. Runtime model chính thức
 
----
+Runtime command chính thức là:
 
-## 10. Kết luận
+```bash
+gsgr
+```
 
-`Global Safe Git Rule` là rule Git an toàn toàn cục, được áp dụng bắt buộc cho:
+Install path chính thức:
 
-- ATP
-- mọi dự án khác
-- mọi AI
-- mọi actor có liên quan đến quản lý Git an toàn
-- mọi thao tác Git quan trọng trên terminal Mac
+```bash
+~/.config/shell/functions/git_safe.sh
+```
 
-Từ thời điểm này, mọi combo Git quan trọng phải được xây theo đúng guard pattern của GSGR.
+`~/.zshrc` phải source file này bằng đúng dòng:
+
+```bash
+[ -f ~/.config/shell/functions/git_safe.sh ] && source ~/.config/shell/functions/git_safe.sh
+```
+
+Không duplicate source line này.
+
+## 5. Alias layer và AI interaction model
+
+`gsgr` là command thực thi thật.
+
+Các tên ngắn sau là **user-facing shorthand entrypoints** nếu không bị collision:
+
+- `gs`
+- `gsg`
+- `git-safe`
+- `git-guard`
+
+Mục tiêu của alias layer là:
+
+- giảm cognitive load
+- tăng tốc giao tiếp giữa user và AI
+- để user chỉ cần nói intent ngắn
+- để AI chịu trách nhiệm dựng lệnh `gsgr ...` đầy đủ và an toàn
+
+### 5.1 Nguyên tắc giao tiếp với AI
+
+User có thể nói ngắn với AI bằng các cụm như:
+
+- `git`
+- `gs`
+- `gsg`
+- `git-safe`
+- `git-guard`
+
+và mô tả intent ngắn gọn, ví dụ:
+
+- `gs commit docs governance`
+- `gsg merge slice-c into main`
+- `git-safe tag v1.0.2`
+- `git-guard pick f44acc0 to v1.0-planning`
+
+AI **không** được yêu cầu user tự xác định low-level Git arguments thủ công khi việc đó có thể suy ra an toàn từ context.
+
+AI phải:
+
+- hiểu intent
+- xác định target branch/action phù hợp
+- output câu lệnh `gsgr ...` cuối cùng
+- giữ guard pattern an toàn
+
+Rule này **không** yêu cầu xây natural-language parser trong shell.
+
+## 6. Mandatory pre-install alias collision policy
+
+Trước khi cài bất kỳ alias hoặc function name nào, phải check collision qua:
+
+- alias hiện có
+- shell function hiện có
+- command trong `PATH`
+- shell config files liên quan, nếu phát hiện được
+
+Candidate names:
+
+- `gsgr`
+- `gs`
+- `gsg`
+- `git-safe`
+- `git-guard`
+
+### 6.1 Cách phân loại collision
+
+Mỗi tên phải được phân loại thành một trong ba trạng thái:
+
+- `free`
+- `already used by the same intended Git safety layer`
+- `already used by something unrelated`
+
+### 6.2 Chính sách cài đặt
+
+Ưu tiên bắt buộc:
+
+1. giữ `gsgr`
+2. cài tất cả alias collision-free trong nhóm:
+   - `gs`
+   - `gsg`
+   - `git-safe`
+   - `git-guard`
+3. nếu alias đang bị dùng bởi behavior không liên quan, phải skip alias đó
+4. không force-overwrite alias/function/command không liên quan
+
+Kết quả cài đặt phải báo rõ:
+
+- tên nào đã được check
+- tên nào free
+- tên nào occupied
+- tên nào được install
+- tên nào bị skip
+- vì sao
+
+## 7. Command interface chính thức
+
+Command interface chuẩn:
+
+```bash
+gsgr <action> [args...]
+```
+
+Global options được hỗ trợ:
+
+- `--dry-run`
+- `--verbose`
+- `--yes`
+
+Supported actions:
+
+1. `help`
+2. `status`
+3. `commit`
+4. `push`
+5. `pull`
+6. `merge-main`
+7. `tag`
+8. `pick`
+9. `reset`
+10. `restore`
+11. `rebase-main`
+
+## 8. Action semantics
+
+### 8.1 `gsgr help`
+
+In usage, examples, alias guidance, installed alias layer, skipped aliases.
+
+### 8.2 `gsgr status [target-branch]`
+
+Guard only, không có state-changing Git action.
+
+### 8.3 `gsgr commit <target-branch> "<commit-message>" <file1> [file2 ...]`
+
+- guard branch
+- chỉ add các file được chỉ định
+- không dùng `git add .`
+- commit
+- push đúng target branch
+
+### 8.4 `gsgr push <target-branch>`
+
+- guard branch
+- push đúng branch đó
+
+### 8.5 `gsgr pull <target-branch>`
+
+- guard branch
+- working tree phải sạch
+- pull `origin <target-branch>`
+
+### 8.6 `gsgr merge-main <source-branch> "<merge-message>"`
+
+- guard về `main`
+- working tree phải sạch
+- pull `origin main`
+- merge `--no-ff`
+- push `origin main`
+- là dangerous action, cần `--yes`
+
+### 8.7 `gsgr tag <tag-name> "<tag-message>"`
+
+- guard về `main`
+- working tree phải sạch
+- fail nếu tag đã tồn tại
+- tạo annotated tag
+- push tag
+- là dangerous action, cần `--yes`
+
+### 8.8 `gsgr pick <target-branch> <commit-id>`
+
+- validate commit tồn tại
+- guard target branch
+- cherry-pick
+- push đúng branch
+
+### 8.9 `gsgr reset <target-branch> <safe-commit>`
+
+- validate commit tồn tại
+- guard target branch
+- dangerous action
+- reset `--hard`
+- show status sau đó
+- cần `--yes`
+
+### 8.10 `gsgr restore <target-branch> <file1> [file2 ...]`
+
+- guard target branch
+- restore đúng các file được chỉ định
+- show status sau đó
+
+### 8.11 `gsgr rebase-main <target-branch>`
+
+- target branch không được là `main`
+- guard target branch
+- working tree phải sạch
+- fetch `origin`
+- rebase onto `origin/main`
+- push `--force-with-lease`
+- là dangerous action, cần `--yes`
+
+## 9. Safety validations bắt buộc
+
+System phải fail rõ ràng khi:
+
+- không ở trong Git repo
+- thiếu hoặc sai arguments
+- branch target không tồn tại ở local hoặc origin
+- action nguy hiểm chạy khi chưa có `--yes`
+- merge/tag/pull/rebase/reset chạy khi working tree bẩn
+- `commit` không có file list
+- commit hoặc safe commit không tồn tại
+- tag đã tồn tại
+
+System không được silently continue qua unsafe states.
+
+## 10. UX requirements chính thức
+
+Runtime output phải giữ:
+
+- stage headers rõ: `CHECK / SWITCH / RE-CHECK / EXECUTE`
+- error messages dễ hiểu
+- return codes ổn định
+- help text ngắn, dùng được ngay
+
+Khuyến nghị mạnh:
+
+- ANSI colors
+- `--dry-run`
+- `--verbose`
+- `--yes`
+
+## 11. Logging model
+
+Logging phải nhẹ, user-global, và nằm ngoài project repos.
+
+Location chuẩn:
+
+```bash
+~/.local/state/gsgr/gsgr.log
+```
+
+Minimum fields:
+
+- timestamp
+- action
+- repo path
+- current branch
+- target branch
+- success / failure
+
+Không overengineer logging thành workflow engine.
+
+## 12. Quy tắc cho `main`
+
+`main` chỉ là branch tích hợp/baseline:
+
+- merge
+- tag/release
+- kiểm tra integrated baseline
+
+Không dùng `main` cho dev work thường ngày.
+
+## 13. Ví dụ vận hành chuẩn
+
+### 13.1 Commit an toàn trên branch dev
+
+```bash
+gsgr commit v1.0-planning "docs: integrate GSGR" docs/governance/README.md docs/README.md
+```
+
+### 13.2 Push branch
+
+```bash
+gsgr push v1.0-planning
+```
+
+### 13.3 Merge vào `main`
+
+```bash
+gsgr --yes merge-main v1.0-planning "merge: v1.0 planning into main"
+```
+
+### 13.4 Tag release
+
+```bash
+gsgr --yes tag v1.0.2 "release: v1.0.2"
+```
+
+### 13.5 Cherry-pick an toàn
+
+```bash
+gsgr pick v1.0-planning f44acc0
+```
+
+### 13.6 Reset có kiểm soát
+
+```bash
+gsgr --yes reset v1.0-planning abc1234
+```
+
+### 13.7 Rebase lên `origin/main`
+
+```bash
+gsgr --yes rebase-main v1.0-planning
+```
+
+## 14. Vai trò trong ATP governance
+
+Trong ATP, rule này là:
+
+- global safe Git governance rule
+- authority doc cho branch guard pattern
+- companion doc cho Git governance bundle hiện có
+- nền bắt buộc để AI-assisted Git workflow không commit/push/merge/tag sai ngữ cảnh
+
+Rule này **không** thay thế:
+
+- `docs/governance/ATP_Development_Ruleset.md`
+- `docs/governance/git/Contextual_Git_Governance_Model.md`
+- `docs/governance/git/AI_Branch_Operation_Rules.md`
+
+Nó bổ sung một execution-ready guard discipline dùng chung cho tất cả các tài liệu đó.
+
+## 15. Kết luận
+
+`Global Safe Git Branch Guard Rule` là permanent global Git safety framework của ATP và các workflow liên quan.
+
+Từ nay:
+
+- `gsgr` là command runtime chính thức
+- alias layer là lớp tương tác ngắn gọn nếu không collision
+- user có thể nói intent ngắn với AI
+- AI phải xuất ra lệnh `gsgr ...` cuối cùng và an toàn
+- mọi Git combo quan trọng phải đi qua:
+
+**Check -> Switch -> Re-check -> Execute**

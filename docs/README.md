@@ -22,7 +22,7 @@
 2. **Vận hành:** `operators/runbook_atp_v0.md` → `operators/workspace_layout.md`
 3. **Governance:** `governance/README.md` → `governance/framework/Contextual_Project_Governance_Framework.md` → `governance/ATP_3_Role_Workflow.md` khi phase dùng workflow Multi-AI
    Rule execution baseline: `governance/ATP_Development_Ruleset.md`
-   Global Git branch guard: `governance/Global_Safe_Git_Branch_Guard_Rule.md`
+   Global Git branch guard runtime: `governance/Global_Safe_Git_Branch_Guard_Rule.md`
    Lineage continuity rule: `governance/framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md`
 4. **Freeze / baseline:** `architecture/ATP_MVP_v0_Freeze_Decision_Record.md` và snapshot bundles trong `architecture/`
 5. **Historical close-out:** các freeze close-out reports trong `archive/reports/`
