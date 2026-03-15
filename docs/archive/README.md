@@ -22,7 +22,7 @@
 
 - `governance-seed/` — governance bundle giai đoạn seed hoặc placement proposal ban đầu
 - `legacy-top-level-snapshot-docs/` — snapshot bundle từng nằm sai ở top-level `docs/`
-- `reports/` — báo cáo rà soát, consolidation, scope planning, và freeze close-out (ví dụ: `ATP_Docs_Review_Report_VI.md`, `ATP_v0_2_0_Freeze_Closeout.md`, `ATP_v0_4_0_Freeze_Closeout.md`, ATP v1.0 Slice D baseline bundle `ATP_v1_0_Slice_D_*`)
+- `reports/` — báo cáo rà soát, consolidation, scope planning, và freeze close-out (ví dụ: `ATP_Docs_Review_Report_VI.md`, `ATP_v0_2_0_Freeze_Closeout.md`, `ATP_v0_4_0_Freeze_Closeout.md`, ATP v1.0 Slice D bundle: baseline `ATP_v1_0_Slice_D_*`, integration review, consolidation decision, freeze-readiness assessment, documentation governance close-out)
 - `bundles/` — bản nén tài liệu trước governance (ví dụ: `docs_pre_governance_bundle.zip`)
 
 ## Tài liệu liên quan
