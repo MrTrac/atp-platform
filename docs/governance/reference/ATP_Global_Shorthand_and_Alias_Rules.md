@@ -125,8 +125,8 @@ Diễn giải thực dụng cho nhóm `git`:
 
 | Alias / biến thể | Canonical form | Ý nghĩa | Phạm vi | Rule đi kèm / ghi chú |
 |---|---|---|---|---|
-| `pr` | `pr` | Viết một prompt thật chặt cho current task để user copy/paste cho AI khác | prompt delegation | Inherit “tight prompt for current task” semantics + single-block handoff/review loop |
-| `pr <name|description>` | `pr <name|description>` | Viết prompt chặt cho task được nêu để user copy/paste cho AI khác | prompt delegation | Argument là authoritative narrowing + single-block handoff/review loop |
+| `pr` | `pr` | Viết một prompt thật chặt cho current task để user copy/paste cho AI khác | prompt delegation | Inherit AI_OS global `pr` rule + single-block handoff/verify-pass loop |
+| `pr <name|description>` | `pr <name|description>` | Viết prompt chặt cho task được nêu để user copy/paste cho AI khác | prompt delegation | Argument là authoritative narrowing + inherit AI_OS global `pr` rule |
 
 ### 9. Title / chat
 
@@ -163,11 +163,13 @@ Các alias dưới đây không chỉ là shortcut; chúng tự động inherit 
   - inherit current-context continuation semantics
   - không tự override approval-sensitive boundary hoặc change scope
 - `pr`
-  - inherit semantics “write a tight prompt for the named/current task”
+  - inherit semantics “write a tight prompt for the named/current task” từ AI_OS global shorthand authority
   - prompt phải bám current governance context, không viết chung chung
   - prompt phải được viết ở một chỗ duy nhất để user copy/paste dễ dàng; không phân mảnh thành nhiều block nếu không thật sự cần
-  - trong prompt hoặc hướng dẫn đi kèm phải nói rõ: sau khi AI mục tiêu thực hiện xong, user sẽ dán kết quả lại đây để review
-  - nếu cần, sau vòng review đó sẽ viết tiếp một prompt review / follow-up lần nữa
+  - trong prompt hoặc hướng dẫn đi kèm phải nói rõ: sau khi AI mục tiêu thực hiện xong, user sẽ dán kết quả lại đây
+  - bước tiếp theo bắt buộc là `verify`
+  - `verify` phải PASS
+  - chỉ sau khi `verify` PASS thì mới review sâu hơn hoặc viết tiếp một prompt review / follow-up lần nữa nếu cần
 
 ## Ghi chú về canonical form và accepted variants
 

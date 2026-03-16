@@ -27,3 +27,11 @@ Use AGENTS.md, copilot instructions, CLAUDE.md, .cursorrules, or AI_OS_CONTEXT.m
 
 
 
+
+
+
+
+
+
+
+
