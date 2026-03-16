@@ -10,7 +10,7 @@
 |------|----------|----------------------------|
 | `architecture/` | Kiến trúc, overview, flow, ranh giới repo; freeze records; snapshot bundles | Active + Frozen bundles |
 | `design/` | Model thiết kế (artifact, handoff, registry, request, run); naming conventions | Active |
-| `operators/` | Bootstrap, runbook, workspace layout | Active |
+| `operators/` | Bootstrap, runbook, workspace layout, ATP-side AI_OS thin integration | Active |
 | `decisions/` | Chỉ mục decision records; authority path tới freeze artifact | Active |
 | `governance/` | Framework, Git, documentation, coding, release, AI collaboration | Active |
 | `roadmap/` | Product roadmap, stage roadmap, major roadmap, version roadmap, và inheritance rules | Active |
@@ -20,6 +20,7 @@
 
 1. **Mới vào dự án:** `architecture/overview.md` → `design/artifact_model.md` → `operators/local_bootstrap.md`
 2. **Vận hành:** `operators/runbook_atp_v0.md` → `operators/workspace_layout.md`
+   ATP-side AI_OS bridge: `operators/ai_os_thin_integration.md`
 3. **Governance:** `governance/README.md` → `governance/framework/Contextual_Project_Governance_Framework.md` → `governance/ATP_3_Role_Workflow.md` khi phase dùng workflow Multi-AI
    Rule execution baseline: `governance/ATP_Development_Ruleset.md`
    Global Git branch guard runtime: `governance/Global_Safe_Git_Branch_Guard_Rule.md`
@@ -36,6 +37,7 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 ## Tài liệu liên quan
 
 - `AGENTS.md` — hướng dẫn AI agents cho repo
+- `operators/ai_os_thin_integration.md` — ATP-side bridge surface và verifier hooks cho AI_OS
 - Snapshot bundles: `architecture/ATP_v0_final_snapshot_docs/`, `architecture/ATP_v0_1_hardening_snapshot_docs/` (Frozen)
 - Freeze close-out reports: `archive/reports/ATP_v0_2_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_3_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_4_0_Freeze_Closeout.md`
 - Roadmap layer: `roadmap/ATP_Product_Roadmap.md`, `roadmap/majors/`, `roadmap/versions/`

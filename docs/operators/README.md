@@ -11,11 +11,13 @@
 | `local_bootstrap.md` | Các bước bootstrap tối thiểu; ví dụ CLI |
 | `runbook_atp_v0.md` | Runbook vận hành ATP v0 |
 | `workspace_layout.md` | Layout thư mục workspace |
+| `ai_os_thin_integration.md` | Lớp tích hợp mỏng ATP-side để phối hợp với AI_OS |
 
 ## Đọc gì trước
 
 1. `local_bootstrap.md` — khởi tạo môi trường
 2. `runbook_atp_v0.md` — quy trình vận hành
+3. `ai_os_thin_integration.md` — ATP-side bridge surface cho AI_OS
 
 ## Ranh giới với Architecture và Design
 
