@@ -109,6 +109,13 @@ Slice E tồn tại để:
 - vẫn unresolved
 - hoặc đã closed
 
+`Resulting operational state` và `move closure` liên hệ trực tiếp nhưng không đồng nhất:
+
+- `resulting operational state` trả lời ATP đang neo ở state kết quả nào
+- `move closure` trả lời move dẫn tới state đó đã được kết luận tới mức nào
+
+Một resulting operational state có thể đã explicit nhưng move closure vẫn chỉ ở mức `intermediate_result`, `acknowledged_move`, hoặc `unresolved_move`.
+
 ### 8.4 Intermediate result
 `Intermediate result` là kết quả đã xuất hiện sau transition nhưng chưa đủ basis để coi resulting state đã được fix hoặc move đã khép.
 
@@ -131,24 +138,31 @@ Slice E chuẩn hóa resulting-state và closure semantics như sau:
 ### 9.1 Provisional resulting state
 - có transition result explicit
 - có candidate resulting state
-- chưa đủ basis để acknowledge như stable result
+- chưa đủ basis để ATP ghi acknowledged_result_state
+- resulting operational state mới ở mức candidate fixation
+- move closure tương ứng không được vượt quá `intermediate_result`
 
 ### 9.2 Acknowledged resulting state
 - resulting state đã explicit
 - linkage về Slice D đã đủ
 - result đã được ghi nhận hợp lệ
 - closure vẫn có thể chưa complete
+- acknowledged_result_state không mặc định đồng nghĩa với `closed_result_state`
+- move closure tương ứng tối thiểu là `acknowledged_move`, nhưng vẫn có thể chưa phải `closed_move`
 
 ### 9.3 Unresolved resulting state
 - resulting state đã được acknowledge hoặc đủ rõ để thấy direction
 - còn unresolved guard, hold, missing closure condition, hoặc pending clarification
 - không được diễn giải thành closed
+- unresolved_result_state phải giữ visible unresolved basis, không được che bằng wording completion
+- move closure tương ứng là `unresolved_move`
 
 ### 9.4 Closed resulting state
 - resulting state đã explicit
 - move closure đã explicit
 - closure basis đủ
 - không còn unresolved condition active trong boundary hiện hành
+- closed_result_state chỉ hợp lệ khi resulting operational state và `closed_move` cùng trace được về cùng một transition path
 
 ## 10. Closure classes
 
@@ -174,6 +188,13 @@ Slice E yêu cầu:
 - acknowledgment phải là explicit record, không phải suy diễn ngầm
 - closure chỉ được ghi khi closure basis đã đủ
 - unresolved hoặc hold condition phải được giữ visible thay vì bị che bởi wording "done"
+
+Discipline tối thiểu giữa state và closure là:
+
+- `provisional_result_state` không được dùng như một acknowledged state
+- `acknowledged_result_state` không được dùng như một closed state
+- `unresolved_result_state` không được dùng như biến thể mềm của closed
+- `closed_result_state` không được ghi nếu closure class vẫn chưa là `closed_move`
 
 Một move chỉ được coi là `acknowledged_move` khi tối thiểu có:
 
@@ -253,6 +274,7 @@ Slice E nằm trong acceptance boundary sau:
 - contract semantics cho resulting operational state
 - contract semantics cho move closure
 - closure-state categories
+- boundary rõ giữa state fixation và closure conclusion
 - traceability expectations cho closure result
 - scope discipline và anti-drift guardrails
 
@@ -271,6 +293,8 @@ Quan hệ phải được giữ rõ:
 
 - Slice D trả lời transition nào được phép, có điều kiện, bị hoãn, bị chặn, hoặc loop-back
 - Slice E trả lời resulting state nào đã thực sự được neo và move nào đã được acknowledged hoặc closed
+- Slice D có thể cho phép một transition nhưng vẫn chưa đủ để Slice E ghi `closed_result_state`
+- Slice E chỉ diễn giải closure result của transition; không tái quyết định permission của transition đó
 
 Slice E không rewrite decision authority model của Slice D.
 Slice D cũng không tự động bao gồm closure semantics của Slice E.
@@ -287,6 +311,7 @@ Trong toàn bộ Slice E, ATP phải giữ:
 - không dùng `move closure` như workflow completion engine
 - không dùng `resulting operational state` như orchestration graph node system
 - không diễn giải `acknowledged` thành `fully executed`
+- không diễn giải resulting-state categories như runtime state machine
 - không biến `unresolved_move` thành recovery plan
 - không mở planning line cho `v1.1`
 

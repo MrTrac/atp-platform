@@ -22,6 +22,11 @@ Traceability chain chuẩn của Slice E là:
 -> `resulting operational state`
 -> `acknowledgment / closure result`
 
+Trong chain này:
+
+- `resulting operational state` là node fixation của kết quả sau transition
+- `acknowledgment / closure result` là node kết luận mức closure của move dẫn tới state đó
+
 Trong ATP lineage hiện tại, `source state` của Slice E phải trace ngược về:
 
 - `finalization / closure record`
@@ -44,6 +49,7 @@ Một minimum trace unit phải có tối thiểu:
 - resulting operational state class
 - closure class
 - acknowledgment status
+- resulting-state summary
 - closure rationale summary
 - evidence summary
 
@@ -64,6 +70,7 @@ Mỗi resulting-state record của Slice E phải đáp ứng tối thiểu:
 - resulting-state summary
 - acknowledgment status explicit
 - rationale summary
+- linkage rõ tới move closure record tương ứng hoặc closure expectation tương ứng
 
 Resulting-state record không đạt nếu:
 
@@ -85,6 +92,7 @@ Mỗi move closure record của Slice E phải có:
 - closure basis
 - unresolved / hold status summary
 - closure rationale summary
+- reference ngược về resulting operational state mà move đang dẫn tới hoặc đã neo
 
 Move closure record không đạt nếu:
 
@@ -111,6 +119,7 @@ Evidence đủ tối thiểu khi:
 - transition traceable
 - resulting-state class explicit
 - closure class explicit
+- resulting-state / closure relationship explicit
 - rationale đủ để giải thích vì sao move chưa close hoặc đã close
 
 Evidence bị coi là không đạt khi:
@@ -158,6 +167,7 @@ Traceability của Slice E bị coi là fail trong các trường hợp sau:
 - acknowledgment status không explicit
 - closure basis không đủ để giải thích vì sao state đã closed
 - unresolved / hold condition bị che mất trong record wording
+- resulting operational state và closure class không reconstruct được cùng một transition path
 
 ## 9. Relation với governance, freeze, và audit
 
@@ -185,6 +195,7 @@ Slice E chỉ nên đi qua consolidation khi:
 - minimum trace unit đã rõ
 - resulting-state record expectations đã coherent
 - move closure record expectations đã coherent
+- quan hệ giữa resulting operational state và move closure không còn mơ hồ
 - closure wording đủ để avoid semantic blur
 
 Slice E close-out chỉ có giá trị khi:

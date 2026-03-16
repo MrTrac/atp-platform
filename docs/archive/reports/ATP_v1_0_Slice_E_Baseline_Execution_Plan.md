@@ -52,6 +52,7 @@ Slice E baseline tối thiểu phải có:
 ### Step E3 — Review baseline coherence
 - rà contract semantics
 - rà non-overlap với Slice D
+- rà distinction giữa `resulting operational state` và `move closure`
 - rà closure wording để tránh drift sang execution/orchestration
 
 ### Step E4 — Integration review readiness
@@ -81,6 +82,7 @@ Các checkpoint bắt buộc trong execution path:
 - resulting-state semantics rõ
 - acknowledgment vs unresolved vs closed rõ
 - closure classes rõ
+- distinction giữa state category và closure class rõ
 
 ### Checkpoint 2 — Lineage continuity
 - Slice E nối mượt với Slice D
@@ -97,6 +99,7 @@ Các checkpoint bắt buộc trong execution path:
 ### Checkpoint 4 — Traceability usability
 - source state -> decision -> transition -> resulting state -> closure reconstruct được
 - evidence sufficiency đủ cho audit-grade review
+- resulting operational state và move closure trace được cùng một transition path
 
 ### Checkpoint 5 — Bundle coherence
 - năm tài liệu baseline không trùng vai trò
@@ -110,6 +113,7 @@ Slice E chỉ nên được đưa vào integration review khi:
 - docs baseline đã sạch và nhất quán
 - contract semantics đủ distinct khỏi Slice D
 - traceability model chứng minh được closure logic reconstruct được
+- resulting-state categories và closure classes không còn overlap mơ hồ
 - scope/non-goals chặn được engine/orchestration drift
 
 Integration review phải trả lời:
@@ -126,6 +130,7 @@ Slice E chỉ nên được coi là consolidated khi:
 - contract doc là source-of-truth rõ
 - closure state model usable cho governance/audit
 - traceability model reconstruct được path theo hai chiều
+- resulting operational state và move closure được phân tách rõ nhưng liên kết nhất quán
 - scope/non-goals chặn được scope creep
 - execution plan bám đúng phase-governed logic
 - archive discoverability đủ dùng
@@ -137,6 +142,7 @@ Slice E chỉ nên được coi là freeze-ready khi:
 - baseline đã coherent qua review và integration review
 - blocker docs-level thật sự đã được xử lý hoặc chứng minh là không tồn tại
 - acknowledgment / unresolved / closed semantics không còn mơ hồ
+- provisional / acknowledged / unresolved / closed boundaries không còn overlap đọc sai
 - không có hidden expansion sang execution/orchestration subsystems
 
 ## 8. Close-out expectation
@@ -162,6 +168,7 @@ Slice E baseline chỉ được coi là Done khi:
 
 - ATP có docs baseline hoàn chỉnh cho resulting operational state / move closure
 - bundle đủ chặt cho review, integration review, consolidation, freeze-readiness, và close-out tiếp theo
+- terminology giữa contract, state model, traceability model, scope doc, và execution plan đã coherent
 - không có drift sang execution/orchestration
 - không có drift sang `v1.1`
 - discoverability trực tiếp đã đủ dùng

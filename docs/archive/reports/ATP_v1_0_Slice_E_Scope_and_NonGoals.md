@@ -11,6 +11,13 @@ Slice E là:
 
 Slice E tồn tại vì sau Slice D ATP đã có transition control, nhưng chưa có contract rõ để chốt resulting state nào được coi là đã neo và move nào đã được close boundedly.
 
+Trong Slice E:
+
+- `resulting operational state` là lớp state fixation
+- `move closure` là lớp closure conclusion
+
+Hai lớp này phải đi cùng nhau nhưng không được bị viết như cùng một khái niệm.
+
 ## 2. Slice E không phải là gì
 
 Slice E không phải:
@@ -40,6 +47,8 @@ Nói ngắn gọn:
 
 - Slice D trả lời: move có được phép đi hay không
 - Slice E trả lời: move đã tạo resulting state gì và đã close tới mức nào
+
+Slice E không được diễn giải `allowed transition` như bằng chứng đủ để close. `allowed` của Slice D chỉ mở khả năng move; `closed` của Slice E vẫn cần closure basis riêng.
 
 ## 4. Boundary với earlier slices
 
@@ -115,6 +124,7 @@ Các guardrails bắt buộc của Slice E:
 - không dùng từ ngữ của workflow completion engine để mô tả move closure
 - không dùng từ ngữ của orchestration subsystem để mô tả resulting state
 - không xem `acknowledged` như `fully executed`
+- không xem `acknowledged_result_state` như equivalent của `closed_result_state`
 - không xem `unresolved_move` như backlog orchestration state
 - không xem `closed_move` như release completion signal
 - không suy diễn rằng mọi resulting state đều có closure ngay
