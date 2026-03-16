@@ -106,6 +106,14 @@ Tài liệu này áp dụng cho:
 | `git-guard` | `git` | Git shorthand nhấn mạnh branch guard | git workflow | Inherit GSGR |
 | `rpm` | `rpm` | Hướng dẫn cấu trúc và command build RPM cho current project trên RHEL | packaging | Bao gồm source transfer Mac -> RHEL nếu relevant |
 
+Diễn giải thực dụng cho nhóm `git`:
+
+- AI phải map shorthand này về action surface GSGR hiện hành, gồm: `status`, `fetch`, `diff`, `log`, `show`, `branch-info`, `switch`, `create-branch`, `start-slice`, `publish-branch`, `commit`, `push`, `pull`, `merge-main`, `tag`, `pick`, `delete-branch`, `prune`, `reset`, `restore`, `rebase-main`
+- với slice mới, canonical flow ưu tiên là `gsgr start-slice <new-branch> <base-branch>`
+- nếu không dùng `start-slice`, AI phải ưu tiên flow tối thiểu: `gsgr create-branch <new-branch> <base-branch>` -> `gsgr publish-branch <new-branch>` -> `gsgr status <new-branch>`
+- `diff`, `log`, và `branch-info` là inspect-only; không được mutate branch / HEAD chỉ để inspect
+- `delete-branch` hiện chỉ là local-only guarded delete, chưa phải remote delete
+
 ### 7. Docs
 
 | Alias / biến thể | Canonical form | Ý nghĩa | Phạm vi | Rule đi kèm / ghi chú |
@@ -141,6 +149,7 @@ Các alias dưới đây không chỉ là shortcut; chúng tự động inherit 
 - `git`, `gs`, `gsg`, `git-safe`, `git-guard`
   - inherit [Global Safe Git Branch Guard Rule](../Global_Safe_Git_Branch_Guard_Rule.md)
   - mọi diễn giải phải bám pattern `Check -> Switch -> Re-check -> Execute`
+  - khi mở slice mới, phải ưu tiên `start-slice` hoặc flow `create-branch -> publish-branch -> status`
 - `chk-docs`, `chkdocs`, `c-docs`, `cdocs`
   - inherit docs folder review / refine / normalize rule từ governance documentation discipline
   - nếu đã thấy nội dung thì phải ưu tiên xử lý trực tiếp trong scope cho phép

@@ -152,7 +152,47 @@ Trước khi mở version, phải kiểm tra và ghi rõ:
 ### Rule 5.1 Narrow slice rule
 Mỗi slice phải narrow, testable, verifiable, và traceable tới version roadmap.
 
-### Rule 5.2 In-scope / out-of-scope rule
+### Rule 5.2 Slice branch pre-implementation gate
+Trước khi bắt đầu pass đầu tiên của bất kỳ slice mới nào, bắt buộc phải:
+
+- tạo branch của slice mới
+- switch vào đúng branch của slice mới
+- verify current repo, current branch, và worktree đang đúng với slice đó
+- chỉ sau đó mới được bắt đầu docs baseline, implementation, hoặc bounded execution pass của slice mới
+
+Không được viết docs/baseline/implementation của slice mới khi vẫn đang đứng ở nhánh cũ.
+
+Nếu phát hiện slice work đã bắt đầu trên sai branch, phải:
+
+- dừng pass hiện tại
+- sửa lineage / branch context trước
+- verify lại repo / branch / worktree
+- chỉ tiếp tục sau khi branch gate đã pass
+
+Rule này là global pre-implementation gate cho mọi slice mới.
+
+Trong ATP workflow hiện tại, cách hiện thực hóa ưu tiên cho gate này là:
+
+```bash
+gsgr start-slice <new-branch> <base-branch>
+```
+
+Nếu không dùng `start-slice`, flow tối thiểu phải là:
+
+```bash
+gsgr create-branch <new-branch> <base-branch>
+gsgr publish-branch <new-branch>
+gsgr status <new-branch>
+```
+
+Flow trên tồn tại để chốt đủ bốn bước bắt buộc:
+
+- create branch
+- switch vào branch mới
+- verify đúng repo / branch / worktree
+- rồi mới bắt đầu slice work
+
+### Rule 5.3 In-scope / out-of-scope rule
 Mỗi slice execution task phải ghi rõ:
 
 - objective
@@ -162,26 +202,26 @@ Mỗi slice execution task phải ghi rõ:
 
 Không được ẩn extra work ngoài slice trong cùng change set.
 
-### Rule 5.3 No hidden extra-slice work
+### Rule 5.4 No hidden extra-slice work
 Nếu một thay đổi vượt khỏi slice hiện tại, thay đổi đó phải:
 
 - bị loại khỏi change set, hoặc
 - được nêu explicit như strictly necessary fix với lý do rõ ràng
 
-### Rule 5.4 Verification required
+### Rule 5.5 Verification required
 Mỗi slice phải có test hoặc verification evidence phù hợp với loại thay đổi:
 
 - code/runtime changes -> tests hoặc explicit verification run
 - docs/governance changes -> review pass + consistency check
 
-### Rule 5.5 README alignment
+### Rule 5.6 README alignment
 Whenever anything changes at any level, README system ở level đó phải được review ngay.
 
 Nếu README bị ảnh hưởng, nó phải được cập nhật trong cùng task/change set trừ khi human explicitly cho phép defer.
 
 Nếu README không cần cập nhật, điều đó phải được nói rõ trong final report.
 
-### Rule 5.6 Boundary rule during execution
+### Rule 5.7 Boundary rule during execution
 Slice execution must not làm mờ boundary giữa:
 
 - source repo và runtime workspace
@@ -301,6 +341,9 @@ Ruleset này có thể được refine ở future version, nhưng refinement mus
 
 ### Before implementing a slice
 
+- slice branch đã được tạo cho slice mới
+- đã switch vào đúng slice branch
+- repo / branch / worktree đã được verify lại
 - slice objective rõ
 - in-scope / out-of-scope rõ
 - acceptance criteria rõ
