@@ -401,6 +401,9 @@ pr <tên hoặc mô tả tác vụ>
 
 **Nghĩa:**
 - yêu cầu tôi viết một prompt thật chặt để AI khác thực hiện tác vụ
+- prompt phải được viết gọn ở một chỗ duy nhất để copy/paste dễ dàng
+- sau khi AI mục tiêu chạy xong, user sẽ dán kết quả lại đây để tôi review
+- nếu cần, tôi sẽ viết thêm một prompt review / follow-up vòng nữa
 
 ### Trường hợp 1 — có tên / mô tả cụ thể
 - tôi phân tích tác vụ

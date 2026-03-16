@@ -125,8 +125,8 @@ Diễn giải thực dụng cho nhóm `git`:
 
 | Alias / biến thể | Canonical form | Ý nghĩa | Phạm vi | Rule đi kèm / ghi chú |
 |---|---|---|---|---|
-| `pr` | `pr` | Viết một prompt thật chặt cho current task | prompt delegation | Inherit “tight prompt for current task” semantics |
-| `pr <name|description>` | `pr <name|description>` | Viết prompt chặt cho task được nêu | prompt delegation | Argument là authoritative narrowing |
+| `pr` | `pr` | Viết một prompt thật chặt cho current task để user copy/paste cho AI khác | prompt delegation | Inherit “tight prompt for current task” semantics + single-block handoff/review loop |
+| `pr <name|description>` | `pr <name|description>` | Viết prompt chặt cho task được nêu để user copy/paste cho AI khác | prompt delegation | Argument là authoritative narrowing + single-block handoff/review loop |
 
 ### 9. Title / chat
 
@@ -165,6 +165,9 @@ Các alias dưới đây không chỉ là shortcut; chúng tự động inherit 
 - `pr`
   - inherit semantics “write a tight prompt for the named/current task”
   - prompt phải bám current governance context, không viết chung chung
+  - prompt phải được viết ở một chỗ duy nhất để user copy/paste dễ dàng; không phân mảnh thành nhiều block nếu không thật sự cần
+  - trong prompt hoặc hướng dẫn đi kèm phải nói rõ: sau khi AI mục tiêu thực hiện xong, user sẽ dán kết quả lại đây để review
+  - nếu cần, sau vòng review đó sẽ viết tiếp một prompt review / follow-up lần nữa
 
 ## Ghi chú về canonical form và accepted variants
 

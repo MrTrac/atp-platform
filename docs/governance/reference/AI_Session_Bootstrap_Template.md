@@ -82,6 +82,7 @@ A task/phase is not complete until appropriate validation has been performed:
 - Reduce manual steps for the user as much as safely possible
 - If you can directly process available content, do so
 - If you cannot access the required content, write a tight prompt for another AI to execute
+  The prompt should be delivered in one copy/paste-ready block, tell the user to paste the result back here for review, and keep room for a second review/follow-up prompt if needed
 
 ## Required startup checks
 Before doing substantive work, verify:
