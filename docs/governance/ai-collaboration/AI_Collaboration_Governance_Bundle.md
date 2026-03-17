@@ -21,6 +21,9 @@ Applies to:
 
 - Every major branch should have its own AI workspace/chat
 - AI must always verify repo and branch context
+- Before starting any new slice, AI must create the slice branch, switch into it, verify repo/branch/worktree again, and only then begin the first docs or implementation pass
+- AI must not write baseline docs or implementation for a new slice while still standing on the previous branch
+- If new-slice work is discovered on the wrong branch, AI must stop and repair branch lineage before continuing
 - AI must respect approval boundaries
 - AI should maximize automation, not bypass governance
 - AI outputs must be validated before being called complete

@@ -22,6 +22,8 @@ Mnemonic chính thức:
 
 Từ thời điểm này, mọi Git combo quan trọng phải được điều phối theo guard pattern này, thay vì viết lệnh Git rời rạc rồi tự giả định branch/context là đúng.
 
+Đối với slice execution, guard pattern này đồng thời là branch-lineage gate toàn cục trước mọi first pass của slice mới.
+
 ## 2. Scope áp dụng
 
 Rule này áp dụng cho:
@@ -75,6 +77,30 @@ Sau khi switch, phải kiểm tra lại:
 ### 3.4 Execute
 
 Chỉ sau khi guard pass mới được chạy Git action chính.
+
+### 3.5 Slice pre-implementation branch gate
+
+Đối với mọi slice mới, `GSGR` áp như một pre-implementation gate bắt buộc.
+
+Trước khi bắt đầu docs baseline, implementation, hoặc bounded execution pass đầu tiên của slice mới, bắt buộc phải đi qua đúng chuỗi:
+
+`Check -> Switch -> Re-check -> Execute`
+
+Diễn giải bắt buộc:
+
+- `Check`: xác nhận đang ở đúng repo, biết current branch hiện tại, và biết worktree state hiện tại
+- `Switch`: tạo branch của slice mới nếu chưa có và switch vào đúng branch đó
+- `Re-check`: verify lại current repo, current branch, và worktree sau khi switch
+- `Execute`: chỉ sau đó mới được bắt đầu work của slice mới
+
+Không được bắt đầu slice mới khi vẫn đang đứng ở branch của slice cũ hoặc branch lineage khác.
+
+Nếu phát hiện slice work đã bắt đầu trên sai branch thì phải:
+
+- dừng ngay pass hiện tại
+- sửa lineage / branch context trước
+- re-check lại repo / branch / worktree
+- chỉ tiếp tục sau khi branch gate pass
 
 ## 4. Runtime model chính thức
 
@@ -209,15 +235,26 @@ Supported actions:
 
 1. `help`
 2. `status`
-3. `commit`
-4. `push`
-5. `pull`
-6. `merge-main`
-7. `tag`
-8. `pick`
-9. `reset`
-10. `restore`
-11. `rebase-main`
+3. `fetch`
+4. `diff`
+5. `log`
+6. `show`
+7. `branch-info`
+8. `switch`
+9. `create-branch`
+10. `start-slice`
+11. `publish-branch`
+12. `commit`
+13. `push`
+14. `pull`
+15. `merge-main`
+16. `tag`
+17. `pick`
+18. `delete-branch`
+19. `prune`
+20. `reset`
+21. `restore`
+22. `rebase-main`
 
 ## 8. Action semantics
 
@@ -229,7 +266,77 @@ In usage, examples, alias guidance, installed alias layer, skipped aliases.
 
 Guard only, không có state-changing Git action.
 
-### 8.3 `gsgr commit <target-branch> "<commit-message>" <file1> [file2 ...]`
+### 8.3 `gsgr fetch [target-branch]`
+
+Inspect/sync-only action:
+
+- fetch remote state cần thiết
+- không mutate working tree
+- không đổi HEAD chỉ để inspect
+
+### 8.4 `gsgr diff [target-branch] [diff-args...]`
+
+Inspect-only action:
+
+- dùng để xem diff theo current context hoặc target branch hợp lệ
+- không được switch branch thật chỉ để đọc diff
+- không mutate working tree hoặc HEAD chỉ để inspect
+
+### 8.5 `gsgr log [target-branch] [log-args...]`
+
+Inspect-only action:
+
+- dùng để xem history phù hợp với current context
+- không được switch branch thật chỉ để inspect
+- không mutate branch / HEAD chỉ để xem log
+
+### 8.6 `gsgr show <object>`
+
+Inspect-only action:
+
+- dùng để xem commit, tag, hoặc object Git cụ thể
+- không mutate repo state
+
+### 8.7 `gsgr branch-info [target-branch]`
+
+Inspect-only action:
+
+- hiển thị branch context, remote linkage, và state summary cần thiết
+- không được switch branch thật chỉ để đọc thông tin
+- không mutate branch / HEAD chỉ để inspect
+
+### 8.8 `gsgr switch <target-branch>`
+
+- guard target branch
+- switch vào đúng branch được chỉ định
+- re-check branch/worktree sau switch
+
+### 8.9 `gsgr create-branch <new-branch> <base-branch>`
+
+- verify repo / branch / worktree theo guard pattern
+- tạo branch mới từ đúng `base-branch`
+- switch vào branch mới
+- re-check branch/worktree sau khi tạo
+
+### 8.10 `gsgr start-slice <new-branch> <base-branch>`
+
+Đây là canonical slice-start flow.
+
+- tạo branch slice mới từ đúng `base-branch`
+- switch vào branch mới
+- verify lại repo / branch / worktree
+- chốt pre-implementation gate trước khi bắt đầu slice work
+
+Khi bắt đầu slice mới, đây là flow ưu tiên dùng để hiện thực hóa global slice branch gate.
+
+### 8.11 `gsgr publish-branch <target-branch>`
+
+- guard đúng branch local
+- publish branch mới lên `origin`
+- thiết lập remote tracking khi cần
+- đặc biệt hữu ích ngay sau `create-branch` hoặc `start-slice`
+
+### 8.12 `gsgr commit <target-branch> "<commit-message>" <file1> [file2 ...]`
 
 - guard branch
 - chỉ add các file được chỉ định
@@ -237,18 +344,18 @@ Guard only, không có state-changing Git action.
 - commit
 - push đúng target branch
 
-### 8.4 `gsgr push <target-branch>`
+### 8.13 `gsgr push <target-branch>`
 
 - guard branch
 - push đúng branch đó
 
-### 8.5 `gsgr pull <target-branch>`
+### 8.14 `gsgr pull <target-branch>`
 
 - guard branch
 - working tree phải sạch
 - pull `origin <target-branch>`
 
-### 8.6 `gsgr merge-main <source-branch> "<merge-message>"`
+### 8.15 `gsgr merge-main <source-branch> "<merge-message>"`
 
 - guard về `main`
 - working tree phải sạch
@@ -257,7 +364,7 @@ Guard only, không có state-changing Git action.
 - push `origin main`
 - là dangerous action, cần `--yes`
 
-### 8.7 `gsgr tag <tag-name> "<tag-message>"`
+### 8.16 `gsgr tag <tag-name> "<tag-message>"`
 
 - guard về `main`
 - working tree phải sạch
@@ -266,14 +373,27 @@ Guard only, không có state-changing Git action.
 - push tag
 - là dangerous action, cần `--yes`
 
-### 8.8 `gsgr pick <target-branch> <commit-id>`
+### 8.17 `gsgr pick <target-branch> <commit-id>`
 
 - validate commit tồn tại
 - guard target branch
 - cherry-pick
 - push đúng branch
 
-### 8.9 `gsgr reset <target-branch> <safe-commit>`
+### 8.18 `gsgr delete-branch <target-branch>`
+
+- local-only guarded delete
+- không phải remote delete
+- chỉ xóa local branch khi guard pass
+- là destructive action, cần `--yes`
+
+### 8.19 `gsgr prune`
+
+- dọn branch/reference state cũ theo guard có kiểm soát
+- destructive hoặc semi-destructive cleanup phải được guarded
+- action này không được dùng như remote-delete wrapper mù quáng
+
+### 8.20 `gsgr reset <target-branch> <safe-commit>`
 
 - validate commit tồn tại
 - guard target branch
@@ -282,13 +402,13 @@ Guard only, không có state-changing Git action.
 - show status sau đó
 - cần `--yes`
 
-### 8.10 `gsgr restore <target-branch> <file1> [file2 ...]`
+### 8.21 `gsgr restore <target-branch> <file1> [file2 ...]`
 
 - guard target branch
 - restore đúng các file được chỉ định
 - show status sau đó
 
-### 8.11 `gsgr rebase-main <target-branch>`
+### 8.22 `gsgr rebase-main <target-branch>`
 
 - target branch không được là `main`
 - guard target branch
@@ -297,6 +417,28 @@ Guard only, không có state-changing Git action.
 - rebase onto `origin/main`
 - push `--force-with-lease`
 - là dangerous action, cần `--yes`
+
+## 8A. Canonical slice-start flow
+
+Khi mở một slice mới, flow canonical bây giờ là:
+
+```bash
+gsgr start-slice <new-branch> <base-branch>
+```
+
+Nếu không dùng `start-slice`, flow tối thiểu phải là:
+
+```bash
+gsgr create-branch <new-branch> <base-branch>
+gsgr publish-branch <new-branch>
+gsgr status <new-branch>
+```
+
+Flow này là cách hiện thực hóa trực tiếp:
+
+- global slice branch gate
+- pre-implementation gate cho mọi slice mới
+- doctrine `Check -> Switch -> Re-check -> Execute`
 
 ## 9. Safety validations bắt buộc
 
@@ -310,6 +452,8 @@ System phải fail rõ ràng khi:
 - `commit` không có file list
 - commit hoặc safe commit không tồn tại
 - tag đã tồn tại
+- `delete-branch` được yêu cầu như remote delete
+- inspect-only action đang cố mutate repo state chỉ để inspect
 
 System không được silently continue qua unsafe states.
 
@@ -372,6 +516,20 @@ gsgr commit v1.0-planning "docs: integrate GSGR" docs/governance/README.md docs/
 
 ```bash
 gsgr push v1.0-planning
+```
+
+### 13.2a Start slice an toàn
+
+```bash
+gsgr start-slice v1.0-slice-e v1.0-planning
+```
+
+### 13.2b Start slice bằng flow tách rời
+
+```bash
+gsgr create-branch v1.0-slice-e v1.0-planning
+gsgr publish-branch v1.0-slice-e
+gsgr status v1.0-slice-e
 ```
 
 ### 13.3 Merge vào `main`

@@ -22,8 +22,8 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 ## Cấu trúc governance hiện hành
 
 - `ATP_3_Role_Workflow.md` - workflow governance cho mô hình Multi-AI của ATP: Architect -> Executor -> Verifier
-- `ATP_Development_Ruleset.md` - ruleset vận hành development bắt buộc xuyên suốt version opening, slice execution, consolidation, freeze, và close-out
-- `Global_Safe_Git_Branch_Guard_Rule.md` - global safe Git governance rule cho production `gsgr` runtime, alias layer, và branch guard pattern `Check -> Switch -> Re-check -> Execute`
+- `ATP_Development_Ruleset.md` - ruleset vận hành development bắt buộc xuyên suốt version opening, slice execution, consolidation, freeze, và close-out, bao gồm global pre-implementation gate: tạo/switch/verify đúng slice branch trước khi bắt đầu slice mới
+- `Global_Safe_Git_Branch_Guard_Rule.md` - global safe Git governance rule cho production `gsgr` runtime, alias layer, branch guard pattern `Check -> Switch -> Re-check -> Execute`, slice branch-lineage gate trước first pass của mọi slice mới, và current action surface như `start-slice`, `publish-branch`, `fetch`, `diff`, `log`, `branch-info`, `delete-branch`, `prune`
 - `framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md` - rule bắt buộc để mọi milestone/version có lineage và documentation continuity rõ
 - `framework/` - governance framework cấp cha
 - `git/` - governance cho Git, branch, wrapper, và thao tác an toàn
@@ -38,7 +38,7 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 
 1. `framework/Contextual_Project_Governance_Framework.md`
 2. `ATP_Development_Ruleset.md`
-3. `Global_Safe_Git_Branch_Guard_Rule.md` cho `gsgr` runtime, alias layer, và branch guard toàn cục trước mọi Git combo quan trọng
+3. `Global_Safe_Git_Branch_Guard_Rule.md` cho `gsgr` runtime, alias layer, branch guard toàn cục trước mọi Git combo quan trọng, canonical `start-slice` flow, và pre-implementation gate cho mọi slice mới
 4. `git/Contextual_Git_Governance_Model.md`
 5. `git/Git_Safety_Charter.md`
 6. `git/Safe_Git_Workflow_Templates.md`
