@@ -35,4 +35,7 @@ printf 'canonical_fixture_confirmed: true\n'
 printf 'bounded_request_chain_completed: true\n'
 printf 'bounded_surfaces_exercised: request-flow,request-bundle,request-prompt\n'
 printf 'smoke_verification: passed\n'
+printf 'verification_scope: repo_local_bounded_single_ai_chain\n'
+printf 'verification_confidence: canonical_fixture_and_request_chain_confirmed\n'
+printf 'verification_recheck_command: ./atp smoke-request-chain %s\n' "$REQUEST_FILE"
 printf 'next_operator_path: review -> ./atp request-bundle %s ; handoff -> ./atp request-prompt %s\n' "$REQUEST_FILE" "$REQUEST_FILE"

@@ -62,6 +62,15 @@ class TestSlice10SmokeVerification(unittest.TestCase):
             result.stdout,
         )
         self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("verification_scope: repo_local_bounded_single_ai_chain", result.stdout)
+        self.assertIn(
+            "verification_confidence: canonical_fixture_and_request_chain_confirmed",
+            result.stdout,
+        )
+        self.assertIn(
+            f"verification_recheck_command: ./atp smoke-request-chain {CANONICAL_FIXTURE}",
+            result.stdout,
+        )
         self.assertIn(
             f"next_operator_path: review -> ./atp request-bundle {CANONICAL_FIXTURE} ; handoff -> ./atp request-prompt {CANONICAL_FIXTURE}",
             result.stdout,
