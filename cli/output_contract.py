@@ -58,6 +58,7 @@ _PREFERRED_KEY_ORDER = [
     "result_status",
     "completion_signal",
     "quick_status",
+    "readiness_checklist",
     "primary_artifact",
     "primary_review_target",
     "handoff_target",
@@ -183,6 +184,7 @@ def build_review_summary(
     primary_artifact: dict[str, Any]
     completion_signal: dict[str, Any]
     quick_status: dict[str, Any]
+    readiness_checklist: dict[str, Any]
     primary_review_target: dict[str, Any]
     handoff_target: dict[str, Any]
     next_bounded_action: dict[str, Any]
@@ -200,6 +202,11 @@ def build_review_summary(
             "result_status": result_status,
             "primary_artifact_type": artifact.get("artifact_type"),
             "ready_for_review": True,
+            "ready_for_handoff": True,
+        }
+        readiness_checklist = {
+            "ready_for_review": True,
+            "ready_for_next_bounded_step": False,
             "ready_for_handoff": True,
         }
         primary_artifact = {
@@ -244,6 +251,11 @@ def build_review_summary(
             "ready_for_review": True,
             "ready_for_handoff": False,
         }
+        readiness_checklist = {
+            "ready_for_review": True,
+            "ready_for_next_bounded_step": True,
+            "ready_for_handoff": False,
+        }
         primary_artifact = {
             "bundle_id": artifact.get("bundle_id"),
             "bundle_type": artifact.get("bundle_type"),
@@ -284,6 +296,11 @@ def build_review_summary(
             "result_status": result_status,
             "primary_artifact_type": artifact.get("package_type"),
             "ready_for_review": True,
+            "ready_for_handoff": False,
+        }
+        readiness_checklist = {
+            "ready_for_review": True,
+            "ready_for_next_bounded_step": True,
             "ready_for_handoff": False,
         }
         primary_artifact = {
@@ -327,6 +344,7 @@ def build_review_summary(
         "result_status": result_status,
         "completion_signal": completion_signal,
         "quick_status": quick_status,
+        "readiness_checklist": readiness_checklist,
         "primary_artifact": primary_artifact,
         "primary_review_target": primary_review_target,
         "handoff_target": handoff_target,

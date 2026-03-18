@@ -53,6 +53,7 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "result_status",
                 "completion_signal",
                 "quick_status",
+                "readiness_checklist",
                 "primary_artifact",
                 "primary_review_target",
                 "handoff_target",
@@ -78,6 +79,14 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "result_status": "accepted",
                 "primary_artifact_type": "single_ai_execution_package",
                 "ready_for_review": True,
+                "ready_for_handoff": False,
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["readiness_checklist"],
+            {
+                "ready_for_review": True,
+                "ready_for_next_bounded_step": True,
                 "ready_for_handoff": False,
             },
         )
@@ -159,6 +168,14 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "result_status": "reviewable",
                 "primary_artifact_type": "reviewable_single_ai_output_bundle",
                 "ready_for_review": True,
+                "ready_for_handoff": False,
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["readiness_checklist"],
+            {
+                "ready_for_review": True,
+                "ready_for_next_bounded_step": True,
                 "ready_for_handoff": False,
             },
         )
@@ -258,6 +275,14 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "result_status": "ai_ready",
                 "primary_artifact_type": "one_shot_ai_ready_execution_prompt",
                 "ready_for_review": True,
+                "ready_for_handoff": True,
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["readiness_checklist"],
+            {
+                "ready_for_review": True,
+                "ready_for_next_bounded_step": False,
                 "ready_for_handoff": True,
             },
         )
