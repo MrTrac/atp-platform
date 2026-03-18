@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -18,6 +17,7 @@ from core.intake.review_bundle import (
     prepare_reviewable_single_ai_output_bundle,
 )
 from core.resolution.product_resolver import ProductResolutionError
+from output_contract import build_error_envelope, build_success_envelope, render_output
 
 CANONICAL_SAMPLE_REQUEST = "tests/fixtures/requests/sample_request_slice02.yaml"
 
@@ -82,19 +82,27 @@ def main(argv: list[str] | None = None) -> int:
         ValueError,
     ) as exc:
         print(
-            json.dumps(
-                {
-                    "status": "error",
-                    "error": str(exc),
-                    "request_file": args.request_file,
-                },
-                indent=2,
-                sort_keys=True,
+            render_output(
+                build_error_envelope(
+                    command="request-bundle",
+                    request_file=args.request_file,
+                    run_id=args.run_id,
+                    error=str(exc),
+                )
             )
         )
         return 1
 
-    print(json.dumps({"status": "ok", "summary": summary}, indent=2, sort_keys=True))
+    print(
+        render_output(
+            build_success_envelope(
+                command="request-bundle",
+                request_file=args.request_file,
+                run_id=args.run_id,
+                summary=summary,
+            )
+        )
+    )
     return 0
 
 
