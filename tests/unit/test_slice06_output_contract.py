@@ -51,6 +51,7 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "flow_id",
                 "supported_flow",
                 "result_status",
+                "completion_signal",
                 "quick_status",
                 "primary_artifact",
                 "primary_review_target",
@@ -62,6 +63,14 @@ class TestSlice06OutputContract(unittest.TestCase):
             ],
         )
         self.assertEqual(payload["review_summary"]["result_status"], "accepted")
+        self.assertEqual(
+            payload["review_summary"]["completion_signal"],
+            {
+                "state": "complete_for_current_step",
+                "review_complete_candidate": False,
+                "handoff_complete_candidate": False,
+            },
+        )
         self.assertEqual(
             payload["review_summary"]["quick_status"],
             {
@@ -135,6 +144,14 @@ class TestSlice06OutputContract(unittest.TestCase):
         )
         self.assertEqual(payload["command"], "request-bundle")
         self.assertEqual(payload["review_summary"]["result_status"], "reviewable")
+        self.assertEqual(
+            payload["review_summary"]["completion_signal"],
+            {
+                "state": "review_complete_candidate",
+                "review_complete_candidate": True,
+                "handoff_complete_candidate": False,
+            },
+        )
         self.assertEqual(
             payload["review_summary"]["quick_status"],
             {
@@ -226,6 +243,14 @@ class TestSlice06OutputContract(unittest.TestCase):
         )
         self.assertEqual(payload["command"], "request-prompt")
         self.assertEqual(payload["review_summary"]["result_status"], "ai_ready")
+        self.assertEqual(
+            payload["review_summary"]["completion_signal"],
+            {
+                "state": "handoff_complete_candidate",
+                "review_complete_candidate": True,
+                "handoff_complete_candidate": True,
+            },
+        )
         self.assertEqual(
             payload["review_summary"]["quick_status"],
             {

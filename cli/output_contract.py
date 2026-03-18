@@ -56,6 +56,7 @@ _PREFERRED_KEY_ORDER = [
     "scope_and_constraints",
     "single_ai_package_payload",
     "result_status",
+    "completion_signal",
     "quick_status",
     "primary_artifact",
     "primary_review_target",
@@ -180,6 +181,7 @@ def build_review_summary(
     ]
 
     primary_artifact: dict[str, Any]
+    completion_signal: dict[str, Any]
     quick_status: dict[str, Any]
     primary_review_target: dict[str, Any]
     handoff_target: dict[str, Any]
@@ -188,6 +190,11 @@ def build_review_summary(
     handoff_surface: dict[str, Any]
     if "one_shot_ai_ready_artifact" in summary:
         artifact = summary["one_shot_ai_ready_artifact"]
+        completion_signal = {
+            "state": "handoff_complete_candidate",
+            "review_complete_candidate": True,
+            "handoff_complete_candidate": True,
+        }
         quick_status = {
             "command": command,
             "result_status": result_status,
@@ -225,6 +232,11 @@ def build_review_summary(
         }
     elif "reviewable_output_bundle" in summary:
         artifact = summary["reviewable_output_bundle"]
+        completion_signal = {
+            "state": "review_complete_candidate",
+            "review_complete_candidate": True,
+            "handoff_complete_candidate": False,
+        }
         quick_status = {
             "command": command,
             "result_status": result_status,
@@ -262,6 +274,11 @@ def build_review_summary(
         }
     else:
         artifact = summary.get("single_ai_execution_package", {})
+        completion_signal = {
+            "state": "complete_for_current_step",
+            "review_complete_candidate": False,
+            "handoff_complete_candidate": False,
+        }
         quick_status = {
             "command": command,
             "result_status": result_status,
@@ -308,6 +325,7 @@ def build_review_summary(
         "flow_id": summary.get("flow_id"),
         "supported_flow": summary.get("supported_flow"),
         "result_status": result_status,
+        "completion_signal": completion_signal,
         "quick_status": quick_status,
         "primary_artifact": primary_artifact,
         "primary_review_target": primary_review_target,
