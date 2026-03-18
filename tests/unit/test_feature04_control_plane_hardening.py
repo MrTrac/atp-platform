@@ -79,6 +79,37 @@ class TestFeature04ControlPlaneHardening(unittest.TestCase):
         self.assertIn("Inspect bounded ATP preview summaries or read-only current-task state only.", result.stdout)
         self.assertIn("This command is read-only.", result.stdout)
 
+    def test_root_help_does_not_imply_automation_or_background_control(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "help"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("auto-execute  -> disabled", result.stdout)
+        self.assertIn(
+            "control-plane -> preview/read-only surfaces only; no background execution or autonomous progression",
+            result.stdout,
+        )
+        self.assertNotIn("scheduler", result.stdout.lower())
+        self.assertNotIn("daemon", result.stdout.lower())
+
+    def test_smoke_request_chain_still_passes_after_control_plane_hardening(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
