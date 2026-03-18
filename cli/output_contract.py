@@ -12,6 +12,7 @@ _PREFERRED_KEY_ORDER = [
     "status",
     "request_file",
     "run_id",
+    "review_summary",
     "summary",
     "error_stage",
     "error_kind",
@@ -54,6 +55,9 @@ _PREFERRED_KEY_ORDER = [
     "task_summary",
     "scope_and_constraints",
     "single_ai_package_payload",
+    "result_status",
+    "primary_artifact",
+    "review_sections",
     "review_surface",
     "target_mode",
     "usage_mode",
@@ -100,12 +104,14 @@ def build_success_envelope(
     run_id: str,
     summary: dict[str, Any],
 ) -> OrderedDict[str, Any]:
+    review_summary = build_review_summary(command=command, request_file=request_file, run_id=run_id, summary=summary)
     return order_for_operator_review(
         {
             "command": command,
             "status": "ok",
             "request_file": request_file,
             "run_id": run_id,
+            "review_summary": review_summary,
             "summary": summary,
         }
     )
@@ -139,3 +145,68 @@ def build_error_envelope(
 
 def render_output(payload: OrderedDict[str, Any]) -> str:
     return json.dumps(payload, indent=2)
+
+
+def build_review_summary(
+    *,
+    command: str,
+    request_file: str,
+    run_id: str,
+    summary: dict[str, Any],
+) -> dict[str, Any]:
+    result_status = (
+        summary.get("flow_status")
+        or summary.get("bundle_status")
+        or summary.get("artifact_status")
+        or "unknown"
+    )
+    review_sections = [
+        key
+        for key in (
+            "validation_summary",
+            "normalized_task",
+            "single_ai_execution_package",
+            "task_manifest",
+            "reviewable_output_bundle",
+            "one_shot_ai_ready_artifact",
+        )
+        if key in summary
+    ]
+
+    primary_artifact: dict[str, Any]
+    if "one_shot_ai_ready_artifact" in summary:
+        artifact = summary["one_shot_ai_ready_artifact"]
+        primary_artifact = {
+            "artifact_id": artifact.get("artifact_id"),
+            "artifact_type": artifact.get("artifact_type"),
+            "artifact_version": artifact.get("artifact_version"),
+            "usage_mode": artifact.get("usage_mode"),
+        }
+    elif "reviewable_output_bundle" in summary:
+        artifact = summary["reviewable_output_bundle"]
+        primary_artifact = {
+            "bundle_id": artifact.get("bundle_id"),
+            "bundle_type": artifact.get("bundle_type"),
+            "bundle_version": artifact.get("bundle_version"),
+        }
+    else:
+        artifact = summary.get("single_ai_execution_package", {})
+        primary_artifact = {
+            "package_id": artifact.get("package_id"),
+            "package_type": artifact.get("package_type"),
+            "package_version": artifact.get("package_version"),
+            "target_mode": artifact.get("target_mode"),
+        }
+
+    return {
+        "command": command,
+        "request_file": request_file,
+        "run_id": run_id,
+        "product": summary.get("product"),
+        "request_id": summary.get("request_id"),
+        "flow_id": summary.get("flow_id"),
+        "supported_flow": summary.get("supported_flow"),
+        "result_status": result_status,
+        "primary_artifact": primary_artifact,
+        "review_sections": review_sections,
+    }

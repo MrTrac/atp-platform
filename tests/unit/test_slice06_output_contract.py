@@ -37,9 +37,25 @@ class TestSlice06OutputContract(unittest.TestCase):
         payload = _load_ordered_json(result.stdout)
         self.assertEqual(
             list(payload.keys()),
-            ["command", "status", "request_file", "run_id", "summary"],
+            ["command", "status", "request_file", "run_id", "review_summary", "summary"],
         )
         self.assertEqual(payload["command"], "request-flow")
+        self.assertEqual(
+            list(payload["review_summary"].keys()),
+            [
+                "command",
+                "request_file",
+                "run_id",
+                "product",
+                "request_id",
+                "flow_id",
+                "supported_flow",
+                "result_status",
+                "primary_artifact",
+                "review_sections",
+            ],
+        )
+        self.assertEqual(payload["review_summary"]["result_status"], "accepted")
         summary = payload["summary"]
         self.assertEqual(
             list(summary.keys())[:8],
@@ -62,9 +78,14 @@ class TestSlice06OutputContract(unittest.TestCase):
         payload = _load_ordered_json(result.stdout)
         self.assertEqual(
             list(payload.keys()),
-            ["command", "status", "request_file", "run_id", "summary"],
+            ["command", "status", "request_file", "run_id", "review_summary", "summary"],
         )
         self.assertEqual(payload["command"], "request-bundle")
+        self.assertEqual(payload["review_summary"]["result_status"], "reviewable")
+        self.assertEqual(
+            payload["review_summary"]["review_sections"],
+            ["reviewable_output_bundle"],
+        )
         summary = payload["summary"]
         self.assertEqual(
             list(summary.keys()),
@@ -101,9 +122,14 @@ class TestSlice06OutputContract(unittest.TestCase):
         payload = _load_ordered_json(result.stdout)
         self.assertEqual(
             list(payload.keys()),
-            ["command", "status", "request_file", "run_id", "summary"],
+            ["command", "status", "request_file", "run_id", "review_summary", "summary"],
         )
         self.assertEqual(payload["command"], "request-prompt")
+        self.assertEqual(payload["review_summary"]["result_status"], "ai_ready")
+        self.assertEqual(
+            payload["review_summary"]["review_sections"],
+            ["reviewable_output_bundle", "one_shot_ai_ready_artifact"],
+        )
         summary = payload["summary"]
         self.assertEqual(
             list(summary.keys()),
