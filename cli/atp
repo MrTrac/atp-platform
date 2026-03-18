@@ -20,6 +20,7 @@ case "${1:-help}" in
     printf '\n'
     printf 'Bounded request-chain commands:\n'
     printf '  request-flow    Build the Slice 02 normalized request flow and single-AI package.\n'
+    printf '  request-flow-multi  Build multiple Slice 02 request flows in explicit input order.\n'
     printf '  request-bundle  Build the Slice 03 reviewable output bundle from the same request path.\n'
     printf '  request-prompt  Build the Slice 04 one-shot AI-ready prompt artifact for manual handoff.\n'
     printf '  smoke-request-chain  Run the canonical repo-root smoke verification for the bounded chain.\n'
@@ -31,6 +32,7 @@ case "${1:-help}" in
     printf '\n'
     printf 'Canonical runnable example from repo root:\n'
     printf '  %s request-flow tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s request-flow-multi tests/fixtures/requests/sample_request_slice02.yaml tests/fixtures/requests/sample_request_slice02_b.yaml\n' "$CLI_PATH"
     printf '  %s request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-prompt tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '\n'

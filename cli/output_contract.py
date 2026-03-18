@@ -11,14 +11,27 @@ _PREFERRED_KEY_ORDER = [
     "command",
     "status",
     "request_file",
+    "request_files",
     "run_id",
     "review_summary",
     "summary",
+    "multi_request_summary",
     "error_stage",
     "error_kind",
+    "failed_request_file",
+    "failed_request_index",
+    "processed_request_count",
     "error",
     "next_step",
     "validation_evidence_summary",
+    "multi_request_id",
+    "processing_mode",
+    "ordering_basis",
+    "request_count",
+    "accepted_request_count",
+    "request_ids",
+    "flow_ids",
+    "request_flows",
     "artifact_id",
     "artifact_type",
     "artifact_version",
@@ -96,6 +109,18 @@ _PREFERRED_KEY_ORDER = [
     "supported_scope",
 ]
 _PREFERRED_KEY_INDEX = {key: index for index, key in enumerate(_PREFERRED_KEY_ORDER)}
+_MULTI_REQUEST_SUMMARY_ORDER = [
+    "multi_request_id",
+    "processing_mode",
+    "ordering_basis",
+    "request_count",
+    "accepted_request_count",
+    "supported_flow",
+    "notes",
+    "request_ids",
+    "flow_ids",
+    "request_flows",
+]
 
 
 def _sort_key(key: str) -> tuple[int, str]:
@@ -113,6 +138,20 @@ def order_for_operator_review(value: Any) -> Any:
     if isinstance(value, list):
         return [order_for_operator_review(item) for item in value]
     return value
+
+
+def _order_mapping_with_explicit_keys(
+    value: dict[str, Any],
+    key_order: list[str],
+) -> OrderedDict[str, Any]:
+    ordered = OrderedDict()
+    for key in key_order:
+        if key in value:
+            ordered[key] = order_for_operator_review(value[key])
+    for key in value.keys():
+        if key not in ordered:
+            ordered[key] = order_for_operator_review(value[key])
+    return ordered
 
 
 def build_success_envelope(
@@ -169,6 +208,60 @@ def build_error_envelope(
             ),
         }
     return order_for_operator_review(payload)
+
+
+def build_multi_request_success_envelope(
+    *,
+    command: str,
+    request_files: list[str],
+    run_id: str,
+    multi_request_summary: dict[str, Any],
+) -> OrderedDict[str, Any]:
+    return OrderedDict(
+        [
+            ("command", command),
+            ("status", "ok"),
+            ("request_files", order_for_operator_review(request_files)),
+            ("run_id", run_id),
+            (
+                "multi_request_summary",
+                _order_mapping_with_explicit_keys(
+                    multi_request_summary,
+                    _MULTI_REQUEST_SUMMARY_ORDER,
+                ),
+            ),
+        ]
+    )
+
+
+def build_multi_request_error_envelope(
+    *,
+    command: str,
+    request_files: list[str],
+    run_id: str,
+    error: str,
+    error_stage: str,
+    error_kind: str,
+    failed_request_file: str,
+    failed_request_index: int,
+    processed_request_count: int,
+    next_step: str,
+) -> OrderedDict[str, Any]:
+    return OrderedDict(
+        [
+            ("command", command),
+            ("status", "error"),
+            ("request_files", order_for_operator_review(request_files)),
+            ("run_id", run_id),
+            ("error_stage", error_stage),
+            ("error_kind", error_kind),
+            ("failed_request_file", failed_request_file),
+            ("failed_request_index", failed_request_index),
+            ("processed_request_count", processed_request_count),
+            ("error", error),
+            ("next_step", next_step),
+        ]
+    )
 
 
 def render_output(payload: OrderedDict[str, Any]) -> str:
