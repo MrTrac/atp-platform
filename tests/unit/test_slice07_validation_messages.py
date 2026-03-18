@@ -50,11 +50,22 @@ class TestSlice07ValidationMessages(unittest.TestCase):
                 "error_kind",
                 "error",
                 "next_step",
+                "validation_evidence_summary",
             ],
         )
         self.assertEqual(payload["error_stage"], "request_loading")
         self.assertEqual(payload["error_kind"], "request_file_not_found")
         self.assertIn("./cli/atp request-flow", payload["next_step"])
+        self.assertEqual(
+            payload["validation_evidence_summary"],
+            {
+                "failed_command": "request-flow",
+                "failed_stage": "request_loading",
+                "failed_kind": "request_file_not_found",
+                "bounded_scope_preserved": True,
+                "canonical_recheck_command": "./atp request-flow tests/fixtures/requests/sample_request_slice02.yaml",
+            },
+        )
 
     def test_invalid_yaml_is_classified_clearly_for_all_request_chain_commands(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -76,6 +87,16 @@ class TestSlice07ValidationMessages(unittest.TestCase):
                     self.assertEqual(payload["error_kind"], "invalid_yaml")
                     self.assertIn("Unsupported YAML structure", payload["error"])
                     self.assertIn(CANONICAL_SAMPLE_REQUEST, payload["next_step"])
+                    self.assertEqual(
+                        payload["validation_evidence_summary"],
+                        {
+                            "failed_command": command_name,
+                            "failed_stage": "request_loading",
+                            "failed_kind": "invalid_yaml",
+                            "bounded_scope_preserved": True,
+                            "canonical_recheck_command": f"./atp {command_name} {CANONICAL_SAMPLE_REQUEST}",
+                        },
+                    )
 
     def test_missing_required_field_is_classified_as_request_flow_validation(self) -> None:
         raw_request = load_request(FIXTURE_DIR / "sample_request_slice02.yaml")
@@ -100,6 +121,16 @@ class TestSlice07ValidationMessages(unittest.TestCase):
                     self.assertEqual(payload["error_kind"], "missing_required_field")
                     self.assertIn("payload.request_traceability_seed is required.", payload["error"])
                     self.assertIn(CANONICAL_SAMPLE_REQUEST, payload["next_step"])
+                    self.assertEqual(
+                        payload["validation_evidence_summary"],
+                        {
+                            "failed_command": command_name,
+                            "failed_stage": "request_flow_preparation",
+                            "failed_kind": "missing_required_field",
+                            "bounded_scope_preserved": True,
+                            "canonical_recheck_command": f"./atp {command_name} {CANONICAL_SAMPLE_REQUEST}",
+                        },
+                    )
 
     def test_unsupported_request_shape_is_classified_consistently(self) -> None:
         unsupported_request = str(FIXTURE_DIR / "sample_request_tdf.yaml")
@@ -119,6 +150,16 @@ class TestSlice07ValidationMessages(unittest.TestCase):
                 self.assertEqual(payload["error_kind"], "unsupported_request_shape")
                 self.assertIn("Slice 02 supports ATP requests only.", payload["error"])
                 self.assertIn(command_name, payload["next_step"])
+                self.assertEqual(
+                    payload["validation_evidence_summary"],
+                    {
+                        "failed_command": command_name,
+                        "failed_stage": "request_flow_preparation",
+                        "failed_kind": "unsupported_request_shape",
+                        "bounded_scope_preserved": True,
+                        "canonical_recheck_command": f"./atp {command_name} {CANONICAL_SAMPLE_REQUEST}",
+                    },
+                )
 
 
 if __name__ == "__main__":

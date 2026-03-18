@@ -18,6 +18,7 @@ _PREFERRED_KEY_ORDER = [
     "error_kind",
     "error",
     "next_step",
+    "validation_evidence_summary",
     "artifact_id",
     "artifact_type",
     "artifact_version",
@@ -152,6 +153,16 @@ def build_error_envelope(
         payload["error_kind"] = error_kind
     if next_step is not None:
         payload["next_step"] = next_step
+    if error_stage is not None and error_kind is not None:
+        payload["validation_evidence_summary"] = {
+            "failed_command": command,
+            "failed_stage": error_stage,
+            "failed_kind": error_kind,
+            "bounded_scope_preserved": True,
+            "canonical_recheck_command": (
+                f"./atp {command} tests/fixtures/requests/sample_request_slice02.yaml"
+            ),
+        }
     return order_for_operator_review(payload)
 
 
