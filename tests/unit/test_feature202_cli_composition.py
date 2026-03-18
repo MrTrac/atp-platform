@@ -7,7 +7,9 @@ P3 scope: regression locks — individual commands unchanged, no automation drif
 
 from __future__ import annotations
 
+import json
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -145,6 +147,80 @@ class TestFeature202CliCompositionP1Contract(unittest.TestCase):
         self.assertNotIn("open(", source)
         self.assertNotIn("write_text", source)
         self.assertNotIn("mkdir", source)
+
+
+class TestFeature202CliCompositionP2Implementation(unittest.TestCase):
+    """Lock the P2 compose-chain command implementation."""
+
+    def _run(self, cmd: list[str]) -> tuple[int, str, str]:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=ROOT_DIR,
+        )
+        return result.returncode, result.stdout, result.stderr
+
+    def test_compose_chain_command_exits_zero_on_valid_fixture(self) -> None:
+        rc, stdout, _ = self._run(["./atp", "compose-chain", FIXTURE])
+        self.assertEqual(rc, 0)
+
+    def test_compose_chain_output_is_valid_json(self) -> None:
+        rc, stdout, _ = self._run(["./atp", "compose-chain", FIXTURE])
+        self.assertEqual(rc, 0)
+        data = json.loads(stdout)
+        self.assertEqual(data["command"], "compose-chain")
+
+    def test_compose_chain_reports_all_stages_complete(self) -> None:
+        rc, stdout, _ = self._run(["./atp", "compose-chain", FIXTURE])
+        self.assertEqual(rc, 0)
+        data = json.loads(stdout)
+        self.assertEqual(data["composition_status"], "all_stages_complete")
+
+    def test_compose_chain_output_has_three_stages_in_order(self) -> None:
+        rc, stdout, _ = self._run(["./atp", "compose-chain", FIXTURE])
+        self.assertEqual(rc, 0)
+        data = json.loads(stdout)
+        stages = [s["stage"] for s in data["stages_executed"]]
+        self.assertEqual(stages, ["request_flow", "request_bundle", "request_prompt"])
+
+    def test_compose_chain_each_stage_has_ok_status(self) -> None:
+        rc, stdout, _ = self._run(["./atp", "compose-chain", FIXTURE])
+        self.assertEqual(rc, 0)
+        data = json.loads(stdout)
+        for stage in data["stages_executed"]:
+            self.assertEqual(stage["status"], "ok", f"Stage {stage['stage']!r} not ok")
+
+    def test_compose_chain_output_contains_composition_mode(self) -> None:
+        rc, stdout, _ = self._run(["./atp", "compose-chain", FIXTURE])
+        self.assertEqual(rc, 0)
+        data = json.loads(stdout)
+        self.assertIn("synchronous", data["composition_mode"])
+
+    def test_compose_chain_exits_nonzero_on_missing_request_file(self) -> None:
+        rc, _, _ = self._run(["./atp", "compose-chain", "nonexistent_file.yaml"])
+        self.assertNotEqual(rc, 0)
+
+    def test_compose_chain_halts_at_first_stage_failure(self) -> None:
+        rc, stdout, _ = self._run(["./atp", "compose-chain", "nonexistent_file.yaml"])
+        self.assertNotEqual(rc, 0)
+        data = json.loads(stdout)
+        self.assertEqual(data["composition_status"], "halted_at_stage_failure")
+        self.assertEqual(data["fail_stage"], "request_flow")
+        # Only stage 1 should have been attempted
+        self.assertEqual(len(data["stages_executed"]), 1)
+
+    def test_compose_chain_export_dir_writes_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            rc, _, _ = self._run(["./atp", "compose-chain", FIXTURE, "--export-dir", tmp])
+            self.assertEqual(rc, 0)
+            run_id = "compose-chain-0001"
+            artifact = Path(tmp) / run_id / "request_prompt.json"
+            manifest = Path(tmp) / run_id / "export_manifest.json"
+            self.assertTrue(artifact.exists(), f"artifact not found: {artifact}")
+            self.assertTrue(manifest.exists(), f"manifest not found: {manifest}")
+
+    def test_atp_help_mentions_compose_chain(self) -> None:
+        rc, stdout, _ = self._run(["./atp", "help"])
+        self.assertEqual(rc, 0)
+        self.assertIn("compose-chain", stdout)
 
 
 if __name__ == "__main__":
