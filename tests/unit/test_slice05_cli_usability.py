@@ -56,6 +56,16 @@ class TestSlice05CliUsability(unittest.TestCase):
             "Expected bounded result: all commands exit cleanly on the canonical fixture without changing execution scope.",
             result.stdout,
         )
+        self.assertIn("Execution control boundaries:", result.stdout)
+        self.assertIn(
+            "control-mode  -> repo-local, human-gated, bounded single-AI execution only",
+            result.stdout,
+        )
+        self.assertIn("auto-execute  -> disabled", result.stdout)
+        self.assertIn(
+            "release-gates -> merge main / push main / tag release remain unauthorized here",
+            result.stdout,
+        )
         self.assertIn("Canonical bounded operator path from repo root:", result.stdout)
         self.assertIn("verify  -> ./atp smoke-request-chain", result.stdout)
         self.assertIn(

@@ -68,6 +68,11 @@ class TestSlice10SmokeVerification(unittest.TestCase):
             result.stdout,
         )
         self.assertIn(
+            "control_boundary: repo_local_human_gated_manual_single_ai_only",
+            result.stdout,
+        )
+        self.assertIn("release_gates_opened: false", result.stdout)
+        self.assertIn(
             f"verification_recheck_command: ./atp smoke-request-chain {CANONICAL_FIXTURE}",
             result.stdout,
         )
