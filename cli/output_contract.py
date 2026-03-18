@@ -64,6 +64,7 @@ _PREFERRED_KEY_ORDER = [
     "chain_trace_summary",
     "review_evidence_summary",
     "acceptance_evidence_hint",
+    "review_sequence_summary",
     "primary_artifact",
     "primary_review_target",
     "handoff_target",
@@ -204,6 +205,7 @@ def build_review_summary(
     chain_trace_summary: dict[str, Any]
     review_evidence_summary: dict[str, Any]
     acceptance_evidence_hint: dict[str, Any]
+    review_sequence_summary: dict[str, Any]
     primary_review_target: dict[str, Any]
     handoff_target: dict[str, Any]
     next_bounded_action: dict[str, Any]
@@ -281,6 +283,11 @@ def build_review_summary(
                 "one_shot_ai_ready_artifact.prompt_text",
                 "chain_trace_summary.current_artifact_id",
             ],
+        }
+        review_sequence_summary = {
+            "start_with": "one_shot_ai_ready_artifact",
+            "confirm_with": "one_shot_ai_ready_artifact.prompt_text",
+            "review_goal": "confirm_manual_single_ai_handoff_payload",
         }
         primary_artifact = {
             "artifact_id": artifact.get("artifact_id"),
@@ -375,6 +382,11 @@ def build_review_summary(
                 "chain_trace_summary.current_artifact_id",
             ],
         }
+        review_sequence_summary = {
+            "start_with": "reviewable_output_bundle",
+            "confirm_with": "reviewable_output_bundle.review_surface",
+            "review_goal": "confirm_bundle_is_ready_for_human_review",
+        }
         primary_artifact = {
             "bundle_id": artifact.get("bundle_id"),
             "bundle_type": artifact.get("bundle_type"),
@@ -468,6 +480,11 @@ def build_review_summary(
                 "chain_trace_summary.current_artifact_id",
             ],
         }
+        review_sequence_summary = {
+            "start_with": "validation_summary",
+            "confirm_with": "single_ai_execution_package",
+            "review_goal": "confirm_bounded_request_preparation",
+        }
         primary_artifact = {
             "package_id": artifact.get("package_id"),
             "package_type": artifact.get("package_type"),
@@ -514,6 +531,7 @@ def build_review_summary(
         "chain_trace_summary": chain_trace_summary,
         "review_evidence_summary": review_evidence_summary,
         "acceptance_evidence_hint": acceptance_evidence_hint,
+        "review_sequence_summary": review_sequence_summary,
         "primary_artifact": primary_artifact,
         "primary_review_target": primary_review_target,
         "handoff_target": handoff_target,

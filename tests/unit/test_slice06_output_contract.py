@@ -58,6 +58,7 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "chain_trace_summary",
                 "review_evidence_summary",
                 "acceptance_evidence_hint",
+                "review_sequence_summary",
                 "primary_artifact",
                 "primary_review_target",
                 "handoff_target",
@@ -149,6 +150,14 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "single_ai_execution_package.traceability",
                     "chain_trace_summary.current_artifact_id",
                 ],
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["review_sequence_summary"],
+            {
+                "start_with": "validation_summary",
+                "confirm_with": "single_ai_execution_package",
+                "review_goal": "confirm_bounded_request_preparation",
             },
         )
         self.assertEqual(
@@ -295,6 +304,14 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "reviewable_output_bundle.review_surface",
                     "chain_trace_summary.current_artifact_id",
                 ],
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["review_sequence_summary"],
+            {
+                "start_with": "reviewable_output_bundle",
+                "confirm_with": "reviewable_output_bundle.review_surface",
+                "review_goal": "confirm_bundle_is_ready_for_human_review",
             },
         )
         self.assertEqual(
@@ -461,6 +478,14 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "one_shot_ai_ready_artifact.prompt_text",
                     "chain_trace_summary.current_artifact_id",
                 ],
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["review_sequence_summary"],
+            {
+                "start_with": "one_shot_ai_ready_artifact",
+                "confirm_with": "one_shot_ai_ready_artifact.prompt_text",
+                "review_goal": "confirm_manual_single_ai_handoff_payload",
             },
         )
         self.assertEqual(
