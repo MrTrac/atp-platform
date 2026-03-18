@@ -1,15 +1,17 @@
 """Bounded artifact export contract for ATP v1.3 — F-201.
 
 This module defines the export contract: path convention, manifest schema,
-and bounded builder functions. File write operations (write_artifact,
-write_manifest) are added in P2 only.
+bounded builder functions, and opt-in file write helpers (P2+).
 
-P1 scope: contract definitions only — no file I/O in this module at P1.
+Stdout remains the canonical primary output. File writes are opt-in secondary
+via --export-dir flag only. No background write occurs without the flag.
 """
 
 from __future__ import annotations
 
+import json
 from collections import OrderedDict
+from pathlib import Path
 
 # Export contract version — bumped when schema changes.
 EXPORT_CONTRACT_VERSION = "1.0"
@@ -68,6 +70,30 @@ def build_manifest_path(export_dir: str, run_id: str) -> str:
     if not run_id:
         raise ValueError("run_id must be a non-empty string.")
     return f"{export_dir}/{run_id}/{MANIFEST_FILENAME}"
+
+
+def write_artifact(export_dir: str, run_id: str, artifact_type: str, data: object) -> str:
+    """Write artifact JSON to the deterministic export path. Returns the path written.
+
+    Creates parent directories as needed. Raises ValueError on invalid inputs.
+    """
+    path = build_export_path(export_dir, run_id, artifact_type)
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(data, indent=2))
+    return path
+
+
+def write_manifest(export_dir: str, run_id: str, manifest: object) -> str:
+    """Write manifest JSON to the deterministic manifest path. Returns the path written.
+
+    Creates parent directories as needed. Raises ValueError on invalid inputs.
+    """
+    path = build_manifest_path(export_dir, run_id)
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(manifest, indent=2))
+    return path
 
 
 def build_export_manifest(

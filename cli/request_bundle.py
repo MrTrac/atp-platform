@@ -10,6 +10,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+from core.artifact_export import build_export_manifest, write_artifact, write_manifest
 from core.intake.loader import RequestLoadError, load_request
 from core.intake.request_flow import RequestFlowError
 from core.intake.review_bundle import (
@@ -64,6 +65,15 @@ def _build_parser() -> argparse.ArgumentParser:
         "--run-id",
         default="slice-03-preview-0001",
         help="Optional bounded run identifier for the prepared reviewable bundle.",
+    )
+    parser.add_argument(
+        "--export-dir",
+        default=None,
+        help=(
+            "Optional directory to write the artifact JSON and export manifest.\n"
+            "Stdout remains canonical primary. Export is additive opt-in secondary.\n"
+            "Files written: <export-dir>/<run-id>/request_bundle.json and export_manifest.json"
+        ),
     )
     return parser
 
@@ -173,16 +183,25 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    print(
-        render_output(
-            build_success_envelope(
-                command="request-bundle",
-                request_file=args.request_file,
-                run_id=args.run_id,
-                summary=summary,
-            )
-        )
+    envelope = build_success_envelope(
+        command="request-bundle",
+        request_file=args.request_file,
+        run_id=args.run_id,
+        summary=summary,
     )
+    print(render_output(envelope))
+
+    if args.export_dir:
+        artifact_path = write_artifact(args.export_dir, args.run_id, "request_bundle", envelope)
+        manifest = build_export_manifest(
+            run_id=args.run_id,
+            command="request-bundle",
+            request_file=args.request_file,
+            artifact_type="request_bundle",
+            artifact_path=artifact_path,
+        )
+        write_manifest(args.export_dir, args.run_id, manifest)
+
     return 0
 
 

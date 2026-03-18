@@ -7,7 +7,9 @@ P3 scope: regression locks — stdout unchanged without flag, smoke chain intact
 
 from __future__ import annotations
 
+import json
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -118,15 +120,137 @@ class TestFeature201ArtifactExportP1Contract(unittest.TestCase):
         self.assertIn("Stdout remains the canonical primary output", notes_text)
         self.assertNotIn("background", notes_text.replace("No background", "").lower())
 
-    def test_artifact_export_module_has_no_file_io_at_p1(self) -> None:
-        """Verify the module contains no file write operations at P1 (contract-only stage)."""
+    def test_artifact_export_module_uses_no_raw_open_calls(self) -> None:
+        """Verify the module never uses bare open() — file I/O is Path-based only."""
         module_path = ROOT_DIR / "core" / "artifact_export.py"
         source = module_path.read_text()
-        # write_artifact and write_manifest are P2 additions — not present in P1
-        self.assertNotIn("def write_artifact", source)
-        self.assertNotIn("def write_manifest", source)
-        # No open() calls in P1
+        # File writes use Path.write_text(), not bare open() calls.
         self.assertNotIn("open(", source)
+
+
+class TestFeature201ArtifactExportP2Implementation(unittest.TestCase):
+    """Lock the P2 opt-in export implementation on 3 CLI commands."""
+
+    def test_write_artifact_and_write_manifest_exist_in_module(self) -> None:
+        from core.artifact_export import write_artifact, write_manifest  # noqa: F401
+
+    def test_write_artifact_creates_file_at_correct_path(self) -> None:
+        from core.artifact_export import write_artifact
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_artifact(tmp, "run-p2-001", "request_flow", {"status": "ok"})
+            self.assertTrue(path.endswith("/run-p2-001/request_flow.json"))
+            self.assertTrue(Path(path).exists())
+
+    def test_write_artifact_content_is_valid_json(self) -> None:
+        from core.artifact_export import write_artifact
+
+        data = {"command": "request-flow", "status": "ok", "run_id": "run-p2-001"}
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_artifact(tmp, "run-p2-001", "request_flow", data)
+            loaded = json.loads(Path(path).read_text())
+            self.assertEqual(loaded["status"], "ok")
+            self.assertEqual(loaded["command"], "request-flow")
+
+    def test_write_manifest_creates_file_at_correct_path(self) -> None:
+        from core.artifact_export import build_export_manifest, write_manifest
+
+        manifest = build_export_manifest(
+            run_id="run-p2-001",
+            command="request-flow",
+            request_file=FIXTURE,
+            artifact_type="request_flow",
+            artifact_path="/tmp/run-p2-001/request_flow.json",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_manifest(tmp, "run-p2-001", manifest)
+            self.assertTrue(path.endswith("/run-p2-001/export_manifest.json"))
+            self.assertTrue(Path(path).exists())
+
+    def test_write_manifest_content_is_valid_json_with_contract_fields(self) -> None:
+        from core.artifact_export import build_export_manifest, write_manifest
+
+        manifest = build_export_manifest(
+            run_id="run-p2-001",
+            command="request-bundle",
+            request_file=FIXTURE,
+            artifact_type="request_bundle",
+            artifact_path="/tmp/run-p2-001/request_bundle.json",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            path = write_manifest(tmp, "run-p2-001", manifest)
+            loaded = json.loads(Path(path).read_text())
+            self.assertEqual(loaded["export_contract_version"], "1.0")
+            self.assertEqual(loaded["export_mode"], "opt_in_human_initiated")
+            self.assertEqual(loaded["artifact_type"], "request_bundle")
+
+    def test_request_flow_export_dir_flag_writes_artifact_and_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                ["python3", "cli/request_flow.py", FIXTURE, "--export-dir", tmp],
+                capture_output=True, text=True, cwd=ROOT_DIR,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            run_id = "slice-02-preview-0001"
+            artifact = Path(tmp) / run_id / "request_flow.json"
+            manifest = Path(tmp) / run_id / "export_manifest.json"
+            self.assertTrue(artifact.exists(), f"artifact not found: {artifact}")
+            self.assertTrue(manifest.exists(), f"manifest not found: {manifest}")
+
+    def test_request_bundle_export_dir_flag_writes_artifact_and_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                ["python3", "cli/request_bundle.py", FIXTURE, "--export-dir", tmp],
+                capture_output=True, text=True, cwd=ROOT_DIR,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            run_id = "slice-03-preview-0001"
+            artifact = Path(tmp) / run_id / "request_bundle.json"
+            manifest = Path(tmp) / run_id / "export_manifest.json"
+            self.assertTrue(artifact.exists(), f"artifact not found: {artifact}")
+            self.assertTrue(manifest.exists(), f"manifest not found: {manifest}")
+
+    def test_request_prompt_export_dir_flag_writes_artifact_and_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                ["python3", "cli/request_prompt.py", FIXTURE, "--export-dir", tmp],
+                capture_output=True, text=True, cwd=ROOT_DIR,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            run_id = "slice-04-preview-0001"
+            artifact = Path(tmp) / run_id / "request_prompt.json"
+            manifest = Path(tmp) / run_id / "export_manifest.json"
+            self.assertTrue(artifact.exists(), f"artifact not found: {artifact}")
+            self.assertTrue(manifest.exists(), f"manifest not found: {manifest}")
+
+    def test_exported_artifact_is_same_json_as_stdout(self) -> None:
+        """Artifact file content matches what stdout produced."""
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                ["python3", "cli/request_flow.py", FIXTURE, "--export-dir", tmp],
+                capture_output=True, text=True, cwd=ROOT_DIR,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            stdout_data = json.loads(result.stdout)
+            artifact_path = Path(tmp) / "slice-02-preview-0001" / "request_flow.json"
+            file_data = json.loads(artifact_path.read_text())
+            self.assertEqual(stdout_data, file_data)
+
+    def test_help_output_mentions_export_dir_flag(self) -> None:
+        result = subprocess.run(
+            ["./atp", "help"],
+            capture_output=True, text=True, cwd=ROOT_DIR,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--export-dir", result.stdout)
+        self.assertIn("opt-in", result.stdout)
+
+    def test_artifact_export_module_has_file_io_at_p2(self) -> None:
+        """Verify write_artifact and write_manifest are now present in P2."""
+        module_path = ROOT_DIR / "core" / "artifact_export.py"
+        source = module_path.read_text()
+        self.assertIn("def write_artifact", source)
+        self.assertIn("def write_manifest", source)
 
 
 if __name__ == "__main__":
