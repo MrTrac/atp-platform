@@ -136,6 +136,40 @@ class TestFeature01MultiRequestSurface(unittest.TestCase):
         self.assertEqual(payload["processed_request_count"], 1)
         self.assertIn("./atp request-flow-multi", payload["next_step"])
 
+    def test_single_request_flow_remains_unchanged_from_repo_root(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-flow", REQUEST_A],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        self.assertEqual(
+            list(payload.keys()),
+            ["command", "status", "request_file", "run_id", "review_summary", "summary"],
+        )
+        self.assertEqual(payload["command"], "request-flow")
+        self.assertEqual(payload["request_file"], REQUEST_A)
+        self.assertEqual(payload["review_summary"]["result_status"], "accepted")
+        self.assertNotIn("request_files", payload)
+        self.assertNotIn("multi_request_summary", payload)
+
+    def test_smoke_request_chain_still_passes_after_multi_request_surface(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
