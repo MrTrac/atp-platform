@@ -70,6 +70,7 @@ _PREFERRED_KEY_ORDER = [
     "handoff_target",
     "next_bounded_action",
     "review_first",
+    "manual_handoff_summary",
     "handoff_surface",
     "review_sections",
     "review_surface",
@@ -210,6 +211,7 @@ def build_review_summary(
     handoff_target: dict[str, Any]
     next_bounded_action: dict[str, Any]
     review_first: dict[str, Any]
+    manual_handoff_summary: dict[str, Any]
     handoff_surface: dict[str, Any]
     if "one_shot_ai_ready_artifact" in summary:
         artifact = summary["one_shot_ai_ready_artifact"]
@@ -312,6 +314,12 @@ def build_review_summary(
             "section": "one_shot_ai_ready_artifact",
             "then_check": "one_shot_ai_ready_artifact.prompt_text",
         }
+        manual_handoff_summary = {
+            "handoff_state": "ready_for_manual_single_ai_handoff",
+            "handoff_artifact_section": "one_shot_ai_ready_artifact",
+            "handoff_artifact_field": "prompt_text",
+            "handoff_guardrail": "operator_copy_or_send_without_scope_expansion",
+        }
         handoff_surface = {
             "section": "one_shot_ai_ready_artifact",
             "artifact_field": "prompt_text",
@@ -409,6 +417,12 @@ def build_review_summary(
         review_first = {
             "section": "reviewable_output_bundle",
             "then_check": "reviewable_output_bundle.review_surface",
+        }
+        manual_handoff_summary = {
+            "handoff_state": "not_ready_for_manual_handoff",
+            "handoff_artifact_section": "reviewable_output_bundle",
+            "next_bounded_surface": "one_shot_ai_ready_artifact",
+            "handoff_guardrail": "render_request_prompt_before_manual_handoff",
         }
         handoff_surface = {
             "section": "reviewable_output_bundle",
@@ -509,6 +523,12 @@ def build_review_summary(
             "section": "validation_summary",
             "then_check": "single_ai_execution_package",
         }
+        manual_handoff_summary = {
+            "handoff_state": "not_ready_for_manual_handoff",
+            "handoff_artifact_section": "single_ai_execution_package",
+            "next_bounded_surface": "reviewable_output_bundle",
+            "handoff_guardrail": "materialize_reviewable_bundle_first",
+        }
         handoff_surface = {
             "section": "single_ai_execution_package",
             "mode": "prepare_reviewable_bundle",
@@ -537,6 +557,7 @@ def build_review_summary(
         "handoff_target": handoff_target,
         "next_bounded_action": next_bounded_action,
         "review_first": review_first,
+        "manual_handoff_summary": manual_handoff_summary,
         "handoff_surface": handoff_surface,
         "review_sections": review_sections,
     }
