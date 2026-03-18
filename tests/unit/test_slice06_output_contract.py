@@ -56,6 +56,8 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "primary_review_target",
                 "handoff_target",
                 "next_bounded_action",
+                "review_first",
+                "handoff_surface",
                 "review_sections",
             ],
         )
@@ -90,6 +92,21 @@ class TestSlice06OutputContract(unittest.TestCase):
             {
                 "action_type": "run_cli_command",
                 "command": "./atp request-bundle tests/fixtures/requests/sample_request_slice02.yaml",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["review_first"],
+            {
+                "section": "validation_summary",
+                "then_check": "single_ai_execution_package",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["handoff_surface"],
+            {
+                "section": "single_ai_execution_package",
+                "mode": "prepare_reviewable_bundle",
+                "next_command": "request-bundle",
             },
         )
         summary = payload["summary"]
@@ -148,6 +165,21 @@ class TestSlice06OutputContract(unittest.TestCase):
             {
                 "action_type": "run_cli_command",
                 "command": "./atp request-prompt tests/fixtures/requests/sample_request_slice02.yaml",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["review_first"],
+            {
+                "section": "reviewable_output_bundle",
+                "then_check": "reviewable_output_bundle.review_surface",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["handoff_surface"],
+            {
+                "section": "reviewable_output_bundle",
+                "mode": "prepare_request_prompt",
+                "next_command": "request-prompt",
             },
         )
         self.assertEqual(
@@ -224,6 +256,21 @@ class TestSlice06OutputContract(unittest.TestCase):
             {
                 "action_type": "handoff_to_one_ai",
                 "target_section": "one_shot_ai_ready_artifact",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["review_first"],
+            {
+                "section": "one_shot_ai_ready_artifact",
+                "then_check": "one_shot_ai_ready_artifact.prompt_text",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["handoff_surface"],
+            {
+                "section": "one_shot_ai_ready_artifact",
+                "artifact_field": "prompt_text",
+                "mode": "manual_single_ai_handoff",
             },
         )
         self.assertEqual(

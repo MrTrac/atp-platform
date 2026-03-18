@@ -61,6 +61,8 @@ _PREFERRED_KEY_ORDER = [
     "primary_review_target",
     "handoff_target",
     "next_bounded_action",
+    "review_first",
+    "handoff_surface",
     "review_sections",
     "review_surface",
     "target_mode",
@@ -182,6 +184,8 @@ def build_review_summary(
     primary_review_target: dict[str, Any]
     handoff_target: dict[str, Any]
     next_bounded_action: dict[str, Any]
+    review_first: dict[str, Any]
+    handoff_surface: dict[str, Any]
     if "one_shot_ai_ready_artifact" in summary:
         artifact = summary["one_shot_ai_ready_artifact"]
         quick_status = {
@@ -210,6 +214,15 @@ def build_review_summary(
             "action_type": "handoff_to_one_ai",
             "target_section": "one_shot_ai_ready_artifact",
         }
+        review_first = {
+            "section": "one_shot_ai_ready_artifact",
+            "then_check": "one_shot_ai_ready_artifact.prompt_text",
+        }
+        handoff_surface = {
+            "section": "one_shot_ai_ready_artifact",
+            "artifact_field": "prompt_text",
+            "mode": artifact.get("usage_mode"),
+        }
     elif "reviewable_output_bundle" in summary:
         artifact = summary["reviewable_output_bundle"]
         quick_status = {
@@ -237,6 +250,15 @@ def build_review_summary(
             "action_type": "run_cli_command",
             "command": "./atp request-prompt "
             "tests/fixtures/requests/sample_request_slice02.yaml",
+        }
+        review_first = {
+            "section": "reviewable_output_bundle",
+            "then_check": "reviewable_output_bundle.review_surface",
+        }
+        handoff_surface = {
+            "section": "reviewable_output_bundle",
+            "mode": "prepare_request_prompt",
+            "next_command": "request-prompt",
         }
     else:
         artifact = summary.get("single_ai_execution_package", {})
@@ -267,6 +289,15 @@ def build_review_summary(
             "command": "./atp request-bundle "
             "tests/fixtures/requests/sample_request_slice02.yaml",
         }
+        review_first = {
+            "section": "validation_summary",
+            "then_check": "single_ai_execution_package",
+        }
+        handoff_surface = {
+            "section": "single_ai_execution_package",
+            "mode": "prepare_reviewable_bundle",
+            "next_command": "request-bundle",
+        }
 
     return {
         "command": command,
@@ -282,5 +313,7 @@ def build_review_summary(
         "primary_review_target": primary_review_target,
         "handoff_target": handoff_target,
         "next_bounded_action": next_bounded_action,
+        "review_first": review_first,
+        "handoff_surface": handoff_surface,
         "review_sections": review_sections,
     }
