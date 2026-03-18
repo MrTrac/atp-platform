@@ -59,6 +59,7 @@ _PREFERRED_KEY_ORDER = [
     "completion_signal",
     "quick_status",
     "readiness_checklist",
+    "confidence_summary",
     "primary_artifact",
     "primary_review_target",
     "handoff_target",
@@ -185,6 +186,7 @@ def build_review_summary(
     completion_signal: dict[str, Any]
     quick_status: dict[str, Any]
     readiness_checklist: dict[str, Any]
+    confidence_summary: dict[str, Any]
     primary_review_target: dict[str, Any]
     handoff_target: dict[str, Any]
     next_bounded_action: dict[str, Any]
@@ -208,6 +210,15 @@ def build_review_summary(
             "ready_for_review": True,
             "ready_for_next_bounded_step": False,
             "ready_for_handoff": True,
+        }
+        confidence_summary = {
+            "confidence_state": "low_ambiguity_for_manual_handoff",
+            "confidence_basis": [
+                "completion_signal_handoff_complete_candidate",
+                "readiness_checklist_ready_for_handoff",
+                "handoff_surface_prompt_text_present",
+            ],
+            "next_safe_bounded_action": "handoff one_shot_ai_ready_artifact.prompt_text to one AI manually",
         }
         primary_artifact = {
             "artifact_id": artifact.get("artifact_id"),
@@ -256,6 +267,15 @@ def build_review_summary(
             "ready_for_next_bounded_step": True,
             "ready_for_handoff": False,
         }
+        confidence_summary = {
+            "confidence_state": "low_ambiguity_for_review_then_progression",
+            "confidence_basis": [
+                "completion_signal_review_complete_candidate",
+                "readiness_checklist_ready_for_next_bounded_step",
+                "review_surface_present",
+            ],
+            "next_safe_bounded_action": "./atp request-prompt tests/fixtures/requests/sample_request_slice02.yaml",
+        }
         primary_artifact = {
             "bundle_id": artifact.get("bundle_id"),
             "bundle_type": artifact.get("bundle_type"),
@@ -303,6 +323,15 @@ def build_review_summary(
             "ready_for_next_bounded_step": True,
             "ready_for_handoff": False,
         }
+        confidence_summary = {
+            "confidence_state": "low_ambiguity_for_bounded_progression",
+            "confidence_basis": [
+                "completion_signal_complete_for_current_step",
+                "readiness_checklist_ready_for_next_bounded_step",
+                "primary_artifact_identified",
+            ],
+            "next_safe_bounded_action": "./atp request-bundle tests/fixtures/requests/sample_request_slice02.yaml",
+        }
         primary_artifact = {
             "package_id": artifact.get("package_id"),
             "package_type": artifact.get("package_type"),
@@ -345,6 +374,7 @@ def build_review_summary(
         "completion_signal": completion_signal,
         "quick_status": quick_status,
         "readiness_checklist": readiness_checklist,
+        "confidence_summary": confidence_summary,
         "primary_artifact": primary_artifact,
         "primary_review_target": primary_review_target,
         "handoff_target": handoff_target,

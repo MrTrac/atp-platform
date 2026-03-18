@@ -54,6 +54,7 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "completion_signal",
                 "quick_status",
                 "readiness_checklist",
+                "confidence_summary",
                 "primary_artifact",
                 "primary_review_target",
                 "handoff_target",
@@ -88,6 +89,18 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "ready_for_review": True,
                 "ready_for_next_bounded_step": True,
                 "ready_for_handoff": False,
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["confidence_summary"],
+            {
+                "confidence_state": "low_ambiguity_for_bounded_progression",
+                "confidence_basis": [
+                    "completion_signal_complete_for_current_step",
+                    "readiness_checklist_ready_for_next_bounded_step",
+                    "primary_artifact_identified",
+                ],
+                "next_safe_bounded_action": "./atp request-bundle tests/fixtures/requests/sample_request_slice02.yaml",
             },
         )
         self.assertEqual(
@@ -177,6 +190,18 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "ready_for_review": True,
                 "ready_for_next_bounded_step": True,
                 "ready_for_handoff": False,
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["confidence_summary"],
+            {
+                "confidence_state": "low_ambiguity_for_review_then_progression",
+                "confidence_basis": [
+                    "completion_signal_review_complete_candidate",
+                    "readiness_checklist_ready_for_next_bounded_step",
+                    "review_surface_present",
+                ],
+                "next_safe_bounded_action": "./atp request-prompt tests/fixtures/requests/sample_request_slice02.yaml",
             },
         )
         self.assertEqual(
@@ -284,6 +309,18 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "ready_for_review": True,
                 "ready_for_next_bounded_step": False,
                 "ready_for_handoff": True,
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["confidence_summary"],
+            {
+                "confidence_state": "low_ambiguity_for_manual_handoff",
+                "confidence_basis": [
+                    "completion_signal_handoff_complete_candidate",
+                    "readiness_checklist_ready_for_handoff",
+                    "handoff_surface_prompt_text_present",
+                ],
+                "next_safe_bounded_action": "handoff one_shot_ai_ready_artifact.prompt_text to one AI manually",
             },
         )
         self.assertEqual(
