@@ -223,5 +223,77 @@ class TestFeature202CliCompositionP2Implementation(unittest.TestCase):
         self.assertIn("compose-chain", stdout)
 
 
+class TestFeature202CliCompositionP3RegressionLocks(unittest.TestCase):
+    """Regression locks — individual commands unchanged, no automation drift."""
+
+    def _run(self, cmd: list[str]) -> tuple[int, str]:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=ROOT_DIR,
+        )
+        return result.returncode, result.stdout
+
+    def test_request_flow_unchanged_after_compose_chain_added(self) -> None:
+        rc, stdout = self._run(["python3", "cli/request_flow.py", FIXTURE])
+        self.assertEqual(rc, 0)
+        data = json.loads(stdout)
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["command"], "request-flow")
+
+    def test_request_bundle_unchanged_after_compose_chain_added(self) -> None:
+        rc, stdout = self._run(["python3", "cli/request_bundle.py", FIXTURE])
+        self.assertEqual(rc, 0)
+        data = json.loads(stdout)
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["command"], "request-bundle")
+
+    def test_request_prompt_unchanged_after_compose_chain_added(self) -> None:
+        rc, stdout = self._run(["python3", "cli/request_prompt.py", FIXTURE])
+        self.assertEqual(rc, 0)
+        data = json.loads(stdout)
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["command"], "request-prompt")
+
+    def test_compose_chain_does_not_spawn_background_process(self) -> None:
+        """Verify compose_chain.py source has no background spawn patterns."""
+        module_path = ROOT_DIR / "cli" / "compose_chain.py"
+        source = module_path.read_text()
+        self.assertNotIn("threading", source)
+        self.assertNotIn("asyncio", source)
+        self.assertNotIn("multiprocessing", source)
+        self.assertNotIn("Popen", source)
+
+    def test_compose_chain_does_not_retry_on_failure(self) -> None:
+        """Verify compose_chain.py source has no retry implementation patterns."""
+        module_path = ROOT_DIR / "cli" / "compose_chain.py"
+        source = module_path.read_text()
+        # No retry loop or backoff logic
+        self.assertNotIn("while True", source)
+        self.assertNotIn("for attempt", source)
+        self.assertNotIn("time.sleep", source)
+
+    def test_composition_mode_constant_does_not_imply_automation(self) -> None:
+        from core.composition_contract import COMPOSITION_MODE
+
+        self.assertNotIn("auto", COMPOSITION_MODE)
+        self.assertNotIn("background", COMPOSITION_MODE)
+        self.assertNotIn("async", COMPOSITION_MODE)
+        self.assertNotIn("retry", COMPOSITION_MODE)
+        self.assertIn("human_initiated", COMPOSITION_MODE)
+
+    def test_compose_chain_output_is_synchronous_signal(self) -> None:
+        rc, stdout = self._run(["./atp", "compose-chain", FIXTURE])
+        self.assertEqual(rc, 0)
+        data = json.loads(stdout)
+        self.assertIn("synchronous", data["composition_mode"])
+        self.assertNotIn("async", data["composition_mode"])
+
+    def test_smoke_chain_passes_after_compose_chain_added(self) -> None:
+        result = subprocess.run(
+            ["./atp", "smoke-request-chain"],
+            capture_output=True, text=True, cwd=ROOT_DIR,
+        )
+        self.assertEqual(result.returncode, 0, f"Smoke chain failed:\n{result.stdout}\n{result.stderr}")
+
+
 if __name__ == "__main__":
     unittest.main()
