@@ -8,7 +8,8 @@ while [[ -L "$SOURCE_PATH" ]]; do
   [[ "$SOURCE_PATH" != /* ]] && SOURCE_PATH="$SOURCE_DIR/$SOURCE_PATH"
 done
 ROOT_DIR="$(CDPATH='' cd -- "$(dirname -- "$SOURCE_PATH")/.." && pwd -P)"
-CLI_PATH="./cli/atp"
+CLI_PATH="./atp"
+UNDERLYING_CLI_PATH="./cli/atp"
 
 case "${1:-help}" in
   help|-h|--help)
@@ -58,7 +59,8 @@ case "${1:-help}" in
     printf '  review  -> ./atp request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n'
     printf '  handoff -> ./atp request-prompt tests/fixtures/requests/sample_request_slice02.yaml\n'
     printf '\n'
-    printf 'Use `%s <command> -h` for command-specific help.\n' "$CLI_PATH"
+    printf 'Use `%s <command> -h` for command-specific help from repo root.\n' "$CLI_PATH"
+    printf 'Underlying launcher path remains `%s`.\n' "$UNDERLYING_CLI_PATH"
     ;;
   run)
     exec python3 "$ROOT_DIR/cli/run.py" "${@:2}"

@@ -29,9 +29,11 @@ class TestSlice05CliUsability(unittest.TestCase):
         self.assertIn("request-bundle  Build the Slice 03 reviewable output bundle", result.stdout)
         self.assertIn("request-prompt  Build the Slice 04 one-shot AI-ready prompt artifact", result.stdout)
         self.assertIn(
-            f"./cli/atp request-flow {CANONICAL_SAMPLE_REQUEST}",
+            f"./atp request-flow {CANONICAL_SAMPLE_REQUEST}",
             result.stdout,
         )
+        self.assertIn("Usage:", result.stdout)
+        self.assertIn("  ./atp <command> [args]", result.stdout)
         self.assertIn("Canonical bounded-chain fixture policy:", result.stdout)
         self.assertIn(CANONICAL_SAMPLE_REQUEST, result.stdout)
         self.assertIn(
@@ -76,6 +78,11 @@ class TestSlice05CliUsability(unittest.TestCase):
             f"handoff -> ./atp request-prompt {CANONICAL_SAMPLE_REQUEST}",
             result.stdout,
         )
+        self.assertIn(
+            "Use `./atp <command> -h` for command-specific help from repo root.",
+            result.stdout,
+        )
+        self.assertIn("Underlying launcher path remains `./cli/atp`.", result.stdout)
 
     def test_request_flow_help_includes_description_and_example(self) -> None:
         result = subprocess.run(
