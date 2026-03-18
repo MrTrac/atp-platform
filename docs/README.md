@@ -32,7 +32,8 @@
 6. **Roadmap continuity:** `roadmap/README.md` và các roadmap documents theo product/major/version
    Practical lineage map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
    Milestone templates: `roadmap/templates/milestones/`
-7. **Execution planning hiện hành:** `execution/ROADMAP_EXECUTION.md` → `execution/PROMPT_CMD/INDEX.md`
+7. **Execution planning hiện hành:** `execution/v1_2/ROADMAP_EXECUTION.md` → `execution/v1_2/PROMPT_CMD/INDEX.md`
+   Completed baseline v1.1: `execution/ROADMAP_EXECUTION.md` → `execution/PROMPT_CMD/INDEX.md`
 
 Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP ⇄ products`, không chỉ bám release chronology.
 
@@ -46,7 +47,9 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 - Stage roadmap: `roadmap/stages/ATP_Development_Stage_Roadmap.md`
 - Practical milestone map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
 - Milestone template bundle: `roadmap/templates/milestones/`
-- Execution-plan instance layer: `execution/ROADMAP_EXECUTION.md`, `execution/EXECUTION_MODEL_SOURCE.md`, `execution/PROMPT_CMD/`
+- Execution-plan instance layer:
+  - Current generation v1.2: `execution/v1_2/ROADMAP_EXECUTION.md`, `execution/v1_2/PROMPT_CMD/`
+  - Completed baseline v1.1: `execution/ROADMAP_EXECUTION.md`, `execution/EXECUTION_MODEL_SOURCE.md`, `execution/PROMPT_CMD/`
 
 ---
 
@@ -58,7 +61,7 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 - `decisions/` — chỉ mục cho decision records ngoài các mốc freeze chính
 - `governance/` — governance framework và các bundle đang có hiệu lực
 - `roadmap/` — roadmap layer cho product, major family, và version planning/inheritance
-- `execution/` — execution-plan instance layer cho ATP theo AI_OS canonical execution model
+- `execution/` — execution-plan instance layers cho ATP theo AI_OS canonical execution model; v1.1 retained as completed baseline, v1.2 là generation hiện hành
 - `archive/` — tài liệu lịch sử hoặc bản sao cũ đã bị thay thế về authority path (không phải nguồn chuẩn hiện hành)
 
 ## Quy tắc authority và placement
