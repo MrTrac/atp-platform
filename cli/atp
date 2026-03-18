@@ -21,6 +21,7 @@ case "${1:-help}" in
     printf '  request-flow    Build the Slice 02 normalized request flow and single-AI package.\n'
     printf '  request-bundle  Build the Slice 03 reviewable output bundle from the same request path.\n'
     printf '  request-prompt  Build the Slice 04 one-shot AI-ready prompt artifact for manual handoff.\n'
+    printf '  smoke-request-chain  Run the canonical repo-root smoke verification for the bounded chain.\n'
     printf '\n'
     printf 'Other commands:\n'
     printf '  run             Run ATP control-plane execution surfaces.\n'
@@ -31,6 +32,10 @@ case "${1:-help}" in
     printf '  %s request-flow tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-prompt tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '\n'
+    printf 'Canonical smoke verification from repo root:\n'
+    printf '  ./atp smoke-request-chain\n'
+    printf '  ./atp smoke-request-chain tests/fixtures/requests/sample_request_slice02.yaml\n'
     printf '\n'
     printf 'Use `%s <command> -h` for command-specific help.\n' "$CLI_PATH"
     ;;
@@ -51,6 +56,9 @@ case "${1:-help}" in
     ;;
   request-prompt)
     exec python3 "$ROOT_DIR/cli/request_prompt.py" "${@:2}"
+    ;;
+  smoke-request-chain)
+    exec "$ROOT_DIR/scripts/smoke_request_chain.sh" "${@:2}"
     ;;
   *)
     printf 'Unknown command: %s\n' "${1}" >&2
