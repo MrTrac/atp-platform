@@ -43,6 +43,10 @@ class TestSlice10SmokeVerification(unittest.TestCase):
             f"Canonical fixture policy: {CANONICAL_FIXTURE} is the bounded help/example/smoke fixture",
             result.stdout,
         )
+        self.assertIn(
+            "Canonical verification contract: smoke + request-flow + request-bundle + request-prompt must all succeed on this fixture with bounded scope unchanged.",
+            result.stdout,
+        )
         self.assertIn("[1/3] request-flow", result.stdout)
         self.assertIn("[2/3] request-bundle", result.stdout)
         self.assertIn("[3/3] request-prompt", result.stdout)

@@ -38,6 +38,24 @@ class TestSlice05CliUsability(unittest.TestCase):
             "Use this same fixture for help examples, repo-root smoke verification, and bounded happy-path checks.",
             result.stdout,
         )
+        self.assertIn("Canonical verification contract from repo root:", result.stdout)
+        self.assertIn("verify-smoke  -> ./atp smoke-request-chain", result.stdout)
+        self.assertIn(
+            f"verify-flow   -> ./atp request-flow {CANONICAL_SAMPLE_REQUEST}",
+            result.stdout,
+        )
+        self.assertIn(
+            f"verify-bundle -> ./atp request-bundle {CANONICAL_SAMPLE_REQUEST}",
+            result.stdout,
+        )
+        self.assertIn(
+            f"verify-prompt -> ./atp request-prompt {CANONICAL_SAMPLE_REQUEST}",
+            result.stdout,
+        )
+        self.assertIn(
+            "Expected bounded result: all commands exit cleanly on the canonical fixture without changing execution scope.",
+            result.stdout,
+        )
         self.assertIn("Canonical bounded operator path from repo root:", result.stdout)
         self.assertIn("verify  -> ./atp smoke-request-chain", result.stdout)
         self.assertIn(
