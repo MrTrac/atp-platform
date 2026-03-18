@@ -71,6 +71,7 @@ _PREFERRED_KEY_ORDER = [
     "next_bounded_action",
     "review_first",
     "manual_handoff_summary",
+    "review_to_handoff_bridge",
     "handoff_surface",
     "review_sections",
     "review_surface",
@@ -212,6 +213,7 @@ def build_review_summary(
     next_bounded_action: dict[str, Any]
     review_first: dict[str, Any]
     manual_handoff_summary: dict[str, Any]
+    review_to_handoff_bridge: dict[str, Any]
     handoff_surface: dict[str, Any]
     if "one_shot_ai_ready_artifact" in summary:
         artifact = summary["one_shot_ai_ready_artifact"]
@@ -320,6 +322,14 @@ def build_review_summary(
             "handoff_artifact_field": "prompt_text",
             "handoff_guardrail": "operator_copy_or_send_without_scope_expansion",
         }
+        review_to_handoff_bridge = {
+            "bridge_state": "review_prompt_then_handoff",
+            "review_complete_when": [
+                "review_sequence_summary.confirm_with",
+                "acceptance_evidence_hint.acceptance_state",
+            ],
+            "handoff_surface": "one_shot_ai_ready_artifact.prompt_text",
+        }
         handoff_surface = {
             "section": "one_shot_ai_ready_artifact",
             "artifact_field": "prompt_text",
@@ -423,6 +433,14 @@ def build_review_summary(
             "handoff_artifact_section": "reviewable_output_bundle",
             "next_bounded_surface": "one_shot_ai_ready_artifact",
             "handoff_guardrail": "render_request_prompt_before_manual_handoff",
+        }
+        review_to_handoff_bridge = {
+            "bridge_state": "review_bundle_then_render_prompt",
+            "review_complete_when": [
+                "review_sequence_summary.confirm_with",
+                "acceptance_evidence_hint.acceptance_state",
+            ],
+            "next_surface": "one_shot_ai_ready_artifact",
         }
         handoff_surface = {
             "section": "reviewable_output_bundle",
@@ -529,6 +547,14 @@ def build_review_summary(
             "next_bounded_surface": "reviewable_output_bundle",
             "handoff_guardrail": "materialize_reviewable_bundle_first",
         }
+        review_to_handoff_bridge = {
+            "bridge_state": "review_flow_then_materialize_bundle",
+            "review_complete_when": [
+                "review_sequence_summary.confirm_with",
+                "acceptance_evidence_hint.acceptance_state",
+            ],
+            "next_surface": "reviewable_output_bundle",
+        }
         handoff_surface = {
             "section": "single_ai_execution_package",
             "mode": "prepare_reviewable_bundle",
@@ -558,6 +584,7 @@ def build_review_summary(
         "next_bounded_action": next_bounded_action,
         "review_first": review_first,
         "manual_handoff_summary": manual_handoff_summary,
+        "review_to_handoff_bridge": review_to_handoff_bridge,
         "handoff_surface": handoff_surface,
         "review_sections": review_sections,
     }
