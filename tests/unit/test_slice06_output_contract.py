@@ -57,6 +57,7 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "confidence_summary",
                 "chain_trace_summary",
                 "review_evidence_summary",
+                "acceptance_evidence_hint",
                 "primary_artifact",
                 "primary_review_target",
                 "handoff_target",
@@ -135,6 +136,18 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "single_ai_execution_package",
                     "single_ai_execution_package.traceability",
                     "task_manifest",
+                ],
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["acceptance_evidence_hint"],
+            {
+                "acceptance_state": "bounded_step_evidence_ready_for_acceptance",
+                "acceptance_scope": "single_ai_execution_package_preparation",
+                "acceptance_evidence_anchor": [
+                    "review_evidence_summary.evidence_status",
+                    "single_ai_execution_package.traceability",
+                    "chain_trace_summary.current_artifact_id",
                 ],
             },
         )
@@ -269,6 +282,18 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "reviewable_output_bundle",
                     "reviewable_output_bundle.review_surface",
                     "reviewable_output_bundle.traceability",
+                ],
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["acceptance_evidence_hint"],
+            {
+                "acceptance_state": "bounded_review_surface_ready_for_acceptance",
+                "acceptance_scope": "reviewable_single_ai_bundle",
+                "acceptance_evidence_anchor": [
+                    "review_evidence_summary.evidence_status",
+                    "reviewable_output_bundle.review_surface",
+                    "chain_trace_summary.current_artifact_id",
                 ],
             },
         )
@@ -423,6 +448,18 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "one_shot_ai_ready_artifact.prompt_text",
                     "reviewable_output_bundle",
                     "reviewable_output_bundle.traceability",
+                ],
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["acceptance_evidence_hint"],
+            {
+                "acceptance_state": "bounded_handoff_surface_ready_for_acceptance",
+                "acceptance_scope": "manual_single_ai_handoff",
+                "acceptance_evidence_anchor": [
+                    "review_evidence_summary.evidence_status",
+                    "one_shot_ai_ready_artifact.prompt_text",
+                    "chain_trace_summary.current_artifact_id",
                 ],
             },
         )

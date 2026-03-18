@@ -62,6 +62,7 @@ _PREFERRED_KEY_ORDER = [
     "confidence_summary",
     "chain_trace_summary",
     "review_evidence_summary",
+    "acceptance_evidence_hint",
     "primary_artifact",
     "primary_review_target",
     "handoff_target",
@@ -191,6 +192,7 @@ def build_review_summary(
     confidence_summary: dict[str, Any]
     chain_trace_summary: dict[str, Any]
     review_evidence_summary: dict[str, Any]
+    acceptance_evidence_hint: dict[str, Any]
     primary_review_target: dict[str, Any]
     handoff_target: dict[str, Any]
     next_bounded_action: dict[str, Any]
@@ -258,6 +260,15 @@ def build_review_summary(
                 "one_shot_ai_ready_artifact.prompt_text",
                 "reviewable_output_bundle",
                 "reviewable_output_bundle.traceability",
+            ],
+        }
+        acceptance_evidence_hint = {
+            "acceptance_state": "bounded_handoff_surface_ready_for_acceptance",
+            "acceptance_scope": "manual_single_ai_handoff",
+            "acceptance_evidence_anchor": [
+                "review_evidence_summary.evidence_status",
+                "one_shot_ai_ready_artifact.prompt_text",
+                "chain_trace_summary.current_artifact_id",
             ],
         }
         primary_artifact = {
@@ -344,6 +355,15 @@ def build_review_summary(
                 "reviewable_output_bundle.traceability",
             ],
         }
+        acceptance_evidence_hint = {
+            "acceptance_state": "bounded_review_surface_ready_for_acceptance",
+            "acceptance_scope": "reviewable_single_ai_bundle",
+            "acceptance_evidence_anchor": [
+                "review_evidence_summary.evidence_status",
+                "reviewable_output_bundle.review_surface",
+                "chain_trace_summary.current_artifact_id",
+            ],
+        }
         primary_artifact = {
             "bundle_id": artifact.get("bundle_id"),
             "bundle_type": artifact.get("bundle_type"),
@@ -428,6 +448,15 @@ def build_review_summary(
                 "task_manifest",
             ],
         }
+        acceptance_evidence_hint = {
+            "acceptance_state": "bounded_step_evidence_ready_for_acceptance",
+            "acceptance_scope": "single_ai_execution_package_preparation",
+            "acceptance_evidence_anchor": [
+                "review_evidence_summary.evidence_status",
+                "single_ai_execution_package.traceability",
+                "chain_trace_summary.current_artifact_id",
+            ],
+        }
         primary_artifact = {
             "package_id": artifact.get("package_id"),
             "package_type": artifact.get("package_type"),
@@ -473,6 +502,7 @@ def build_review_summary(
         "confidence_summary": confidence_summary,
         "chain_trace_summary": chain_trace_summary,
         "review_evidence_summary": review_evidence_summary,
+        "acceptance_evidence_hint": acceptance_evidence_hint,
         "primary_artifact": primary_artifact,
         "primary_review_target": primary_review_target,
         "handoff_target": handoff_target,
