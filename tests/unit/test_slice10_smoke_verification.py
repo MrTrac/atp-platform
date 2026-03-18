@@ -73,6 +73,10 @@ class TestSlice10SmokeVerification(unittest.TestCase):
         )
         self.assertIn("release_gates_opened: false", result.stdout)
         self.assertIn(
+            "operator_surface_confirmed: ./atp repo-root launcher remains canonical for bounded followthrough",
+            result.stdout,
+        )
+        self.assertIn(
             f"verification_recheck_command: ./atp smoke-request-chain {CANONICAL_FIXTURE}",
             result.stdout,
         )
