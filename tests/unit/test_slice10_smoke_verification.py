@@ -58,6 +58,10 @@ class TestSlice10SmokeVerification(unittest.TestCase):
             result.stdout,
         )
         self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn(
+            f"next_operator_path: review -> ./atp request-bundle {CANONICAL_FIXTURE} ; handoff -> ./atp request-prompt {CANONICAL_FIXTURE}",
+            result.stdout,
+        )
 
     def test_smoke_request_chain_reports_missing_fixture_clearly(self) -> None:
         result = subprocess.run(

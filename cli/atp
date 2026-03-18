@@ -41,6 +41,11 @@ case "${1:-help}" in
     printf '  ./atp smoke-request-chain\n'
     printf '  ./atp smoke-request-chain tests/fixtures/requests/sample_request_slice02.yaml\n'
     printf '\n'
+    printf 'Canonical bounded operator path from repo root:\n'
+    printf '  verify  -> ./atp smoke-request-chain\n'
+    printf '  review  -> ./atp request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n'
+    printf '  handoff -> ./atp request-prompt tests/fixtures/requests/sample_request_slice02.yaml\n'
+    printf '\n'
     printf 'Use `%s <command> -h` for command-specific help.\n' "$CLI_PATH"
     ;;
   run)

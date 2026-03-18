@@ -34,3 +34,4 @@ printf 'canonical_fixture_confirmed: true\n'
 printf 'bounded_request_chain_completed: true\n'
 printf 'bounded_surfaces_exercised: request-flow,request-bundle,request-prompt\n'
 printf 'smoke_verification: passed\n'
+printf 'next_operator_path: review -> ./atp request-bundle %s ; handoff -> ./atp request-prompt %s\n' "$REQUEST_FILE" "$REQUEST_FILE"

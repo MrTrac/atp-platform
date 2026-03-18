@@ -38,6 +38,16 @@ class TestSlice05CliUsability(unittest.TestCase):
             "Use this same fixture for help examples, repo-root smoke verification, and bounded happy-path checks.",
             result.stdout,
         )
+        self.assertIn("Canonical bounded operator path from repo root:", result.stdout)
+        self.assertIn("verify  -> ./atp smoke-request-chain", result.stdout)
+        self.assertIn(
+            f"review  -> ./atp request-bundle {CANONICAL_SAMPLE_REQUEST}",
+            result.stdout,
+        )
+        self.assertIn(
+            f"handoff -> ./atp request-prompt {CANONICAL_SAMPLE_REQUEST}",
+            result.stdout,
+        )
 
     def test_request_flow_help_includes_description_and_example(self) -> None:
         result = subprocess.run(
