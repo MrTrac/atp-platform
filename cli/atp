@@ -25,18 +25,21 @@ case "${1:-help}" in
     printf '  request-prompt  Build the Slice 04 one-shot AI-ready prompt artifact for manual handoff.\n'
     printf '  smoke-request-chain  Run the canonical repo-root smoke verification for the bounded chain.\n'
     printf '\n'
-    printf 'Other commands:\n'
+    printf 'Bounded control-plane preparation commands:\n'
     printf '  execution-session  Inspect one bounded repo-local execution session from explicit request files.\n'
-    printf '  run             Run ATP control-plane execution surfaces.\n'
-    printf '  inspect         Inspect ATP configuration and repo-local state.\n'
-    printf '  validate        Validate ATP repo-local contracts and inputs.\n'
+    printf '  run             Preview one bounded ATP v0 control-plane run surface from an explicit request file.\n'
+    printf '  inspect         Inspect bounded ATP preview data or read-only current-task state only.\n'
+    printf '  validate        Preview bounded ATP v0 validation readiness from an explicit request file.\n'
     printf '\n'
     printf 'Canonical runnable example from repo root:\n'
     printf '  %s request-flow tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-flow-multi tests/fixtures/requests/sample_request_slice02.yaml tests/fixtures/requests/sample_request_slice02_b.yaml\n' "$CLI_PATH"
     printf '  %s execution-session tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s run tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s validate tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-prompt tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s inspect --workspace-root /Users/nguyenthanhthu/SOURCE_DEV/workspace --run-id run-preview-0001\n' "$CLI_PATH"
     printf '\n'
     printf 'Canonical bounded-chain fixture policy:\n'
     printf '  tests/fixtures/requests/sample_request_slice02.yaml\n'
@@ -57,6 +60,7 @@ case "${1:-help}" in
     printf '  control-mode  -> repo-local, human-gated, bounded single-AI execution only\n'
     printf '  auto-execute  -> disabled\n'
     printf '  release-gates -> merge main / push main / tag release remain unauthorized here\n'
+    printf '  control-plane -> preview/read-only surfaces only; no background execution or autonomous progression\n'
     printf '\n'
     printf 'Canonical bounded operator path from repo root:\n'
     printf '  verify  -> ./atp smoke-request-chain\n'

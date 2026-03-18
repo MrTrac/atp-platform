@@ -27,10 +27,44 @@ from core.routing.route_prepare import RoutePreparationError, prepare_route
 from core.routing.route_select import RouteSelectionError, select_route
 from core.validation.validation_result import build_validation_result
 
+CANONICAL_SAMPLE_REQUEST = "tests/fixtures/requests/sample_request_slice02.yaml"
+
+
+class _ValidateCliParser(argparse.ArgumentParser):
+    """Parser with bounded repo-root guidance for validation preview."""
+
+    def error(self, message: str) -> None:
+        if "request_file" in message:
+            self.print_usage(sys.stderr)
+            self.exit(
+                2,
+                (
+                    f"{self.prog}: error: {message}\n"
+                    "Next step: run this bounded validation preview from repo root with an explicit request file.\n"
+                    f"Example: {self.prog} {CANONICAL_SAMPLE_REQUEST}\n"
+                ),
+            )
+        super().error(message)
+
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Preview ATP v0 validation readiness without executing the request.")
-    parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
+    parser = _ValidateCliParser(
+        prog="./atp validate",
+        description="Preview bounded ATP v0 validation readiness from an explicit request file only.",
+        epilog=(
+            "Example:\n"
+            f"  ./atp validate {CANONICAL_SAMPLE_REQUEST}\n"
+            "This command previews validation readiness only. It does not execute the request or trigger background behavior."
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    parser.add_argument(
+        "request_file",
+        help=(
+            "Path to a JSON or YAML request file.\n"
+            f"Canonical repo-root sample: {CANONICAL_SAMPLE_REQUEST}"
+        ),
+    )
     return parser
 
 
