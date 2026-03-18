@@ -57,6 +57,9 @@ _PREFERRED_KEY_ORDER = [
     "single_ai_package_payload",
     "result_status",
     "primary_artifact",
+    "primary_review_target",
+    "handoff_target",
+    "next_bounded_action",
     "review_sections",
     "review_surface",
     "target_mode",
@@ -174,6 +177,9 @@ def build_review_summary(
     ]
 
     primary_artifact: dict[str, Any]
+    primary_review_target: dict[str, Any]
+    handoff_target: dict[str, Any]
+    next_bounded_action: dict[str, Any]
     if "one_shot_ai_ready_artifact" in summary:
         artifact = summary["one_shot_ai_ready_artifact"]
         primary_artifact = {
@@ -182,12 +188,39 @@ def build_review_summary(
             "artifact_version": artifact.get("artifact_version"),
             "usage_mode": artifact.get("usage_mode"),
         }
+        primary_review_target = {
+            "section": "one_shot_ai_ready_artifact",
+            "focus": "manual_single_ai_handoff_surface",
+        }
+        handoff_target = {
+            "target_type": "manual_single_ai_handoff",
+            "artifact_section": "one_shot_ai_ready_artifact",
+            "usage_mode": artifact.get("usage_mode"),
+        }
+        next_bounded_action = {
+            "action_type": "handoff_to_one_ai",
+            "target_section": "one_shot_ai_ready_artifact",
+        }
     elif "reviewable_output_bundle" in summary:
         artifact = summary["reviewable_output_bundle"]
         primary_artifact = {
             "bundle_id": artifact.get("bundle_id"),
             "bundle_type": artifact.get("bundle_type"),
             "bundle_version": artifact.get("bundle_version"),
+        }
+        primary_review_target = {
+            "section": "reviewable_output_bundle",
+            "focus": "human_reviewable_bundle_surface",
+        }
+        handoff_target = {
+            "target_type": "next_bounded_cli_step",
+            "command": "request-prompt",
+            "artifact_section": "reviewable_output_bundle",
+        }
+        next_bounded_action = {
+            "action_type": "run_cli_command",
+            "command": "./atp request-prompt "
+            "tests/fixtures/requests/sample_request_slice02.yaml",
         }
     else:
         artifact = summary.get("single_ai_execution_package", {})
@@ -196,6 +229,20 @@ def build_review_summary(
             "package_type": artifact.get("package_type"),
             "package_version": artifact.get("package_version"),
             "target_mode": artifact.get("target_mode"),
+        }
+        primary_review_target = {
+            "section": "single_ai_execution_package",
+            "focus": "bounded_execution_package_surface",
+        }
+        handoff_target = {
+            "target_type": "next_bounded_cli_step",
+            "command": "request-bundle",
+            "artifact_section": "single_ai_execution_package",
+        }
+        next_bounded_action = {
+            "action_type": "run_cli_command",
+            "command": "./atp request-bundle "
+            "tests/fixtures/requests/sample_request_slice02.yaml",
         }
 
     return {
@@ -208,5 +255,8 @@ def build_review_summary(
         "supported_flow": summary.get("supported_flow"),
         "result_status": result_status,
         "primary_artifact": primary_artifact,
+        "primary_review_target": primary_review_target,
+        "handoff_target": handoff_target,
+        "next_bounded_action": next_bounded_action,
         "review_sections": review_sections,
     }
