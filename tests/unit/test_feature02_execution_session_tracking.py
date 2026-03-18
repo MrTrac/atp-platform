@@ -43,7 +43,7 @@ class TestFeature02ExecutionSessionTracking(unittest.TestCase):
         payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
         self.assertEqual(
             list(payload.keys()),
-            ["command", "status", "request_files", "session_summary"],
+            ["command", "status", "request_files", "operator_scan_summary", "session_summary"],
         )
         self.assertEqual(payload["command"], "execution-session")
         self.assertEqual(payload["request_files"], [REQUEST_A])

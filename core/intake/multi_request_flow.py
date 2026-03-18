@@ -34,6 +34,11 @@ def build_multi_request_flow_summary(
             }
         )
 
+    session_summary = build_execution_session_summary(
+        request_files=[str(item["request_file"]) for item in prepared_request_flows],
+        request_ids=request_ids,
+    )
+
     return {
         "multi_request_id": f"{run_id}-multi-request-flow",
         "processing_mode": "sequential_operator_controlled",
@@ -45,10 +50,16 @@ def build_multi_request_flow_summary(
             "This surface prepares multiple Slice 02 request flows in explicit input order only.",
             "No queue, scheduler, background execution, or orchestration is performed here.",
         ],
-        "session_summary": build_execution_session_summary(
-            request_files=[str(item["request_file"]) for item in prepared_request_flows],
-            request_ids=request_ids,
-        ),
+        "session_summary": session_summary,
+        "operator_scan_summary": {
+            "primary_focus": "request_flows",
+            "session_id": session_summary["session_id"],
+            "request_count": len(prepared_request_flows),
+            "primary_request_id": request_ids[0],
+            "first_review_target": "request_flows[0].summary",
+            "bounded_posture": "sequential_operator_controlled",
+            "next_safe_bounded_action": "review prepared request_flows in input order",
+        },
         "request_ids": request_ids,
         "flow_ids": flow_ids,
         "request_flows": request_flows,

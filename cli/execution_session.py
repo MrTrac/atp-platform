@@ -12,7 +12,10 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from core.intake.loader import RequestLoadError, load_request
-from core.session_tracking import build_execution_session_summary
+from core.session_tracking import (
+    build_execution_session_summary,
+    build_session_operator_scan_summary,
+)
 from output_contract import render_output
 
 CANONICAL_SAMPLE_REQUEST = "tests/fixtures/requests/sample_request_slice02.yaml"
@@ -120,6 +123,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
+    session_summary = build_execution_session_summary(
+        request_files=args.request_files,
+        request_ids=request_ids,
+    )
     print(
         render_output(
             OrderedDict(
@@ -127,13 +134,8 @@ def main(argv: list[str] | None = None) -> int:
                     ("command", "execution-session"),
                     ("status", "ok"),
                     ("request_files", args.request_files),
-                    (
-                        "session_summary",
-                        build_execution_session_summary(
-                            request_files=args.request_files,
-                            request_ids=request_ids,
-                        ),
-                    ),
+                    ("operator_scan_summary", build_session_operator_scan_summary(session_summary)),
+                    ("session_summary", session_summary),
                 ]
             )
         )

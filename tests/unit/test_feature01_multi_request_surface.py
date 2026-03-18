@@ -56,7 +56,7 @@ class TestFeature01MultiRequestSurface(unittest.TestCase):
 
         multi_request_summary = payload["multi_request_summary"]
         self.assertEqual(
-            list(multi_request_summary.keys())[:9],
+            list(multi_request_summary.keys())[:10],
             [
                 "multi_request_id",
                 "processing_mode",
@@ -66,6 +66,7 @@ class TestFeature01MultiRequestSurface(unittest.TestCase):
                 "supported_flow",
                 "notes",
                 "session_summary",
+                "operator_scan_summary",
                 "request_ids",
             ],
         )

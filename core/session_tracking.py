@@ -49,3 +49,30 @@ def build_execution_session_summary(
             ),
         ]
     )
+
+
+def build_session_operator_scan_summary(
+    session_summary: OrderedDict[str, object],
+) -> OrderedDict[str, object]:
+    """Build a compact first-scan summary for repo-local session outputs."""
+
+    continuity_anchor = session_summary.get("continuity_anchor", {})
+    primary_request_id = None
+    if isinstance(continuity_anchor, dict):
+        primary_request_id = continuity_anchor.get("primary_request_id")
+
+    return OrderedDict(
+        [
+            ("primary_focus", "session_summary"),
+            ("session_id", session_summary.get("session_id")),
+            ("session_mode", session_summary.get("session_mode")),
+            ("request_count", session_summary.get("request_count")),
+            ("primary_request_id", primary_request_id),
+            ("first_review_target", "session_summary.request_ids"),
+            ("bounded_posture", "repo_local_derived_only"),
+            (
+                "next_safe_bounded_action",
+                "review the ordered request_ids, then continue with explicit request-chain commands from repo root",
+            ),
+        ]
+    )
