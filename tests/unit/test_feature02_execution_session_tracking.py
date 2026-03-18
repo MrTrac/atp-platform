@@ -126,6 +126,38 @@ class TestFeature02ExecutionSessionTracking(unittest.TestCase):
         self.assertEqual(session_summary["request_count"], 2)
         self.assertTrue(session_summary["session_id"].startswith("session-multi-2-"))
 
+    def test_execution_session_explicitly_rules_out_runtime_state_subsystems(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "execution-session", REQUEST_A],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        session_summary = payload["session_summary"]
+        self.assertEqual(session_summary["session_scope"], "repo_local_operator_controlled")
+        self.assertEqual(session_summary["persistence_mode"], "derived_in_memory_only")
+        self.assertIn(
+            "No background writer, daemon, service, or database is used.",
+            session_summary["notes"],
+        )
+
+    def test_smoke_request_chain_still_passes_with_session_tracking_present(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
