@@ -59,6 +59,7 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "review_evidence_summary",
                 "acceptance_evidence_hint",
                 "review_sequence_summary",
+                "progression_governance_summary",
                 "primary_artifact",
                 "primary_review_target",
                 "handoff_target",
@@ -160,6 +161,19 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "start_with": "validation_summary",
                 "confirm_with": "single_ai_execution_package",
                 "review_goal": "confirm_bounded_request_preparation",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["progression_governance_summary"],
+            {
+                "allowed_progression": "materialize_reviewable_bundle_after_review",
+                "progression_mode": "operator_initiated",
+                "blocked_actions": [
+                    "auto_execute_ai",
+                    "merge_main",
+                    "push_main",
+                    "tag_release",
+                ],
             },
         )
         self.assertEqual(
@@ -334,6 +348,19 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "start_with": "reviewable_output_bundle",
                 "confirm_with": "reviewable_output_bundle.review_surface",
                 "review_goal": "confirm_bundle_is_ready_for_human_review",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["progression_governance_summary"],
+            {
+                "allowed_progression": "render_request_prompt_after_review",
+                "progression_mode": "operator_initiated",
+                "blocked_actions": [
+                    "auto_execute_ai",
+                    "merge_main",
+                    "push_main",
+                    "tag_release",
+                ],
             },
         )
         self.assertEqual(
@@ -528,6 +555,19 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "start_with": "one_shot_ai_ready_artifact",
                 "confirm_with": "one_shot_ai_ready_artifact.prompt_text",
                 "review_goal": "confirm_manual_single_ai_handoff_payload",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["progression_governance_summary"],
+            {
+                "allowed_progression": "manual_single_ai_handoff_only",
+                "progression_mode": "operator_initiated",
+                "blocked_actions": [
+                    "auto_execute_ai",
+                    "merge_main",
+                    "push_main",
+                    "tag_release",
+                ],
             },
         )
         self.assertEqual(
