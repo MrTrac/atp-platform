@@ -12,6 +12,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from core.intake.loader import RequestLoadError, load_request
+from core.integration_readiness import build_compact_integration_readiness_summary
 from core.session_tracking import (
     build_execution_session_summary,
     build_session_operator_scan_summary,
@@ -136,6 +137,7 @@ def main(argv: list[str] | None = None) -> int:
                     ("request_files", args.request_files),
                     ("operator_scan_summary", build_session_operator_scan_summary(session_summary)),
                     ("session_summary", session_summary),
+                    ("integration_readiness_summary", build_compact_integration_readiness_summary()),
                 ]
             )
         )

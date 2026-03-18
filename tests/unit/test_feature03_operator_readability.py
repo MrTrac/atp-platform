@@ -59,7 +59,7 @@ class TestFeature03OperatorReadability(unittest.TestCase):
         payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
         self.assertEqual(
             list(payload.keys()),
-            ["command", "status", "request_files", "operator_scan_summary", "session_summary"],
+            ["command", "status", "request_files", "operator_scan_summary", "session_summary", "integration_readiness_summary"],
         )
         self.assertIn("session_summary", payload)
         self.assertEqual(

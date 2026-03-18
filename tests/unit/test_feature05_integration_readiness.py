@@ -123,5 +123,127 @@ class TestFeature05IntegrationReadinessP1Categories(unittest.TestCase):
         self.assertIn("bounded_request_chain_completed: true", result.stdout)
 
 
+class TestFeature05IntegrationReadinessP2Surface(unittest.TestCase):
+    """Lock the bounded integration readiness surface added in P2."""
+
+    def test_help_output_has_integration_readiness_block(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "help"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("Integration readiness (v1.2 phase", result.stdout)
+        self.assertIn("readiness_scope  -> integration_preparation_signaling_only", result.stdout)
+        self.assertIn("integration_mode -> not_activated", result.stdout)
+        self.assertIn("entrypoints      ->", result.stdout)
+        self.assertIn("blocked          ->", result.stdout)
+
+    def test_execution_session_output_has_integration_readiness_summary(self) -> None:
+        import json
+        from collections import OrderedDict
+
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "execution-session", "tests/fixtures/requests/sample_request_slice02.yaml"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        self.assertIn("integration_readiness_summary", payload)
+        irs = payload["integration_readiness_summary"]
+        self.assertEqual(irs["readiness_scope"], "integration_preparation_signaling_only")
+        self.assertEqual(irs["integration_mode"], "not_activated")
+        self.assertIn("safe_integration_entrypoints", irs)
+        self.assertIn("blocked_actions", irs)
+
+    def test_execution_session_integration_readiness_summary_is_compact(self) -> None:
+        import json
+        from collections import OrderedDict
+
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "execution-session", "tests/fixtures/requests/sample_request_slice02.yaml"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        irs = payload["integration_readiness_summary"]
+        # Compact: only 4 approved fields, no full feature lists
+        self.assertEqual(list(irs.keys()), ["readiness_scope", "integration_mode", "safe_integration_entrypoints", "blocked_actions"])
+        self.assertNotIn("supported_features", irs)
+        self.assertNotIn("unsupported_features", irs)
+        self.assertNotIn("next_safe_prep_action", irs)
+        self.assertNotIn("notes", irs)
+
+    def test_integration_readiness_summary_not_spread_to_request_flow(self) -> None:
+        import json
+
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-flow", "tests/fixtures/requests/sample_request_slice02.yaml"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout)
+        self.assertNotIn("integration_readiness_summary", payload)
+        self.assertNotIn("integration_readiness_summary", str(payload))
+
+    def test_integration_readiness_summary_not_spread_to_request_bundle(self) -> None:
+        import json
+
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-bundle", "tests/fixtures/requests/sample_request_slice02.yaml"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout)
+        self.assertNotIn("integration_readiness_summary", str(payload))
+
+    def test_integration_readiness_summary_not_spread_to_request_prompt(self) -> None:
+        import json
+
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-prompt", "tests/fixtures/requests/sample_request_slice02.yaml"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout)
+        self.assertNotIn("integration_readiness_summary", str(payload))
+
+    def test_smoke_request_chain_still_passes_after_readiness_surface_added(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -68,6 +68,23 @@ NEXT_SAFE_PREP_ACTION = (
 )
 
 
+def build_compact_integration_readiness_summary() -> OrderedDict[str, object]:
+    """Return a compact, operator-facing integration readiness summary for runtime surfaces.
+
+    Contains only the 4 fields approved for execution-session output:
+    readiness_scope, integration_mode, safe_integration_entrypoints, blocked_actions.
+    No full feature lists. No network calls, no persistence, no activation.
+    """
+    return OrderedDict(
+        [
+            ("readiness_scope", READINESS_SCOPE),
+            ("integration_mode", INTEGRATION_MODE),
+            ("safe_integration_entrypoints", list(SAFE_INTEGRATION_ENTRYPOINTS)),
+            ("blocked_actions", list(BLOCKED_ACTIONS)),
+        ]
+    )
+
+
 def build_integration_readiness_summary() -> OrderedDict[str, object]:
     """Return a bounded, signaling-only integration readiness summary.
 

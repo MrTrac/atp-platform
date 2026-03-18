@@ -78,6 +78,7 @@ _PREFERRED_KEY_ORDER = [
     "readiness_checklist",
     "confidence_summary",
     "session_summary",
+    "integration_readiness_summary",
     "chain_trace_summary",
     "review_evidence_summary",
     "acceptance_evidence_hint",
