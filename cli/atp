@@ -74,6 +74,9 @@ case "${1:-help}" in
   request-flow)
     exec python3 "$ROOT_DIR/cli/request_flow.py" "${@:2}"
     ;;
+  request-flow-multi)
+    exec python3 "$ROOT_DIR/cli/request_flow_multi.py" "${@:2}"
+    ;;
   request-bundle)
     exec python3 "$ROOT_DIR/cli/request_bundle.py" "${@:2}"
     ;;
