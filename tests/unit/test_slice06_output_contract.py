@@ -60,6 +60,7 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "acceptance_evidence_hint",
                 "review_sequence_summary",
                 "progression_governance_summary",
+                "acceptance_discipline_summary",
                 "primary_artifact",
                 "primary_review_target",
                 "handoff_target",
@@ -174,6 +175,14 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "push_main",
                     "tag_release",
                 ],
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["acceptance_discipline_summary"],
+            {
+                "acceptance_mode": "human_review_before_bundle_progression",
+                "acceptance_gate": "operator_confirms_preparation_surface_before_next_step",
+                "release_actions_authorized": False,
             },
         )
         self.assertEqual(
@@ -361,6 +370,14 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "push_main",
                     "tag_release",
                 ],
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["acceptance_discipline_summary"],
+            {
+                "acceptance_mode": "human_review_before_prompt_render",
+                "acceptance_gate": "operator_confirms_reviewable_bundle_before_handoff_progression",
+                "release_actions_authorized": False,
             },
         )
         self.assertEqual(
@@ -568,6 +585,14 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "push_main",
                     "tag_release",
                 ],
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["acceptance_discipline_summary"],
+            {
+                "acceptance_mode": "human_review_then_manual_handoff",
+                "acceptance_gate": "operator_confirms_prompt_surface_before_handoff",
+                "release_actions_authorized": False,
             },
         )
         self.assertEqual(
