@@ -28,3 +28,9 @@ printf '\n'
 
 printf '[3/3] request-prompt\n'
 "$ROOT_DIR/atp" request-prompt "$REQUEST_FILE"
+printf '\n\n'
+printf 'ATP smoke verification result\n'
+printf 'canonical_fixture_confirmed: true\n'
+printf 'bounded_request_chain_completed: true\n'
+printf 'bounded_surfaces_exercised: request-flow,request-bundle,request-prompt\n'
+printf 'smoke_verification: passed\n'

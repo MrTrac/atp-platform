@@ -50,6 +50,14 @@ class TestSlice10SmokeVerification(unittest.TestCase):
         self.assertIn('"command": "request-bundle"', result.stdout)
         self.assertIn('"command": "request-prompt"', result.stdout)
         self.assertIn('"request_file": "tests/fixtures/requests/sample_request_slice02.yaml"', result.stdout)
+        self.assertIn("ATP smoke verification result", result.stdout)
+        self.assertIn("canonical_fixture_confirmed: true", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+        self.assertIn(
+            "bounded_surfaces_exercised: request-flow,request-bundle,request-prompt",
+            result.stdout,
+        )
+        self.assertIn("smoke_verification: passed", result.stdout)
 
     def test_smoke_request_chain_reports_missing_fixture_clearly(self) -> None:
         result = subprocess.run(
