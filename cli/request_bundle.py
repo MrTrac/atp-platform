@@ -68,6 +68,82 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _describe_error(exc: Exception) -> tuple[str, str, str]:
+    message = str(exc)
+
+    if isinstance(exc, RequestLoadError):
+        if "Request file not found:" in message:
+            return (
+                "request_loading",
+                "request_file_not_found",
+                "Confirm the request_file path exists relative to repo root, or rerun with "
+                f"`./cli/atp request-bundle {CANONICAL_SAMPLE_REQUEST}`.",
+            )
+        if "Unsupported YAML structure" in message:
+            return (
+                "request_loading",
+                "invalid_yaml",
+                "Fix the YAML structure near the reported line, or compare against "
+                f"`{CANONICAL_SAMPLE_REQUEST}` and rerun.",
+            )
+        if "Invalid JSON request:" in message:
+            return (
+                "request_loading",
+                "invalid_json",
+                "Fix the JSON syntax, or rerun with the canonical sample "
+                f"`./cli/atp request-bundle {CANONICAL_SAMPLE_REQUEST}`.",
+            )
+        return (
+            "request_loading",
+            "invalid_request_file",
+            "Ensure the request file is a top-level JSON/YAML object shaped like the canonical sample "
+            f"`{CANONICAL_SAMPLE_REQUEST}`.",
+        )
+
+    if isinstance(exc, RequestFlowError):
+        if " is required." in message:
+            return (
+                "request_flow_preparation",
+                "missing_required_field",
+                "Fix the missing upstream request field shown in `error`, then rerun. "
+                f"For a known-good shape, start from `{CANONICAL_SAMPLE_REQUEST}`.",
+            )
+        if "supports ATP requests only" in message:
+            return (
+                "request_flow_preparation",
+                "unsupported_request_shape",
+                "Use an ATP request bounded to the current single-AI flow, or rerun with "
+                f"`./cli/atp request-bundle {CANONICAL_SAMPLE_REQUEST}`.",
+            )
+        return (
+            "request_flow_preparation",
+            "validation_error",
+            "Keep the request within the bounded Slice 02 flow and compare it against "
+            f"`{CANONICAL_SAMPLE_REQUEST}`.",
+        )
+
+    if isinstance(exc, ProductResolutionError):
+        return (
+            "request_flow_preparation",
+            "product_resolution_error",
+            "Keep the request within the bounded ATP repo-local flow and compare it against "
+            f"`{CANONICAL_SAMPLE_REQUEST}`.",
+        )
+
+    if " is required." in message:
+        return (
+            "review_bundle_preparation",
+            "invalid_upstream_bundle_state",
+            "Keep the Slice 02 package surface intact so Slice 03 can materialize a reviewable bundle.",
+        )
+
+    return (
+        "review_bundle_preparation",
+        "validation_error",
+        "Review the error and keep the request within the bounded Slice 03 reviewable-bundle flow.",
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
 
@@ -81,6 +157,7 @@ def main(argv: list[str] | None = None) -> int:
         ProductResolutionError,
         ValueError,
     ) as exc:
+        error_stage, error_kind, next_step = _describe_error(exc)
         print(
             render_output(
                 build_error_envelope(
@@ -88,6 +165,9 @@ def main(argv: list[str] | None = None) -> int:
                     request_file=args.request_file,
                     run_id=args.run_id,
                     error=str(exc),
+                    error_stage=error_stage,
+                    error_kind=error_kind,
+                    next_step=next_step,
                 )
             )
         )

@@ -13,7 +13,10 @@ _PREFERRED_KEY_ORDER = [
     "request_file",
     "run_id",
     "summary",
+    "error_stage",
+    "error_kind",
     "error",
+    "next_step",
     "artifact_id",
     "artifact_type",
     "artifact_version",
@@ -114,16 +117,24 @@ def build_error_envelope(
     request_file: str,
     run_id: str,
     error: str,
+    error_stage: str | None = None,
+    error_kind: str | None = None,
+    next_step: str | None = None,
 ) -> OrderedDict[str, Any]:
-    return order_for_operator_review(
-        {
-            "command": command,
-            "status": "error",
-            "request_file": request_file,
-            "run_id": run_id,
-            "error": error,
-        }
-    )
+    payload: dict[str, Any] = {
+        "command": command,
+        "status": "error",
+        "request_file": request_file,
+        "run_id": run_id,
+        "error": error,
+    }
+    if error_stage is not None:
+        payload["error_stage"] = error_stage
+    if error_kind is not None:
+        payload["error_kind"] = error_kind
+    if next_step is not None:
+        payload["next_step"] = next_step
+    return order_for_operator_review(payload)
 
 
 def render_output(payload: OrderedDict[str, Any]) -> str:
