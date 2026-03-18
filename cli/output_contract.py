@@ -60,6 +60,7 @@ _PREFERRED_KEY_ORDER = [
     "quick_status",
     "readiness_checklist",
     "confidence_summary",
+    "chain_trace_summary",
     "primary_artifact",
     "primary_review_target",
     "handoff_target",
@@ -187,6 +188,7 @@ def build_review_summary(
     quick_status: dict[str, Any]
     readiness_checklist: dict[str, Any]
     confidence_summary: dict[str, Any]
+    chain_trace_summary: dict[str, Any]
     primary_review_target: dict[str, Any]
     handoff_target: dict[str, Any]
     next_bounded_action: dict[str, Any]
@@ -194,6 +196,10 @@ def build_review_summary(
     handoff_surface: dict[str, Any]
     if "one_shot_ai_ready_artifact" in summary:
         artifact = summary["one_shot_ai_ready_artifact"]
+        bundle = summary["reviewable_output_bundle"]
+        bundle_traceability = bundle.get("traceability", {})
+        package_payload = bundle.get("single_ai_package_payload", {})
+        package_traceability = package_payload.get("traceability", {})
         completion_signal = {
             "state": "handoff_complete_candidate",
             "review_complete_candidate": True,
@@ -219,6 +225,24 @@ def build_review_summary(
                 "handoff_surface_prompt_text_present",
             ],
             "next_safe_bounded_action": "handoff one_shot_ai_ready_artifact.prompt_text to one AI manually",
+        }
+        chain_trace_summary = {
+            "current_stage": "one_shot_ai_ready_prompt",
+            "current_artifact_id": artifact.get("artifact_id"),
+            "current_artifact_type": artifact.get("artifact_type"),
+            "request_traceability_seed": bundle_traceability.get("request_traceability_seed")
+            or package_traceability.get("request_traceability_seed"),
+            "upstream_evidence": {
+                "request_id": summary.get("request_id"),
+                "flow_id": summary.get("flow_id"),
+                "normalized_task_id": bundle_traceability.get("normalized_task_id"),
+                "package_id": bundle_traceability.get("package_id"),
+                "bundle_id": bundle.get("bundle_id"),
+                "task_manifest_id": bundle_traceability.get("task_manifest_id")
+                or package_traceability.get("task_manifest_id"),
+                "preparation_contract_id": bundle_traceability.get("preparation_contract_id")
+                or package_traceability.get("preparation_contract_id"),
+            },
         }
         primary_artifact = {
             "artifact_id": artifact.get("artifact_id"),
@@ -250,6 +274,7 @@ def build_review_summary(
         }
     elif "reviewable_output_bundle" in summary:
         artifact = summary["reviewable_output_bundle"]
+        bundle_traceability = artifact.get("traceability", {})
         completion_signal = {
             "state": "review_complete_candidate",
             "review_complete_candidate": True,
@@ -275,6 +300,20 @@ def build_review_summary(
                 "review_surface_present",
             ],
             "next_safe_bounded_action": "./atp request-prompt tests/fixtures/requests/sample_request_slice02.yaml",
+        }
+        chain_trace_summary = {
+            "current_stage": "reviewable_single_ai_bundle",
+            "current_artifact_id": artifact.get("bundle_id"),
+            "current_artifact_type": artifact.get("bundle_type"),
+            "request_traceability_seed": bundle_traceability.get("request_traceability_seed"),
+            "upstream_evidence": {
+                "request_id": summary.get("request_id"),
+                "flow_id": summary.get("flow_id"),
+                "normalized_task_id": bundle_traceability.get("normalized_task_id"),
+                "package_id": bundle_traceability.get("package_id"),
+                "task_manifest_id": bundle_traceability.get("task_manifest_id"),
+                "preparation_contract_id": bundle_traceability.get("preparation_contract_id"),
+            },
         }
         primary_artifact = {
             "bundle_id": artifact.get("bundle_id"),
@@ -306,6 +345,7 @@ def build_review_summary(
         }
     else:
         artifact = summary.get("single_ai_execution_package", {})
+        traceability = artifact.get("traceability", {})
         completion_signal = {
             "state": "complete_for_current_step",
             "review_complete_candidate": False,
@@ -331,6 +371,19 @@ def build_review_summary(
                 "primary_artifact_identified",
             ],
             "next_safe_bounded_action": "./atp request-bundle tests/fixtures/requests/sample_request_slice02.yaml",
+        }
+        chain_trace_summary = {
+            "current_stage": "single_ai_execution_package",
+            "current_artifact_id": artifact.get("package_id"),
+            "current_artifact_type": artifact.get("package_type"),
+            "request_traceability_seed": traceability.get("request_traceability_seed"),
+            "upstream_evidence": {
+                "request_id": summary.get("request_id"),
+                "flow_id": summary.get("flow_id"),
+                "task_id": summary.get("normalized_task", {}).get("task_id"),
+                "task_manifest_id": traceability.get("task_manifest_id"),
+                "preparation_contract_id": traceability.get("preparation_contract_id"),
+            },
         }
         primary_artifact = {
             "package_id": artifact.get("package_id"),
@@ -375,6 +428,7 @@ def build_review_summary(
         "quick_status": quick_status,
         "readiness_checklist": readiness_checklist,
         "confidence_summary": confidence_summary,
+        "chain_trace_summary": chain_trace_summary,
         "primary_artifact": primary_artifact,
         "primary_review_target": primary_review_target,
         "handoff_target": handoff_target,

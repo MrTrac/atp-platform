@@ -55,6 +55,7 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "quick_status",
                 "readiness_checklist",
                 "confidence_summary",
+                "chain_trace_summary",
                 "primary_artifact",
                 "primary_review_target",
                 "handoff_target",
@@ -101,6 +102,22 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "primary_artifact_identified",
                 ],
                 "next_safe_bounded_action": "./atp request-bundle tests/fixtures/requests/sample_request_slice02.yaml",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["chain_trace_summary"],
+            {
+                "current_stage": "single_ai_execution_package",
+                "current_artifact_id": "single-ai-package-req-atp-v1-1-slice02-0001",
+                "current_artifact_type": "single_ai_execution_package",
+                "request_traceability_seed": "trace-slice02-0001",
+                "upstream_evidence": {
+                    "request_id": "req-atp-v1-1-slice02-0001",
+                    "flow_id": "slice-02-request-flow-req-atp-v1-1-slice02-0001",
+                    "task_id": "single-ai-task-req-atp-v1-1-slice02-0001",
+                    "task_manifest_id": "task-manifest-req-atp-v1-1-slice02-0001",
+                    "preparation_contract_id": "product-execution-preparation-req-atp-v1-1-slice02-0001",
+                },
             },
         )
         self.assertEqual(
@@ -202,6 +219,23 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "review_surface_present",
                 ],
                 "next_safe_bounded_action": "./atp request-prompt tests/fixtures/requests/sample_request_slice02.yaml",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["chain_trace_summary"],
+            {
+                "current_stage": "reviewable_single_ai_bundle",
+                "current_artifact_id": "reviewable-output-bundle-req-atp-v1-1-slice02-0001",
+                "current_artifact_type": "reviewable_single_ai_output_bundle",
+                "request_traceability_seed": "trace-slice02-0001",
+                "upstream_evidence": {
+                    "request_id": "req-atp-v1-1-slice02-0001",
+                    "flow_id": "slice-02-request-flow-req-atp-v1-1-slice02-0001",
+                    "normalized_task_id": "single-ai-task-req-atp-v1-1-slice02-0001",
+                    "package_id": "single-ai-package-req-atp-v1-1-slice02-0001",
+                    "task_manifest_id": "task-manifest-req-atp-v1-1-slice02-0001",
+                    "preparation_contract_id": "product-execution-preparation-req-atp-v1-1-slice02-0001",
+                },
             },
         )
         self.assertEqual(
@@ -321,6 +355,24 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "handoff_surface_prompt_text_present",
                 ],
                 "next_safe_bounded_action": "handoff one_shot_ai_ready_artifact.prompt_text to one AI manually",
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["chain_trace_summary"],
+            {
+                "current_stage": "one_shot_ai_ready_prompt",
+                "current_artifact_id": "one-shot-ai-prompt-req-atp-v1-1-slice02-0001",
+                "current_artifact_type": "one_shot_ai_ready_execution_prompt",
+                "request_traceability_seed": "trace-slice02-0001",
+                "upstream_evidence": {
+                    "request_id": "req-atp-v1-1-slice02-0001",
+                    "flow_id": "slice-02-request-flow-req-atp-v1-1-slice02-0001",
+                    "normalized_task_id": "single-ai-task-req-atp-v1-1-slice02-0001",
+                    "package_id": "single-ai-package-req-atp-v1-1-slice02-0001",
+                    "bundle_id": "reviewable-output-bundle-req-atp-v1-1-slice02-0001",
+                    "task_manifest_id": "task-manifest-req-atp-v1-1-slice02-0001",
+                    "preparation_contract_id": "product-execution-preparation-req-atp-v1-1-slice02-0001",
+                },
             },
         )
         self.assertEqual(
