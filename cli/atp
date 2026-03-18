@@ -7,7 +7,7 @@ case "${1:-help}" in
   help|-h|--help)
     printf 'ATP v0 repo-local CLI\n'
     printf 'Usage: %s <command> [args]\n' "$0"
-    printf 'Commands: run inspect validate\n'
+    printf 'Commands: run inspect validate request-flow\n'
     ;;
   run)
     exec python3 "$ROOT_DIR/cli/run.py" "${@:2}"
@@ -17,6 +17,9 @@ case "${1:-help}" in
     ;;
   validate)
     exec python3 "$ROOT_DIR/cli/validate.py" "${@:2}"
+    ;;
+  request-flow)
+    exec python3 "$ROOT_DIR/cli/request_flow.py" "${@:2}"
     ;;
   *)
     printf 'Unknown command: %s\n' "${1}" >&2
