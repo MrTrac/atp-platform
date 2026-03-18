@@ -245,5 +245,160 @@ class TestFeature05IntegrationReadinessP2Surface(unittest.TestCase):
         self.assertIn("bounded_request_chain_completed: true", result.stdout)
 
 
+class TestFeature05IntegrationReadinessP3Boundaries(unittest.TestCase):
+    """Regression locks: integration readiness surface must not imply activation, automation, or external execution."""
+
+    def test_integration_readiness_summary_integration_mode_is_never_activated(self) -> None:
+        import json
+
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "execution-session", "tests/fixtures/requests/sample_request_slice02.yaml"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout)
+        irs = payload["integration_readiness_summary"]
+        self.assertNotEqual(irs["integration_mode"], "activated")
+        self.assertNotEqual(irs["integration_mode"], "active")
+        self.assertNotEqual(irs["integration_mode"], "enabled")
+        self.assertEqual(irs["integration_mode"], "not_activated")
+
+    def test_integration_readiness_summary_does_not_contain_orchestration_language(self) -> None:
+        import json
+
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "execution-session", "tests/fixtures/requests/sample_request_slice02.yaml"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout)
+        irs_text = str(payload["integration_readiness_summary"]).lower()
+        self.assertNotIn("orchestrat", irs_text)
+        self.assertNotIn("scheduler", irs_text)
+        self.assertNotIn("queue", irs_text)
+        self.assertNotIn("webhook", irs_text)
+        self.assertNotIn("async", irs_text)
+
+    def test_integration_readiness_summary_does_not_expose_external_endpoint(self) -> None:
+        import json
+
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "execution-session", "tests/fixtures/requests/sample_request_slice02.yaml"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout)
+        irs = payload["integration_readiness_summary"]
+        irs_str = str(irs).lower()
+        # No URL, port, host, or external endpoint reference
+        self.assertNotIn("http", irs_str)
+        self.assertNotIn("://", irs_str)
+        self.assertNotIn("localhost", irs_str)
+        self.assertNotIn("port", irs_str)
+
+    def test_help_integration_readiness_block_does_not_imply_activation(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "help"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        # The block must clearly signal not_activated, not enabled
+        self.assertIn("integration_mode -> not_activated", result.stdout)
+        self.assertNotIn("integration_mode -> activated", result.stdout)
+        self.assertNotIn("integration_mode -> enabled", result.stdout)
+
+    def test_help_integration_readiness_block_does_not_contain_external_runtime_language(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "help"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        # Extract only the integration readiness section
+        lines = result.stdout.splitlines()
+        in_ir_block = False
+        ir_lines: list[str] = []
+        for line in lines:
+            if "Integration readiness" in line:
+                in_ir_block = True
+            elif in_ir_block and line.strip() == "":
+                break
+            if in_ir_block:
+                ir_lines.append(line.lower())
+        ir_text = "\n".join(ir_lines)
+        self.assertNotIn("orchestrat", ir_text)
+        self.assertNotIn("scheduler", ir_text)
+        self.assertNotIn("webhook", ir_text)
+        self.assertNotIn("http", ir_text)
+
+    def test_compact_integration_readiness_module_has_no_network_imports(self) -> None:
+        # Verify core/integration_readiness.py does not import network or subprocess modules.
+        module_path = ROOT_DIR / "core" / "integration_readiness.py"
+        source = module_path.read_text()
+        self.assertNotIn("import requests", source)
+        self.assertNotIn("import urllib", source)
+        self.assertNotIn("import http.client", source)
+        self.assertNotIn("import socket", source)
+        self.assertNotIn("import subprocess", source)
+        self.assertNotIn("open(", source)
+
+    def test_execution_session_output_contract_is_not_broken_by_readiness_surface(self) -> None:
+        import json
+
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "execution-session", "tests/fixtures/requests/sample_request_slice02.yaml"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout)
+        # Core contract keys still present and unchanged
+        self.assertIn("command", payload)
+        self.assertIn("status", payload)
+        self.assertIn("operator_scan_summary", payload)
+        self.assertIn("session_summary", payload)
+        self.assertEqual(payload["status"], "ok")
+        self.assertEqual(payload["command"], "execution-session")
+        # New readiness field is additive, not replacing existing fields
+        self.assertEqual(len(payload), 6)
+
+    def test_smoke_request_chain_confirms_no_pseudo_integration_drift(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+        self.assertIn("control_boundary: repo_local_human_gated_manual_single_ai_only", result.stdout)
+        self.assertIn("release_gates_opened: false", result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
