@@ -56,6 +56,7 @@ _PREFERRED_KEY_ORDER = [
     "scope_and_constraints",
     "single_ai_package_payload",
     "result_status",
+    "quick_status",
     "primary_artifact",
     "primary_review_target",
     "handoff_target",
@@ -177,11 +178,19 @@ def build_review_summary(
     ]
 
     primary_artifact: dict[str, Any]
+    quick_status: dict[str, Any]
     primary_review_target: dict[str, Any]
     handoff_target: dict[str, Any]
     next_bounded_action: dict[str, Any]
     if "one_shot_ai_ready_artifact" in summary:
         artifact = summary["one_shot_ai_ready_artifact"]
+        quick_status = {
+            "command": command,
+            "result_status": result_status,
+            "primary_artifact_type": artifact.get("artifact_type"),
+            "ready_for_review": True,
+            "ready_for_handoff": True,
+        }
         primary_artifact = {
             "artifact_id": artifact.get("artifact_id"),
             "artifact_type": artifact.get("artifact_type"),
@@ -203,6 +212,13 @@ def build_review_summary(
         }
     elif "reviewable_output_bundle" in summary:
         artifact = summary["reviewable_output_bundle"]
+        quick_status = {
+            "command": command,
+            "result_status": result_status,
+            "primary_artifact_type": artifact.get("bundle_type"),
+            "ready_for_review": True,
+            "ready_for_handoff": False,
+        }
         primary_artifact = {
             "bundle_id": artifact.get("bundle_id"),
             "bundle_type": artifact.get("bundle_type"),
@@ -224,6 +240,13 @@ def build_review_summary(
         }
     else:
         artifact = summary.get("single_ai_execution_package", {})
+        quick_status = {
+            "command": command,
+            "result_status": result_status,
+            "primary_artifact_type": artifact.get("package_type"),
+            "ready_for_review": True,
+            "ready_for_handoff": False,
+        }
         primary_artifact = {
             "package_id": artifact.get("package_id"),
             "package_type": artifact.get("package_type"),
@@ -254,6 +277,7 @@ def build_review_summary(
         "flow_id": summary.get("flow_id"),
         "supported_flow": summary.get("supported_flow"),
         "result_status": result_status,
+        "quick_status": quick_status,
         "primary_artifact": primary_artifact,
         "primary_review_target": primary_review_target,
         "handoff_target": handoff_target,

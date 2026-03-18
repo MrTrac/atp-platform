@@ -51,6 +51,7 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "flow_id",
                 "supported_flow",
                 "result_status",
+                "quick_status",
                 "primary_artifact",
                 "primary_review_target",
                 "handoff_target",
@@ -59,6 +60,16 @@ class TestSlice06OutputContract(unittest.TestCase):
             ],
         )
         self.assertEqual(payload["review_summary"]["result_status"], "accepted")
+        self.assertEqual(
+            payload["review_summary"]["quick_status"],
+            {
+                "command": "request-flow",
+                "result_status": "accepted",
+                "primary_artifact_type": "single_ai_execution_package",
+                "ready_for_review": True,
+                "ready_for_handoff": False,
+            },
+        )
         self.assertEqual(
             payload["review_summary"]["primary_review_target"],
             {
@@ -107,6 +118,16 @@ class TestSlice06OutputContract(unittest.TestCase):
         )
         self.assertEqual(payload["command"], "request-bundle")
         self.assertEqual(payload["review_summary"]["result_status"], "reviewable")
+        self.assertEqual(
+            payload["review_summary"]["quick_status"],
+            {
+                "command": "request-bundle",
+                "result_status": "reviewable",
+                "primary_artifact_type": "reviewable_single_ai_output_bundle",
+                "ready_for_review": True,
+                "ready_for_handoff": False,
+            },
+        )
         self.assertEqual(
             payload["review_summary"]["primary_review_target"],
             {
@@ -173,6 +194,16 @@ class TestSlice06OutputContract(unittest.TestCase):
         )
         self.assertEqual(payload["command"], "request-prompt")
         self.assertEqual(payload["review_summary"]["result_status"], "ai_ready")
+        self.assertEqual(
+            payload["review_summary"]["quick_status"],
+            {
+                "command": "request-prompt",
+                "result_status": "ai_ready",
+                "primary_artifact_type": "one_shot_ai_ready_execution_prompt",
+                "ready_for_review": True,
+                "ready_for_handoff": True,
+            },
+        )
         self.assertEqual(
             payload["review_summary"]["primary_review_target"],
             {
