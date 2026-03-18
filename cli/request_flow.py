@@ -37,14 +37,14 @@ class _RequestCliParser(argparse.ArgumentParser):
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = _RequestCliParser(
-        prog="./cli/atp request-flow",
+        prog="./atp request-flow",
         description=(
             "Prepare the ATP Slice 02 thin request flow: intake one bounded request, "
             "normalize it deterministically, and emit a single-AI execution package."
         ),
         epilog=(
             "Example:\n"
-            f"  ./cli/atp request-flow {CANONICAL_SAMPLE_REQUEST}\n"
+            f"  ./atp request-flow {CANONICAL_SAMPLE_REQUEST}\n"
             "This command is bounded to the current ATP single-AI request path only."
         ),
         formatter_class=argparse.RawTextHelpFormatter,
@@ -73,7 +73,7 @@ def _describe_error(exc: Exception) -> tuple[str, str, str]:
                 "request_loading",
                 "request_file_not_found",
                 "Confirm the request_file path exists relative to repo root, or rerun with "
-                f"`./cli/atp request-flow {CANONICAL_SAMPLE_REQUEST}`.",
+                f"`./atp request-flow {CANONICAL_SAMPLE_REQUEST}`.",
             )
         if "Unsupported YAML structure" in message:
             return (
@@ -87,7 +87,7 @@ def _describe_error(exc: Exception) -> tuple[str, str, str]:
                 "request_loading",
                 "invalid_json",
                 "Fix the JSON syntax, or rerun with the canonical sample "
-                f"`./cli/atp request-flow {CANONICAL_SAMPLE_REQUEST}`.",
+                f"`./atp request-flow {CANONICAL_SAMPLE_REQUEST}`.",
             )
         return (
             "request_loading",
@@ -117,7 +117,7 @@ def _describe_error(exc: Exception) -> tuple[str, str, str]:
             "request_flow_preparation",
             "unsupported_request_shape",
             "Use an ATP request bounded to the current single-AI flow, or rerun with "
-            f"`./cli/atp request-flow {CANONICAL_SAMPLE_REQUEST}`.",
+                f"`./atp request-flow {CANONICAL_SAMPLE_REQUEST}`.",
         )
 
     return (

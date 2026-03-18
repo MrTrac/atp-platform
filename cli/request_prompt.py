@@ -42,14 +42,14 @@ class _RequestCliParser(argparse.ArgumentParser):
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = _RequestCliParser(
-        prog="./cli/atp request-prompt",
+        prog="./atp request-prompt",
         description=(
             "Prepare the ATP Slice 04 one-shot AI-ready prompt artifact from the bounded "
             "request-flow chain for manual one-AI handoff."
         ),
         epilog=(
             "Example:\n"
-            f"  ./cli/atp request-prompt {CANONICAL_SAMPLE_REQUEST}\n"
+            f"  ./atp request-prompt {CANONICAL_SAMPLE_REQUEST}\n"
             "This command renders a deterministic manual-use artifact; it does not execute an AI."
         ),
         formatter_class=argparse.RawTextHelpFormatter,
@@ -78,7 +78,7 @@ def _describe_error(exc: Exception) -> tuple[str, str, str]:
                 "request_loading",
                 "request_file_not_found",
                 "Confirm the request_file path exists relative to repo root, or rerun with "
-                f"`./cli/atp request-prompt {CANONICAL_SAMPLE_REQUEST}`.",
+                f"`./atp request-prompt {CANONICAL_SAMPLE_REQUEST}`.",
             )
         if "Unsupported YAML structure" in message:
             return (
@@ -92,7 +92,7 @@ def _describe_error(exc: Exception) -> tuple[str, str, str]:
                 "request_loading",
                 "invalid_json",
                 "Fix the JSON syntax, or rerun with the canonical sample "
-                f"`./cli/atp request-prompt {CANONICAL_SAMPLE_REQUEST}`.",
+                f"`./atp request-prompt {CANONICAL_SAMPLE_REQUEST}`.",
             )
         return (
             "request_loading",
@@ -114,7 +114,7 @@ def _describe_error(exc: Exception) -> tuple[str, str, str]:
                 "request_flow_preparation",
                 "unsupported_request_shape",
                 "Use an ATP request bounded to the current single-AI flow, or rerun with "
-                f"`./cli/atp request-prompt {CANONICAL_SAMPLE_REQUEST}`.",
+                f"`./atp request-prompt {CANONICAL_SAMPLE_REQUEST}`.",
             )
         return (
             "request_flow_preparation",

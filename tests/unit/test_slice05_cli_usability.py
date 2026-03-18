@@ -95,9 +95,10 @@ class TestSlice05CliUsability(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("Prepare the ATP Slice 02 thin request flow", result.stdout)
         self.assertIn(
-            f"./cli/atp request-flow {CANONICAL_SAMPLE_REQUEST}",
+            f"./atp request-flow {CANONICAL_SAMPLE_REQUEST}",
             result.stdout,
         )
+        self.assertIn("usage: ./atp request-flow", result.stdout)
         self.assertIn("Canonical repo-root sample", result.stdout)
 
     def test_request_bundle_help_includes_description_and_example(self) -> None:
@@ -111,9 +112,10 @@ class TestSlice05CliUsability(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("Prepare the ATP Slice 03 reviewable bundle", result.stdout)
         self.assertIn(
-            f"./cli/atp request-bundle {CANONICAL_SAMPLE_REQUEST}",
+            f"./atp request-bundle {CANONICAL_SAMPLE_REQUEST}",
             result.stdout,
         )
+        self.assertIn("usage: ./atp request-bundle", result.stdout)
         self.assertIn("Canonical repo-root sample", result.stdout)
 
     def test_request_prompt_help_includes_description_and_example(self) -> None:
@@ -127,16 +129,17 @@ class TestSlice05CliUsability(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("Prepare the ATP Slice 04 one-shot AI-ready prompt artifact", result.stdout)
         self.assertIn(
-            f"./cli/atp request-prompt {CANONICAL_SAMPLE_REQUEST}",
+            f"./atp request-prompt {CANONICAL_SAMPLE_REQUEST}",
             result.stdout,
         )
+        self.assertIn("usage: ./atp request-prompt", result.stdout)
         self.assertIn("Canonical repo-root sample", result.stdout)
 
     def test_missing_request_file_guidance_is_actionable(self) -> None:
         commands = [
-            ("request_flow.py", "./cli/atp request-flow"),
-            ("request_bundle.py", "./cli/atp request-bundle"),
-            ("request_prompt.py", "./cli/atp request-prompt"),
+            ("request_flow.py", "./atp request-flow"),
+            ("request_bundle.py", "./atp request-bundle"),
+            ("request_prompt.py", "./atp request-prompt"),
         ]
 
         for script_name, command_name in commands:

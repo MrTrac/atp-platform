@@ -55,7 +55,7 @@ class TestSlice07ValidationMessages(unittest.TestCase):
         )
         self.assertEqual(payload["error_stage"], "request_loading")
         self.assertEqual(payload["error_kind"], "request_file_not_found")
-        self.assertIn("./cli/atp request-flow", payload["next_step"])
+        self.assertIn("./atp request-flow", payload["next_step"])
         self.assertEqual(
             payload["validation_evidence_summary"],
             {
