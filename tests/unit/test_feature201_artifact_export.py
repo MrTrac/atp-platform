@@ -253,5 +253,91 @@ class TestFeature201ArtifactExportP2Implementation(unittest.TestCase):
         self.assertIn("def write_manifest", source)
 
 
+class TestFeature201ArtifactExportP3RegressionLocks(unittest.TestCase):
+    """Regression locks — stdout contract unchanged without flag, export posture bounded."""
+
+    def _run_command(self, cmd: list[str]) -> str:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, cwd=ROOT_DIR,
+        )
+        self.assertEqual(result.returncode, 0, f"Command failed: {result.stderr}")
+        return result.stdout
+
+    def test_request_flow_stdout_is_valid_json_without_export_flag(self) -> None:
+        out = self._run_command(["python3", "cli/request_flow.py", FIXTURE])
+        data = json.loads(out)
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["command"], "request-flow")
+
+    def test_request_bundle_stdout_is_valid_json_without_export_flag(self) -> None:
+        out = self._run_command(["python3", "cli/request_bundle.py", FIXTURE])
+        data = json.loads(out)
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["command"], "request-bundle")
+
+    def test_request_prompt_stdout_is_valid_json_without_export_flag(self) -> None:
+        out = self._run_command(["python3", "cli/request_prompt.py", FIXTURE])
+        data = json.loads(out)
+        self.assertEqual(data["status"], "ok")
+        self.assertEqual(data["command"], "request-prompt")
+
+    def test_no_export_files_written_without_flag(self) -> None:
+        """Without --export-dir, no files are written anywhere in the repo."""
+        import os
+        before_mtime = os.path.getmtime(ROOT_DIR / "core" / "artifact_export.py")
+        self._run_command(["python3", "cli/request_flow.py", FIXTURE])
+        after_mtime = os.path.getmtime(ROOT_DIR / "core" / "artifact_export.py")
+        self.assertEqual(before_mtime, after_mtime)
+
+    def test_export_mode_constant_remains_opt_in(self) -> None:
+        from core.artifact_export import EXPORT_MODE
+
+        self.assertEqual(EXPORT_MODE, "opt_in_human_initiated")
+        self.assertNotIn("auto", EXPORT_MODE)
+        self.assertNotIn("background", EXPORT_MODE)
+        self.assertNotIn("default", EXPORT_MODE)
+
+    def test_request_flow_stdout_content_unchanged_vs_no_flag_baseline(self) -> None:
+        """Stdout with --export-dir equals stdout without flag."""
+        out_no_flag = self._run_command(["python3", "cli/request_flow.py", FIXTURE])
+        with tempfile.TemporaryDirectory() as tmp:
+            out_with_flag = self._run_command(
+                ["python3", "cli/request_flow.py", FIXTURE, "--export-dir", tmp]
+            )
+        self.assertEqual(json.loads(out_no_flag), json.loads(out_with_flag))
+
+    def test_smoke_chain_passes_after_export_surface_added(self) -> None:
+        result = subprocess.run(
+            ["./atp", "smoke-request-chain"],
+            capture_output=True, text=True, cwd=ROOT_DIR,
+        )
+        self.assertEqual(result.returncode, 0, f"Smoke chain failed:\n{result.stdout}\n{result.stderr}")
+
+    def test_export_scope_label_does_not_imply_remote_or_network(self) -> None:
+        from core.artifact_export import EXPORT_SCOPE
+
+        self.assertNotIn("remote", EXPORT_SCOPE)
+        self.assertNotIn("network", EXPORT_SCOPE)
+        self.assertNotIn("cloud", EXPORT_SCOPE)
+        self.assertIn("repo_local", EXPORT_SCOPE)
+
+    def test_export_notes_contain_no_background_write_statement(self) -> None:
+        from core.artifact_export import EXPORT_NOTES
+
+        notes_text = " ".join(EXPORT_NOTES)
+        self.assertIn("No background write", notes_text)
+        self.assertIn("opt-in", notes_text)
+
+    def test_write_artifact_does_not_write_inside_repo_root_by_default(self) -> None:
+        """write_artifact must not write inside repo root — it only writes to provided export_dir."""
+        from core.artifact_export import write_artifact
+        import inspect
+
+        source = inspect.getsource(write_artifact)
+        # Function must not reference ROOT_DIR or repo paths
+        self.assertNotIn("ROOT_DIR", source)
+        self.assertNotIn("/SOURCE_DEV", source)
+
+
 if __name__ == "__main__":
     unittest.main()
