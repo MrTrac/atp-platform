@@ -76,6 +76,33 @@ class TestFeature03OperatorReadability(unittest.TestCase):
             },
         )
 
+    def test_single_request_request_chain_outputs_do_not_gain_extra_scan_surface(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-prompt", REQUEST_A],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        self.assertNotIn("operator_scan_summary", payload)
+        self.assertNotIn("operator_scan_summary", payload["review_summary"])
+
+    def test_smoke_request_chain_still_passes_without_readability_drift(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
