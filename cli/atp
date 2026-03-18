@@ -26,6 +26,7 @@ case "${1:-help}" in
     printf '  smoke-request-chain  Run the canonical repo-root smoke verification for the bounded chain.\n'
     printf '\n'
     printf 'Other commands:\n'
+    printf '  execution-session  Inspect one bounded repo-local execution session from explicit request files.\n'
     printf '  run             Run ATP control-plane execution surfaces.\n'
     printf '  inspect         Inspect ATP configuration and repo-local state.\n'
     printf '  validate        Validate ATP repo-local contracts and inputs.\n'
@@ -33,6 +34,7 @@ case "${1:-help}" in
     printf 'Canonical runnable example from repo root:\n'
     printf '  %s request-flow tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-flow-multi tests/fixtures/requests/sample_request_slice02.yaml tests/fixtures/requests/sample_request_slice02_b.yaml\n' "$CLI_PATH"
+    printf '  %s execution-session tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-prompt tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '\n'

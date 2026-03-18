@@ -6,6 +6,8 @@ import json
 from collections import OrderedDict
 from typing import Any
 
+from core.session_tracking import build_execution_session_summary
+
 
 _PREFERRED_KEY_ORDER = [
     "command",
@@ -74,6 +76,7 @@ _PREFERRED_KEY_ORDER = [
     "quick_status",
     "readiness_checklist",
     "confidence_summary",
+    "session_summary",
     "chain_trace_summary",
     "review_evidence_summary",
     "acceptance_evidence_hint",
@@ -117,6 +120,7 @@ _MULTI_REQUEST_SUMMARY_ORDER = [
     "accepted_request_count",
     "supported_flow",
     "notes",
+    "session_summary",
     "request_ids",
     "flow_ids",
     "request_flows",
@@ -716,6 +720,10 @@ def build_review_summary(
         "quick_status": quick_status,
         "readiness_checklist": readiness_checklist,
         "confidence_summary": confidence_summary,
+        "session_summary": build_execution_session_summary(
+            request_files=[request_file],
+            request_ids=[str(summary["request_id"])],
+        ),
         "chain_trace_summary": chain_trace_summary,
         "review_evidence_summary": review_evidence_summary,
         "acceptance_evidence_hint": acceptance_evidence_hint,

@@ -55,6 +55,7 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "quick_status",
                 "readiness_checklist",
                 "confidence_summary",
+                "session_summary",
                 "chain_trace_summary",
                 "review_evidence_summary",
                 "acceptance_evidence_hint",

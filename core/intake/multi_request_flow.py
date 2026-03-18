@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from core.session_tracking import build_execution_session_summary
+
 from core.intake.request_flow import prepare_single_ai_request_flow
 
 
@@ -43,6 +45,10 @@ def build_multi_request_flow_summary(
             "This surface prepares multiple Slice 02 request flows in explicit input order only.",
             "No queue, scheduler, background execution, or orchestration is performed here.",
         ],
+        "session_summary": build_execution_session_summary(
+            request_files=[str(item["request_file"]) for item in prepared_request_flows],
+            request_ids=request_ids,
+        ),
         "request_ids": request_ids,
         "flow_ids": flow_ids,
         "request_flows": request_flows,

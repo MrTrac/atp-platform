@@ -17,6 +17,19 @@ REQUEST_B = "tests/fixtures/requests/sample_request_slice02_b.yaml"
 class TestFeature02ExecutionSessionTracking(unittest.TestCase):
     """Lock the bounded repo-local execution session identity surface."""
 
+    def test_root_help_mentions_execution_session_surface(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "help"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("execution-session  Inspect one bounded repo-local execution session", result.stdout)
+        self.assertIn(f"./atp execution-session {REQUEST_A}", result.stdout)
+
     def test_execution_session_supports_single_request_identity(self) -> None:
         result = subprocess.run(
             [str(ROOT_DIR / "atp"), "execution-session", REQUEST_A],
@@ -60,6 +73,58 @@ class TestFeature02ExecutionSessionTracking(unittest.TestCase):
             ["req-atp-v1-1-slice02-0001", "req-atp-v1-1-slice02-0002"],
         )
         self.assertTrue(payload["session_summary"]["session_id"].startswith("session-multi-2-"))
+
+    def test_single_request_outputs_share_same_session_id(self) -> None:
+        flow_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-flow", REQUEST_A],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+        bundle_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-bundle", REQUEST_A],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+        prompt_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-prompt", REQUEST_A],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(flow_result.returncode, 0)
+        self.assertEqual(bundle_result.returncode, 0)
+        self.assertEqual(prompt_result.returncode, 0)
+
+        flow_payload = json.loads(flow_result.stdout, object_pairs_hook=OrderedDict)
+        bundle_payload = json.loads(bundle_result.stdout, object_pairs_hook=OrderedDict)
+        prompt_payload = json.loads(prompt_result.stdout, object_pairs_hook=OrderedDict)
+
+        session_id = flow_payload["review_summary"]["session_summary"]["session_id"]
+        self.assertEqual(session_id, bundle_payload["review_summary"]["session_summary"]["session_id"])
+        self.assertEqual(session_id, prompt_payload["review_summary"]["session_summary"]["session_id"])
+        self.assertEqual(session_id, "session-single-req-atp-v1-1-slice02-0001")
+
+    def test_multi_request_summary_includes_session_continuity(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-flow-multi", REQUEST_A, REQUEST_B],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        session_summary = payload["multi_request_summary"]["session_summary"]
+        self.assertEqual(session_summary["session_mode"], "multi_request")
+        self.assertEqual(session_summary["request_count"], 2)
+        self.assertTrue(session_summary["session_id"].startswith("session-multi-2-"))
 
 
 if __name__ == "__main__":
