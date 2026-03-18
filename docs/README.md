@@ -14,6 +14,7 @@
 | `decisions/` | Chỉ mục decision records; authority path tới freeze artifact | Active |
 | `governance/` | Framework, Git, documentation, coding, release, AI collaboration | Active |
 | `roadmap/` | Product roadmap, stage roadmap, major roadmap, version roadmap, và inheritance rules | Active |
+| `execution/` | ATP project-instance execution plan layer: roadmap execution + prompt-cmd feature programs | Active |
 | `archive/` | Tài liệu lịch sử; seed bundle; bản sao cũ không còn authority | Archived (không phải source of truth) |
 
 ## Đọc gì trước
@@ -31,6 +32,7 @@
 6. **Roadmap continuity:** `roadmap/README.md` và các roadmap documents theo product/major/version
    Practical lineage map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
    Milestone templates: `roadmap/templates/milestones/`
+7. **Execution planning hiện hành:** `execution/ROADMAP_EXECUTION.md` → `execution/PROMPT_CMD/INDEX.md`
 
 Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP ⇄ products`, không chỉ bám release chronology.
 
@@ -44,6 +46,7 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 - Stage roadmap: `roadmap/stages/ATP_Development_Stage_Roadmap.md`
 - Practical milestone map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
 - Milestone template bundle: `roadmap/templates/milestones/`
+- Execution-plan instance layer: `execution/ROADMAP_EXECUTION.md`, `execution/EXECUTION_MODEL_SOURCE.md`, `execution/PROMPT_CMD/`
 
 ---
 
@@ -55,6 +58,7 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 - `decisions/` — chỉ mục cho decision records ngoài các mốc freeze chính
 - `governance/` — governance framework và các bundle đang có hiệu lực
 - `roadmap/` — roadmap layer cho product, major family, và version planning/inheritance
+- `execution/` — execution-plan instance layer cho ATP theo AI_OS canonical execution model
 - `archive/` — tài liệu lịch sử hoặc bản sao cũ đã bị thay thế về authority path (không phải nguồn chuẩn hiện hành)
 
 ## Quy tắc authority và placement
