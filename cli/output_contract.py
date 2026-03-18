@@ -61,6 +61,7 @@ _PREFERRED_KEY_ORDER = [
     "readiness_checklist",
     "confidence_summary",
     "chain_trace_summary",
+    "review_evidence_summary",
     "primary_artifact",
     "primary_review_target",
     "handoff_target",
@@ -189,6 +190,7 @@ def build_review_summary(
     readiness_checklist: dict[str, Any]
     confidence_summary: dict[str, Any]
     chain_trace_summary: dict[str, Any]
+    review_evidence_summary: dict[str, Any]
     primary_review_target: dict[str, Any]
     handoff_target: dict[str, Any]
     next_bounded_action: dict[str, Any]
@@ -243,6 +245,20 @@ def build_review_summary(
                 "preparation_contract_id": bundle_traceability.get("preparation_contract_id")
                 or package_traceability.get("preparation_contract_id"),
             },
+        }
+        review_evidence_summary = {
+            "evidence_status": "bounded_handoff_evidence_present",
+            "evidence_needed": [
+                "one_shot_ai_ready_artifact.prompt_text",
+                "one_shot_ai_ready_artifact.prompt_sections.traceability",
+                "reviewable_output_bundle.traceability",
+            ],
+            "evidence_present": [
+                "one_shot_ai_ready_artifact",
+                "one_shot_ai_ready_artifact.prompt_text",
+                "reviewable_output_bundle",
+                "reviewable_output_bundle.traceability",
+            ],
         }
         primary_artifact = {
             "artifact_id": artifact.get("artifact_id"),
@@ -315,6 +331,19 @@ def build_review_summary(
                 "preparation_contract_id": bundle_traceability.get("preparation_contract_id"),
             },
         }
+        review_evidence_summary = {
+            "evidence_status": "bounded_review_evidence_present",
+            "evidence_needed": [
+                "reviewable_output_bundle.review_surface",
+                "reviewable_output_bundle.traceability",
+                "reviewable_output_bundle.single_ai_package_payload.traceability",
+            ],
+            "evidence_present": [
+                "reviewable_output_bundle",
+                "reviewable_output_bundle.review_surface",
+                "reviewable_output_bundle.traceability",
+            ],
+        }
         primary_artifact = {
             "bundle_id": artifact.get("bundle_id"),
             "bundle_type": artifact.get("bundle_type"),
@@ -385,6 +414,20 @@ def build_review_summary(
                 "preparation_contract_id": traceability.get("preparation_contract_id"),
             },
         }
+        review_evidence_summary = {
+            "evidence_status": "bounded_preparation_evidence_present",
+            "evidence_needed": [
+                "validation_summary",
+                "single_ai_execution_package.traceability",
+                "task_manifest.input_artifacts",
+            ],
+            "evidence_present": [
+                "validation_summary",
+                "single_ai_execution_package",
+                "single_ai_execution_package.traceability",
+                "task_manifest",
+            ],
+        }
         primary_artifact = {
             "package_id": artifact.get("package_id"),
             "package_type": artifact.get("package_type"),
@@ -429,6 +472,7 @@ def build_review_summary(
         "readiness_checklist": readiness_checklist,
         "confidence_summary": confidence_summary,
         "chain_trace_summary": chain_trace_summary,
+        "review_evidence_summary": review_evidence_summary,
         "primary_artifact": primary_artifact,
         "primary_review_target": primary_review_target,
         "handoff_target": handoff_target,

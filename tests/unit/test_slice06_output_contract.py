@@ -56,6 +56,7 @@ class TestSlice06OutputContract(unittest.TestCase):
                 "readiness_checklist",
                 "confidence_summary",
                 "chain_trace_summary",
+                "review_evidence_summary",
                 "primary_artifact",
                 "primary_review_target",
                 "handoff_target",
@@ -118,6 +119,23 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "task_manifest_id": "task-manifest-req-atp-v1-1-slice02-0001",
                     "preparation_contract_id": "product-execution-preparation-req-atp-v1-1-slice02-0001",
                 },
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["review_evidence_summary"],
+            {
+                "evidence_status": "bounded_preparation_evidence_present",
+                "evidence_needed": [
+                    "validation_summary",
+                    "single_ai_execution_package.traceability",
+                    "task_manifest.input_artifacts",
+                ],
+                "evidence_present": [
+                    "validation_summary",
+                    "single_ai_execution_package",
+                    "single_ai_execution_package.traceability",
+                    "task_manifest",
+                ],
             },
         )
         self.assertEqual(
@@ -236,6 +254,22 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "task_manifest_id": "task-manifest-req-atp-v1-1-slice02-0001",
                     "preparation_contract_id": "product-execution-preparation-req-atp-v1-1-slice02-0001",
                 },
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["review_evidence_summary"],
+            {
+                "evidence_status": "bounded_review_evidence_present",
+                "evidence_needed": [
+                    "reviewable_output_bundle.review_surface",
+                    "reviewable_output_bundle.traceability",
+                    "reviewable_output_bundle.single_ai_package_payload.traceability",
+                ],
+                "evidence_present": [
+                    "reviewable_output_bundle",
+                    "reviewable_output_bundle.review_surface",
+                    "reviewable_output_bundle.traceability",
+                ],
             },
         )
         self.assertEqual(
@@ -373,6 +407,23 @@ class TestSlice06OutputContract(unittest.TestCase):
                     "task_manifest_id": "task-manifest-req-atp-v1-1-slice02-0001",
                     "preparation_contract_id": "product-execution-preparation-req-atp-v1-1-slice02-0001",
                 },
+            },
+        )
+        self.assertEqual(
+            payload["review_summary"]["review_evidence_summary"],
+            {
+                "evidence_status": "bounded_handoff_evidence_present",
+                "evidence_needed": [
+                    "one_shot_ai_ready_artifact.prompt_text",
+                    "one_shot_ai_ready_artifact.prompt_sections.traceability",
+                    "reviewable_output_bundle.traceability",
+                ],
+                "evidence_present": [
+                    "one_shot_ai_ready_artifact",
+                    "one_shot_ai_ready_artifact.prompt_text",
+                    "reviewable_output_bundle",
+                    "reviewable_output_bundle.traceability",
+                ],
             },
         )
         self.assertEqual(
