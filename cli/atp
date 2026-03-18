@@ -33,6 +33,10 @@ case "${1:-help}" in
     printf '  %s request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-prompt tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '\n'
+    printf 'Canonical bounded-chain fixture policy:\n'
+    printf '  tests/fixtures/requests/sample_request_slice02.yaml\n'
+    printf '  Use this same fixture for help examples, repo-root smoke verification, and bounded happy-path checks.\n'
+    printf '\n'
     printf 'Canonical smoke verification from repo root:\n'
     printf '  ./atp smoke-request-chain\n'
     printf '  ./atp smoke-request-chain tests/fixtures/requests/sample_request_slice02.yaml\n'

@@ -15,6 +15,7 @@ fi
 printf 'ATP v1.1 canonical smoke verification\n'
 printf 'Repo root: %s\n' "$ROOT_DIR"
 printf 'Request fixture: %s\n' "$REQUEST_FILE"
+printf 'Canonical fixture policy: %s is the bounded help/example/smoke fixture for the current execution chain.\n' "$CANONICAL_FIXTURE"
 printf '\n'
 
 printf '[1/3] request-flow\n'

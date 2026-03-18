@@ -26,6 +26,7 @@ class TestSlice10SmokeVerification(unittest.TestCase):
         self.assertIn("smoke-request-chain", result.stdout)
         self.assertIn("./atp smoke-request-chain", result.stdout)
         self.assertIn(CANONICAL_FIXTURE, result.stdout)
+        self.assertIn("Canonical bounded-chain fixture policy:", result.stdout)
 
     def test_smoke_request_chain_runs_all_three_steps(self) -> None:
         result = subprocess.run(
@@ -38,6 +39,10 @@ class TestSlice10SmokeVerification(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0)
         self.assertIn("ATP v1.1 canonical smoke verification", result.stdout)
+        self.assertIn(
+            f"Canonical fixture policy: {CANONICAL_FIXTURE} is the bounded help/example/smoke fixture",
+            result.stdout,
+        )
         self.assertIn("[1/3] request-flow", result.stdout)
         self.assertIn("[2/3] request-bundle", result.stdout)
         self.assertIn("[3/3] request-prompt", result.stdout)

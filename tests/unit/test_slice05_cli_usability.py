@@ -32,6 +32,12 @@ class TestSlice05CliUsability(unittest.TestCase):
             f"./cli/atp request-flow {CANONICAL_SAMPLE_REQUEST}",
             result.stdout,
         )
+        self.assertIn("Canonical bounded-chain fixture policy:", result.stdout)
+        self.assertIn(CANONICAL_SAMPLE_REQUEST, result.stdout)
+        self.assertIn(
+            "Use this same fixture for help examples, repo-root smoke verification, and bounded happy-path checks.",
+            result.stdout,
+        )
 
     def test_request_flow_help_includes_description_and_example(self) -> None:
         result = subprocess.run(
