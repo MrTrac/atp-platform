@@ -97,6 +97,61 @@ class TestFeature203SessionArtifactContinuity(unittest.TestCase):
             ],
         )
 
+    def test_continuity_anchor_wording_stays_repo_local_and_non_persistent(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "execution-session", FIXTURE],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        anchor_text = json.dumps(payload["artifact_continuity_anchors"]).lower()
+        self.assertIn("bounded invocation only", anchor_text)
+        self.assertNotIn("database", anchor_text)
+        self.assertNotIn("registry", anchor_text)
+        self.assertNotIn("audit service", anchor_text)
+        self.assertNotIn("background", anchor_text)
+        self.assertNotIn("daemon", anchor_text)
+
+    def test_compose_chain_export_manifest_continuity_stays_bounded_to_exported_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                [str(ROOT_DIR / "atp"), "compose-chain", FIXTURE, "--export-dir", tmp],
+                check=False,
+                capture_output=True,
+                text=True,
+                cwd=ROOT_DIR,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            manifest_path = Path(tmp) / "compose-chain-0001" / "export_manifest.json"
+            manifest = json.loads(manifest_path.read_text(), object_pairs_hook=OrderedDict)
+            anchors = manifest["artifact_continuity_anchors"]["anchors"]
+            self.assertEqual(len(anchors), 1)
+            self.assertEqual(
+                anchors[0]["artifact_type"],
+                "one_shot_ai_ready_execution_prompt",
+            )
+            self.assertTrue(
+                anchors[0]["export_path"].endswith("/compose-chain-0001/request_prompt.json")
+            )
+
+    def test_smoke_request_chain_still_passes_without_continuity_drift(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
