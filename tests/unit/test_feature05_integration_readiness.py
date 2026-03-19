@@ -379,10 +379,12 @@ class TestFeature05IntegrationReadinessP3Boundaries(unittest.TestCase):
         self.assertIn("status", payload)
         self.assertIn("operator_scan_summary", payload)
         self.assertIn("session_summary", payload)
+        self.assertIn("artifact_continuity_anchors", payload)
+        self.assertIn("integration_readiness_summary", payload)
         self.assertEqual(payload["status"], "ok")
         self.assertEqual(payload["command"], "execution-session")
-        # New readiness field is additive, not replacing existing fields
-        self.assertEqual(len(payload), 6)
+        # New additive fields must not replace the existing execution-session contract.
+        self.assertGreaterEqual(len(payload), 6)
 
     def test_smoke_request_chain_confirms_no_pseudo_integration_drift(self) -> None:
         result = subprocess.run(

@@ -14,6 +14,7 @@ if str(ROOT_DIR) not in sys.path:
 from core.intake.loader import RequestLoadError, load_request
 from core.integration_readiness import build_compact_integration_readiness_summary
 from core.session_tracking import (
+    build_artifact_continuity_anchors,
     build_execution_session_summary,
     build_session_operator_scan_summary,
 )
@@ -137,6 +138,14 @@ def main(argv: list[str] | None = None) -> int:
                     ("request_files", args.request_files),
                     ("operator_scan_summary", build_session_operator_scan_summary(session_summary)),
                     ("session_summary", session_summary),
+                    (
+                        "artifact_continuity_anchors",
+                        build_artifact_continuity_anchors(
+                            session_id=str(session_summary["session_id"]),
+                            request_ids=[str(request_id) for request_id in request_ids],
+                            artifact_records=[],
+                        ),
+                    ),
                     ("integration_readiness_summary", build_compact_integration_readiness_summary()),
                 ]
             )

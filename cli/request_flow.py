@@ -14,6 +14,10 @@ from core.artifact_export import build_export_manifest, write_artifact, write_ma
 from core.intake.loader import RequestLoadError, load_request
 from core.intake.request_flow import RequestFlowError, prepare_single_ai_request_flow
 from core.resolution.product_resolver import ProductResolutionError
+from core.session_tracking import (
+    build_artifact_continuity_anchors,
+    build_artifact_record_from_primary_artifact,
+)
 from output_contract import build_error_envelope, build_success_envelope, render_output
 
 CANONICAL_SAMPLE_REQUEST = "tests/fixtures/requests/sample_request_slice02.yaml"
@@ -171,12 +175,25 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.export_dir:
         artifact_path = write_artifact(args.export_dir, args.run_id, "request_flow", envelope)
+        review_summary = envelope["review_summary"]
         manifest = build_export_manifest(
             run_id=args.run_id,
             command="request-flow",
             request_file=args.request_file,
             artifact_type="request_flow",
             artifact_path=artifact_path,
+            session_id=str(review_summary["session_summary"]["session_id"]),
+            artifact_continuity_anchors=build_artifact_continuity_anchors(
+                session_id=str(review_summary["session_summary"]["session_id"]),
+                request_ids=[str(request_id) for request_id in review_summary["session_summary"]["request_ids"]],
+                artifact_records=[
+                    build_artifact_record_from_primary_artifact(
+                        primary_artifact=review_summary["primary_artifact"],
+                        creation_order=1,
+                        export_path=artifact_path,
+                    )
+                ],
+            ),
         )
         write_manifest(args.export_dir, args.run_id, manifest)
 

@@ -51,6 +51,7 @@ def build_composition_envelope(
     run_id: str,
     composition_status: str,
     stages: list[dict],
+    artifact_continuity_anchors: dict | None = None,
     fail_stage: str | None = None,
     fail_reason: str | None = None,
 ) -> OrderedDict[str, object]:
@@ -79,6 +80,8 @@ def build_composition_envelope(
         ("stage_sequence", list(COMPOSITION_STAGE_SEQUENCE)),
         ("stages_executed", stages),
     ]
+    if artifact_continuity_anchors is not None:
+        payload.append(("artifact_continuity_anchors", artifact_continuity_anchors))
     if fail_stage is not None:
         payload.append(("fail_stage", fail_stage))
     if fail_reason is not None:

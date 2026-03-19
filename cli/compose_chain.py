@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections import OrderedDict
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -33,6 +34,10 @@ from core.intake.review_bundle import (
     prepare_reviewable_single_ai_output_bundle,
 )
 from core.resolution.product_resolver import ProductResolutionError
+from core.session_tracking import (
+    build_artifact_continuity_anchors,
+    build_artifact_record_from_primary_artifact,
+)
 from output_contract import build_success_envelope, render_output
 
 CANONICAL_SAMPLE_REQUEST = "tests/fixtures/requests/sample_request_slice02.yaml"
@@ -150,18 +155,50 @@ _STAGE_RUNNERS = [
 ]
 
 
+def _extract_stage_artifact_record(stage_output: dict, creation_order: int) -> OrderedDict[str, object] | None:
+    review_summary = stage_output.get("review_summary")
+    if not isinstance(review_summary, dict):
+        return None
+    primary_artifact = review_summary.get("primary_artifact")
+    if not isinstance(primary_artifact, dict):
+        return None
+    return build_artifact_record_from_primary_artifact(
+        primary_artifact=primary_artifact,
+        creation_order=creation_order,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
 
     stages_executed: list[dict] = []
     fail_stage: str | None = None
     fail_reason: str | None = None
+    session_id: str | None = None
+    request_ids: list[str] = []
+    artifact_records: list[OrderedDict[str, object]] = []
 
     for stage_name, runner in _STAGE_RUNNERS:
         run_id = _STAGE_RUN_IDS[stage_name]
         status, output = runner(args.request_file, run_id)
         stage_result = dict(build_stage_result(stage=stage_name, status=status, output=output))
         stages_executed.append(stage_result)
+        if status == "ok":
+            review_summary = output.get("review_summary")
+            if isinstance(review_summary, dict):
+                stage_session_summary = review_summary.get("session_summary")
+                if isinstance(stage_session_summary, dict):
+                    if session_id is None:
+                        raw_session_id = stage_session_summary.get("session_id")
+                        if isinstance(raw_session_id, str):
+                            session_id = raw_session_id
+                    if not request_ids:
+                        raw_request_ids = stage_session_summary.get("request_ids")
+                        if isinstance(raw_request_ids, list):
+                            request_ids = [str(request_id) for request_id in raw_request_ids]
+                artifact_record = _extract_stage_artifact_record(output, len(artifact_records) + 1)
+                if artifact_record is not None:
+                    artifact_records.append(artifact_record)
         if status != "ok":
             fail_stage = stage_name
             fail_reason = output.get("error", "Stage returned error status.")
@@ -172,11 +209,20 @@ def main(argv: list[str] | None = None) -> int:
     else:
         composition_status = COMPOSITION_STATUS_FAIL
 
+    artifact_continuity_anchors = None
+    if session_id is not None and request_ids:
+        artifact_continuity_anchors = build_artifact_continuity_anchors(
+            session_id=session_id,
+            request_ids=request_ids,
+            artifact_records=artifact_records,
+        )
+
     envelope = build_composition_envelope(
         request_file=args.request_file,
         run_id=args.run_id,
         composition_status=composition_status,
         stages=stages_executed,
+        artifact_continuity_anchors=artifact_continuity_anchors,
         fail_stage=fail_stage,
         fail_reason=fail_reason,
     )
@@ -187,12 +233,25 @@ def main(argv: list[str] | None = None) -> int:
         artifact_path = write_artifact(
             args.export_dir, args.run_id, "request_prompt", envelope
         )
+        manifest_continuity_anchors = None
+        if session_id is not None and request_ids:
+            prompt_artifact_record = None
+            if artifact_records:
+                prompt_artifact_record = OrderedDict(artifact_records[-1])
+                prompt_artifact_record["export_path"] = artifact_path
+            manifest_continuity_anchors = build_artifact_continuity_anchors(
+                session_id=session_id,
+                request_ids=request_ids,
+                artifact_records=[] if prompt_artifact_record is None else [prompt_artifact_record],
+            )
         manifest = build_export_manifest(
             run_id=args.run_id,
             command="compose-chain",
             request_file=args.request_file,
             artifact_type="request_prompt",
             artifact_path=artifact_path,
+            session_id=session_id,
+            artifact_continuity_anchors=manifest_continuity_anchors,
         )
         write_manifest(args.export_dir, args.run_id, manifest)
 

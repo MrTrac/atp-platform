@@ -103,12 +103,14 @@ def build_export_manifest(
     request_file: str,
     artifact_type: str,
     artifact_path: str,
+    session_id: str | None = None,
+    artifact_continuity_anchors: OrderedDict[str, object] | None = None,
 ) -> OrderedDict[str, object]:
     """Build a bounded export manifest dict for one artifact export.
 
     Returns a deterministic manifest. Does not perform any file I/O.
     """
-    return OrderedDict(
+    manifest = OrderedDict(
         [
             ("export_contract_version", EXPORT_CONTRACT_VERSION),
             ("export_scope", EXPORT_SCOPE),
@@ -118,6 +120,11 @@ def build_export_manifest(
             ("request_file", request_file),
             ("artifact_type", artifact_type),
             ("artifact_path", artifact_path),
-            ("notes", list(EXPORT_NOTES)),
         ]
     )
+    if session_id is not None:
+        manifest["session_id"] = session_id
+    if artifact_continuity_anchors is not None:
+        manifest["artifact_continuity_anchors"] = artifact_continuity_anchors
+    manifest["notes"] = list(EXPORT_NOTES)
+    return manifest

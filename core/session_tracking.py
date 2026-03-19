@@ -6,6 +6,67 @@ import hashlib
 from collections import OrderedDict
 
 
+def build_artifact_record_from_primary_artifact(
+    *,
+    primary_artifact: dict[str, object],
+    creation_order: int,
+    export_path: str | None = None,
+) -> OrderedDict[str, object]:
+    """Build one compact artifact record for continuity anchors."""
+
+    artifact_id = primary_artifact.get("artifact_id")
+    if not artifact_id:
+        artifact_id = primary_artifact.get("bundle_id") or primary_artifact.get("package_id")
+
+    artifact_type = primary_artifact.get("artifact_type")
+    if not artifact_type:
+        artifact_type = primary_artifact.get("bundle_type") or primary_artifact.get("package_type")
+
+    record = OrderedDict(
+        [
+            ("artifact_id", artifact_id),
+            ("artifact_type", artifact_type),
+            ("creation_order", creation_order),
+        ]
+    )
+    if export_path is not None:
+        record["export_path"] = export_path
+    return record
+
+
+def build_artifact_continuity_anchors(
+    *,
+    session_id: str,
+    request_ids: list[str],
+    artifact_records: list[OrderedDict[str, object]] | None = None,
+) -> OrderedDict[str, object]:
+    """Build a compact, derived session-to-artifact continuity surface."""
+
+    normalized_request_ids = [str(request_id) for request_id in request_ids]
+    anchors = list(artifact_records or [])
+    return OrderedDict(
+        [
+            ("continuity_mode", "derived_session_to_artifact"),
+            ("continuity_scope", "bounded_repo_local_within_invocation"),
+            ("session_id", session_id),
+            (
+                "request_group_anchor",
+                OrderedDict(
+                    [
+                        ("primary_request_id", normalized_request_ids[0]),
+                        ("request_count", len(normalized_request_ids)),
+                    ]
+                ),
+            ),
+            ("anchors", anchors),
+            (
+                "operator_interpretation",
+                "These anchors link this session to locally produced artifacts in this bounded invocation only.",
+            ),
+        ]
+    )
+
+
 def build_execution_session_summary(
     *,
     request_files: list[str],
