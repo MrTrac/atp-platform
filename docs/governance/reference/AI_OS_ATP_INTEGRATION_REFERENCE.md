@@ -7,10 +7,16 @@ Tài liệu này là local reference ngắn trong ATP để chỉ tới canonica
 ATP không giữ source-of-truth chính cho mô hình kết nối này.  
 Canonical source nằm ở repo **AI_OS**.
 
+## Entrypoint (ATP-local)
+Nếu bạn đang đọc trong repo ATP và cần “điểm bắt đầu” cho gói tài liệu AI_OS ↔ ATP, **hãy bắt đầu ở file này**.
+
 ## Canonical source
 
 Canonical document:
 - `AI_OS/40_INTEGRATIONS/AI_OS_ATP_INTEGRATION_MODEL.md`
+
+Canonical family index (entrypoint trong AI_OS):
+- `AI_OS/40_INTEGRATIONS/README.md`
 
 Canonical / local split:
 
@@ -70,6 +76,14 @@ Tài liệu này chỉ có vai trò:
 - local bridge/reference
 - giúp reviewer trong ATP repo biết canonical source nằm ở đâu
 - tránh tạo dual authority giữa AI_OS và ATP
+
+### Đi tiếp (ATP-local next hops)
+- Boundary reference: `docs/governance/reference/AI_OS_ATP_BOUNDARY_REFERENCE.md`
+- Staged adoption reference: `docs/governance/reference/AI_OS_ATP_STAGED_ADOPTION_REFERENCE.md`
+- Helper tooling reference: `docs/governance/reference/AI_OS_ATP_HELPER_TOOLING_REFERENCE.md`
+
+### Quy tắc thay đổi “truth”
+Nếu cần thay đổi ý nghĩa/model của kết nối AI_OS ↔ ATP, phải cập nhật **canonical docs trong AI_OS trước**, sau đó ATP-local reference mới được cập nhật theo (không tạo canonical copy thứ hai trong ATP).
 
 ## Ghi chú trạng thái hiện tại
 
