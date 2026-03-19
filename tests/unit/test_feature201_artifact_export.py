@@ -38,13 +38,14 @@ class TestFeature201ArtifactExportP1Contract(unittest.TestCase):
         self.assertNotIn("automatic", EXPORT_MODE)
         self.assertNotIn("background", EXPORT_MODE)
 
-    def test_supported_artifact_types_covers_three_cli_commands(self) -> None:
+    def test_supported_artifact_types_covers_legacy_cli_commands_and_new_projection_artifact(self) -> None:
         from core.artifact_export import SUPPORTED_ARTIFACT_TYPES
 
         self.assertIn("request_flow", SUPPORTED_ARTIFACT_TYPES)
         self.assertIn("request_bundle", SUPPORTED_ARTIFACT_TYPES)
         self.assertIn("request_prompt", SUPPORTED_ARTIFACT_TYPES)
-        self.assertEqual(len(SUPPORTED_ARTIFACT_TYPES), 3)
+        self.assertIn("integration_contract", SUPPORTED_ARTIFACT_TYPES)
+        self.assertEqual(len(SUPPORTED_ARTIFACT_TYPES), 4)
 
     def test_manifest_filename_is_deterministic(self) -> None:
         from core.artifact_export import MANIFEST_FILENAME
@@ -57,10 +58,15 @@ class TestFeature201ArtifactExportP1Contract(unittest.TestCase):
         path = build_export_path("/tmp/atp-export", "my-run-001", "request_flow")
         self.assertEqual(path, "/tmp/atp-export/my-run-001/request_flow.json")
 
-    def test_build_export_path_all_three_types(self) -> None:
+    def test_build_export_path_all_supported_types(self) -> None:
         from core.artifact_export import build_export_path
 
-        for artifact_type in ("request_flow", "request_bundle", "request_prompt"):
+        for artifact_type in (
+            "request_flow",
+            "request_bundle",
+            "request_prompt",
+            "integration_contract",
+        ):
             path = build_export_path("/export", "run-id", artifact_type)
             self.assertTrue(path.endswith(f"/{artifact_type}.json"))
 

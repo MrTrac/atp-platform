@@ -30,6 +30,7 @@ SUPPORTED_ARTIFACT_TYPES = [
     "request_flow",
     "request_bundle",
     "request_prompt",
+    "integration_contract",
 ]
 
 # Notes embedded in every manifest.
@@ -100,7 +101,7 @@ def build_export_manifest(
     *,
     run_id: str,
     command: str,
-    request_file: str,
+    request_file: str | None,
     artifact_type: str,
     artifact_path: str,
     session_id: str | None = None,
@@ -117,11 +118,12 @@ def build_export_manifest(
             ("export_mode", EXPORT_MODE),
             ("run_id", run_id),
             ("command", command),
-            ("request_file", request_file),
             ("artifact_type", artifact_type),
             ("artifact_path", artifact_path),
         ]
     )
+    if request_file is not None:
+        manifest["request_file"] = request_file
     if session_id is not None:
         manifest["session_id"] = session_id
     if artifact_continuity_anchors is not None:

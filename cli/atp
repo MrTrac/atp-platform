@@ -28,6 +28,7 @@ case "${1:-help}" in
     printf '\n'
     printf 'Bounded control-plane preparation commands:\n'
     printf '  execution-session  Inspect one bounded repo-local execution session from explicit request files.\n'
+    printf '  integration-contract  Emit one bounded derived integration-contract projection document.\n'
     printf '  run             Preview one bounded ATP v0 control-plane run surface from an explicit request file.\n'
     printf '  inspect         Inspect bounded ATP preview data or read-only current-task state only.\n'
     printf '  validate        Preview bounded ATP v0 validation readiness from an explicit request file.\n'
@@ -36,6 +37,7 @@ case "${1:-help}" in
     printf '  %s request-flow tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-flow-multi tests/fixtures/requests/sample_request_slice02.yaml tests/fixtures/requests/sample_request_slice02_b.yaml\n' "$CLI_PATH"
     printf '  %s execution-session tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s integration-contract\n' "$CLI_PATH"
     printf '  %s run tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s validate tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
@@ -64,7 +66,7 @@ case "${1:-help}" in
     printf '  control-plane -> preview/read-only surfaces only; no background execution or autonomous progression\n'
     printf '\n'
     printf 'Artifact export (v1.3 — opt-in only):\n'
-    printf '  flag    -> --export-dir <dir>  (request-flow / request-bundle / request-prompt)\n'
+    printf '  flag    -> --export-dir <dir>  (request-flow / request-bundle / request-prompt / integration-contract)\n'
     printf '  output  -> <dir>/<run-id>/<artifact_type>.json + export_manifest.json\n'
     printf '  posture -> stdout remains canonical primary; export is additive secondary; no background write\n'
     printf '\n'
@@ -100,6 +102,9 @@ case "${1:-help}" in
     ;;
   execution-session)
     exec python3 "$ROOT_DIR/cli/execution_session.py" "${@:2}"
+    ;;
+  integration-contract)
+    exec python3 "$ROOT_DIR/cli/integration_contract.py" "${@:2}"
     ;;
   request-bundle)
     exec python3 "$ROOT_DIR/cli/request_bundle.py" "${@:2}"
