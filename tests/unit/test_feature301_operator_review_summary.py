@@ -161,5 +161,70 @@ class TestFeature301OperatorReviewSummaryP2Surface(unittest.TestCase):
         self.assertNotIn("control center", notes_text)
 
 
+class TestFeature301OperatorReviewSummaryP3PostureLocks(unittest.TestCase):
+    """Regression locks for truthful, bounded operator review posture."""
+
+    def test_help_does_not_imply_dashboard_or_control_plane(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "help"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        lowered = result.stdout.lower()
+        self.assertNotIn("dashboard", lowered)
+        self.assertNotIn("control center", lowered)
+        self.assertNotIn("live status", lowered)
+        self.assertNotIn("status board", lowered)
+
+    def test_review_summary_is_not_spread_to_compose_chain_or_request_prompt(self) -> None:
+        compose_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "compose-chain", CANONICAL_REQUEST],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+        prompt_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-prompt", CANONICAL_REQUEST],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(compose_result.returncode, 0)
+        self.assertEqual(prompt_result.returncode, 0)
+        compose_payload = json.loads(compose_result.stdout, object_pairs_hook=OrderedDict)
+        prompt_payload = json.loads(prompt_result.stdout, object_pairs_hook=OrderedDict)
+        self.assertNotIn("operator_review_summary", compose_payload)
+        self.assertNotIn("operator_review_summary", prompt_payload)
+        self.assertNotIn("operator_review_summary", prompt_payload["review_summary"])
+
+    def test_review_summary_module_has_no_network_or_subprocess_imports(self) -> None:
+        module_path = ROOT_DIR / "core" / "operator_review_summary.py"
+        source = module_path.read_text()
+        self.assertNotIn("import requests", source)
+        self.assertNotIn("import urllib", source)
+        self.assertNotIn("import socket", source)
+        self.assertNotIn("import subprocess", source)
+
+    def test_smoke_request_chain_still_passes_without_review_summary_drift(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
