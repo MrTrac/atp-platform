@@ -28,6 +28,7 @@ case "${1:-help}" in
     printf '\n'
     printf 'Bounded control-plane preparation commands:\n'
     printf '  execution-session  Inspect one bounded repo-local execution session from explicit request files.\n'
+    printf '  review-summary  Emit one bounded operator-facing review summary for ATP posture.\n'
     printf '  integration-contract  Emit one bounded derived integration-contract projection document.\n'
     printf '  deployability-check  Emit one bounded read-only deployability-readiness assessment.\n'
     printf '  run             Preview one bounded ATP v0 control-plane run surface from an explicit request file.\n'
@@ -38,6 +39,7 @@ case "${1:-help}" in
     printf '  %s request-flow tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-flow-multi tests/fixtures/requests/sample_request_slice02.yaml tests/fixtures/requests/sample_request_slice02_b.yaml\n' "$CLI_PATH"
     printf '  %s execution-session tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s review-summary\n' "$CLI_PATH"
     printf '  %s integration-contract\n' "$CLI_PATH"
     printf '  %s deployability-check\n' "$CLI_PATH"
     printf '  %s run tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
@@ -68,7 +70,7 @@ case "${1:-help}" in
     printf '  control-plane -> preview/read-only surfaces only; no background execution or autonomous progression\n'
     printf '\n'
     printf 'Artifact export (v1.3 — opt-in only):\n'
-    printf '  flag    -> --export-dir <dir>  (request-flow / request-bundle / request-prompt / integration-contract / deployability-check)\n'
+    printf '  flag    -> --export-dir <dir>  (request-flow / request-bundle / request-prompt / review-summary / integration-contract / deployability-check)\n'
     printf '  output  -> <dir>/<run-id>/<artifact_type>.json + export_manifest.json\n'
     printf '  posture -> stdout remains canonical primary; export is additive secondary; no background write\n'
     printf '\n'
@@ -110,6 +112,9 @@ case "${1:-help}" in
     ;;
   execution-session)
     exec python3 "$ROOT_DIR/cli/execution_session.py" "${@:2}"
+    ;;
+  review-summary)
+    exec python3 "$ROOT_DIR/cli/review_summary.py" "${@:2}"
     ;;
   integration-contract)
     exec python3 "$ROOT_DIR/cli/integration_contract.py" "${@:2}"

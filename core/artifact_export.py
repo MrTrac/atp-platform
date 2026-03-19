@@ -32,6 +32,7 @@ SUPPORTED_ARTIFACT_TYPES = [
     "request_prompt",
     "integration_contract",
     "deployability_readiness",
+    "operator_review_summary",
 ]
 
 # Notes embedded in every manifest.
