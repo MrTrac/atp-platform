@@ -100,5 +100,88 @@ class TestFeature302HandoffPlanningConsolidationP2Surface(unittest.TestCase):
         self.assertNotIn("deployability_readiness", summary)
 
 
+class TestFeature302HandoffPlanningConsolidationP3PostureLocks(unittest.TestCase):
+    """Regression locks for truthful, non-centralizing consolidation posture."""
+
+    def test_touched_surfaces_do_not_imply_workflow_or_planning_controller(self) -> None:
+        integration_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "integration-contract"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+        deployability_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "deployability-check"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(integration_result.returncode, 0)
+        self.assertEqual(deployability_result.returncode, 0)
+        lowered = (integration_result.stdout + deployability_result.stdout).lower()
+        self.assertNotIn("workflow engine", lowered)
+        self.assertNotIn("planning controller", lowered)
+        self.assertNotIn("handoff manager", lowered)
+        self.assertNotIn("state machine", lowered)
+        self.assertNotIn("control center", lowered)
+
+    def test_consolidation_guidance_is_not_spread_to_compose_chain_or_request_prompt(self) -> None:
+        compose_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "compose-chain", "tests/fixtures/requests/sample_request_slice02.yaml"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+        prompt_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-prompt", "tests/fixtures/requests/sample_request_slice02.yaml"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(compose_result.returncode, 0)
+        self.assertEqual(prompt_result.returncode, 0)
+        compose_payload = json.loads(compose_result.stdout, object_pairs_hook=OrderedDict)
+        prompt_payload = json.loads(prompt_result.stdout, object_pairs_hook=OrderedDict)
+        self.assertNotIn("review_handoff_alignment", compose_payload)
+        self.assertNotIn("review_handoff_alignment", prompt_payload)
+        self.assertNotIn("review_handoff_alignment", prompt_payload["review_summary"])
+
+    def test_consolidation_does_not_create_central_registry_semantics(self) -> None:
+        review_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "review-summary"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(review_result.returncode, 0)
+        lowered = review_result.stdout.lower()
+        self.assertIn("does not report live state", lowered)
+        self.assertIn("or create a registry/catalog", lowered)
+        self.assertNotIn("single source of truth", lowered)
+        self.assertNotIn("global coordination", lowered)
+        self.assertNotIn("surface catalog", lowered)
+
+    def test_smoke_request_chain_still_passes_without_consolidation_drift(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
