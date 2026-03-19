@@ -32,10 +32,12 @@
 6. **Roadmap continuity:** `roadmap/README.md` và các roadmap documents theo product/major/version
    Practical lineage map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
    Milestone templates: `roadmap/templates/milestones/`
-7. **Execution planning hiện hành:** `execution/v1_3/ROADMAP_EXECUTION.md` → `execution/v1_3/PROMPT_CMD/INDEX.md`
+7. **Execution planning hiện hành:** `execution/v1_4/ROADMAP_EXECUTION.md` → `execution/v1_4/PROMPT_CMD/INDEX.md`
+   Supporting v1.4 feature programs: `execution/v1_4/PROMPT_CMD/`
+   Freeze baseline cho line mới: `archive/reports/ATP_v1_3_Freeze_Closeout.md`
+   Completed baseline v1.3 generation: `execution/v1_3/ROADMAP_EXECUTION.md` → `execution/v1_3/PROMPT_CMD/INDEX.md`
    Completed baseline v1.2: `execution/v1_2/ROADMAP_EXECUTION.md` → `execution/v1_2/PROMPT_CMD/INDEX.md`
    Completed baseline v1.1: `execution/ROADMAP_EXECUTION.md` → `execution/PROMPT_CMD/INDEX.md`
-   v1.3 freeze close-out artifact: `archive/reports/ATP_v1_3_Freeze_Closeout.md`
 
 Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP ⇄ products`, không chỉ bám release chronology.
 
@@ -51,7 +53,9 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 - Practical milestone map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
 - Milestone template bundle: `roadmap/templates/milestones/`
 - Execution-plan instance layer:
-  - Current generation v1.3: `execution/v1_3/ROADMAP_EXECUTION.md`, `execution/v1_3/PROMPT_CMD/`
+  - Current generation v1.4: `execution/v1_4/ROADMAP_EXECUTION.md`, `execution/v1_4/PROMPT_CMD/`
+  - Freeze baseline for v1.4 planning: `archive/reports/ATP_v1_3_Freeze_Closeout.md`
+  - Completed baseline v1.3: `execution/v1_3/ROADMAP_EXECUTION.md`, `execution/v1_3/PROMPT_CMD/`
   - Completed baseline v1.2: `execution/v1_2/ROADMAP_EXECUTION.md`, `execution/v1_2/PROMPT_CMD/`
   - Completed baseline v1.1: `execution/ROADMAP_EXECUTION.md`, `execution/EXECUTION_MODEL_SOURCE.md`, `execution/PROMPT_CMD/`
 
@@ -65,7 +69,7 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 - `decisions/` — chỉ mục cho decision records ngoài các mốc freeze chính
 - `governance/` — governance framework và các bundle đang có hiệu lực
 - `roadmap/` — roadmap layer cho product, major family, và version planning/inheritance
-- `execution/` — execution-plan instance layers cho ATP theo AI_OS canonical execution model; v1.1 và v1.2 retained as completed baselines, v1.3 là generation hiện hành
+- `execution/` — execution-plan instance layers cho ATP theo AI_OS canonical execution model; v1.1, v1.2, và v1.3 retained as completed baselines, v1.4 là generation hiện hành
 - `archive/` — tài liệu lịch sử hoặc bản sao cũ đã bị thay thế về authority path (không phải nguồn chuẩn hiện hành)
 
 ## Quy tắc authority và placement

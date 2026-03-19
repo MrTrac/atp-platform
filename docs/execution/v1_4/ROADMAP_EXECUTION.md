@@ -52,9 +52,14 @@ Nó chỉ định nghĩa execution-design line cho `v1.4`.
 - `docs/archive/reports/ATP_v1_3_Freeze_Closeout.md`
 
 ### Planning authority for v1.4
-- `ATP v1.4 Scope Proposal`
-- `ATP v1.4 Line Definition Proposal`
-- `ATP v1.4 Roadmap Readiness Decision`
+- `docs/execution/v1_4/ROADMAP_EXECUTION.md`
+- `docs/execution/v1_4/PROMPT_CMD/INDEX.md`
+- `docs/execution/v1_4/PROMPT_CMD/01_operator_review_summary.md`
+- `docs/execution/v1_4/PROMPT_CMD/02_handoff_planning_surface_consolidation.md`
+- `docs/execution/v1_4/PROMPT_CMD/03_reviewability_posture_guard.md`
+
+### Planning authority interpretation
+`v1.4` planning authority hiện được materialize trong chính execution-design doc set dưới `docs/execution/v1_4/`. Bộ file này là canonical, path-verifiable planning chain hiện có trong repo cho line `v1.4`.
 
 ### Accepted inherited truth from v1.3
 ATP hiện đã có:
@@ -393,25 +398,26 @@ và đồng thời đạt được:
 `v1.4` hiện **chưa được mở implementation** trong tài liệu này.
 
 ### What this roadmap authorizes
-Roadmap này chỉ authorize bước kế tiếp ở mức planning/execution-design:
-- có thể tạo `PROMPT_CMD/INDEX.md`
-- có thể tạo feature-program files cho F-301/F-302/F-303
-- chưa authorize coding trực tiếp nếu chưa qua bước đó
+Roadmap này xác nhận execution-design set của `v1.4` hiện đã tồn tại ở mức planning:
+- `docs/execution/v1_4/PROMPT_CMD/INDEX.md`
+- feature-program files cho F-301 / F-302 / F-303
+
+Roadmap này **không** tự authorize coding trực tiếp.
+Next valid governance use của roadmap này là:
+- review execution-design set hiện có
+- dùng bộ `PROMPT_CMD` để viết bounded executor prompts chỉ khi có approval riêng ở bước sau
 
 ---
 
-## 14. Recommended next artifact
+## 14. Recommended next governance use
 
-Sau tài liệu này, bước planning tiếp theo hợp lý là tạo:
+Sau tài liệu này, next valid governance use là:
 
-- `docs/execution/v1_4/PROMPT_CMD/INDEX.md`
+- review `docs/execution/v1_4/PROMPT_CMD/INDEX.md`
+- review 3 feature-program files của F-301 / F-302 / F-303
+- chỉ sau một approval riêng mới được dùng bộ này để soạn bounded executor prompts
 
-và sau đó:
-- `docs/execution/v1_4/PROMPT_CMD/01_operator_review_summary.md`
-- `docs/execution/v1_4/PROMPT_CMD/02_handoff_planning_surface_consolidation.md`
-- `docs/execution/v1_4/PROMPT_CMD/03_reviewability_posture_guard.md`
-
-Các file này phải giữ đúng small-line posture đã khóa trong roadmap này.
+Không có additional artifact bắt buộc nào phải được tạo thêm trong current v1.4 doc set chỉ để hoàn tất execution-design shape.
 
 ---
 
