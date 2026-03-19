@@ -35,6 +35,7 @@
 7. **Execution planning hiện hành:** `execution/v1_3/ROADMAP_EXECUTION.md` → `execution/v1_3/PROMPT_CMD/INDEX.md`
    Completed baseline v1.2: `execution/v1_2/ROADMAP_EXECUTION.md` → `execution/v1_2/PROMPT_CMD/INDEX.md`
    Completed baseline v1.1: `execution/ROADMAP_EXECUTION.md` → `execution/PROMPT_CMD/INDEX.md`
+   v1.3 freeze close-out artifact: `archive/reports/ATP_v1_3_Freeze_Closeout.md`
 
 Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP ⇄ products`, không chỉ bám release chronology.
 
@@ -44,6 +45,7 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 - `operators/ai_os_thin_integration.md` — ATP-side bridge surface và verifier hooks cho AI_OS
 - Snapshot bundles: `architecture/ATP_v0_final_snapshot_docs/`, `architecture/ATP_v0_1_hardening_snapshot_docs/` (Frozen)
 - Freeze close-out reports: `archive/reports/ATP_v0_2_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_3_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_4_0_Freeze_Closeout.md`
+- Current close-out / freeze artifact for execution generation v1.3: `archive/reports/ATP_v1_3_Freeze_Closeout.md`
 - Roadmap layer: `roadmap/ATP_Product_Roadmap.md`, `roadmap/majors/`, `roadmap/versions/`
 - Stage roadmap: `roadmap/stages/ATP_Development_Stage_Roadmap.md`
 - Practical milestone map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
