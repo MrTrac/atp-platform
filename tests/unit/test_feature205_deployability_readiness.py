@@ -182,3 +182,68 @@ class TestFeature205DeployabilityReadinessP2Surface(unittest.TestCase):
         self.assertNotIn("activated", notes_text)
         self.assertNotIn("scheduler", notes_text)
         self.assertNotIn("daemon", notes_text)
+
+
+class TestFeature205DeployabilityReadinessP3PostureLocks(unittest.TestCase):
+    """Regression locks for truthful, bounded deployability posture."""
+
+    def test_help_does_not_imply_deploy_engine_or_background_control(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "help"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        lowered = result.stdout.lower()
+        self.assertNotIn("deploy engine", lowered)
+        self.assertNotIn("installer engine", lowered)
+        self.assertNotIn("background worker", lowered)
+        self.assertNotIn("scheduler", lowered)
+
+    def test_deployability_surface_is_not_spread_to_compose_chain_or_request_prompt(self) -> None:
+        compose_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "compose-chain", CANONICAL_REQUEST],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+        prompt_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-prompt", CANONICAL_REQUEST],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(compose_result.returncode, 0)
+        self.assertEqual(prompt_result.returncode, 0)
+        compose_payload = json.loads(compose_result.stdout, object_pairs_hook=OrderedDict)
+        prompt_payload = json.loads(prompt_result.stdout, object_pairs_hook=OrderedDict)
+        self.assertNotIn("deployability_readiness", compose_payload)
+        self.assertNotIn("deployability_readiness", prompt_payload)
+        self.assertNotIn("deployability_readiness", prompt_payload["review_summary"])
+
+    def test_deployability_module_has_no_network_or_subprocess_imports(self) -> None:
+        module_path = ROOT_DIR / "core" / "deployability_readiness.py"
+        source = module_path.read_text()
+        self.assertNotIn("import requests", source)
+        self.assertNotIn("import urllib", source)
+        self.assertNotIn("import socket", source)
+        self.assertNotIn("import subprocess", source)
+
+    def test_smoke_request_chain_still_passes_without_deployability_drift(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
