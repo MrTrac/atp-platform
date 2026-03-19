@@ -45,7 +45,8 @@ class TestFeature201ArtifactExportP1Contract(unittest.TestCase):
         self.assertIn("request_bundle", SUPPORTED_ARTIFACT_TYPES)
         self.assertIn("request_prompt", SUPPORTED_ARTIFACT_TYPES)
         self.assertIn("integration_contract", SUPPORTED_ARTIFACT_TYPES)
-        self.assertEqual(len(SUPPORTED_ARTIFACT_TYPES), 4)
+        self.assertIn("deployability_readiness", SUPPORTED_ARTIFACT_TYPES)
+        self.assertEqual(len(SUPPORTED_ARTIFACT_TYPES), 5)
 
     def test_manifest_filename_is_deterministic(self) -> None:
         from core.artifact_export import MANIFEST_FILENAME
@@ -66,6 +67,7 @@ class TestFeature201ArtifactExportP1Contract(unittest.TestCase):
             "request_bundle",
             "request_prompt",
             "integration_contract",
+            "deployability_readiness",
         ):
             path = build_export_path("/export", "run-id", artifact_type)
             self.assertTrue(path.endswith(f"/{artifact_type}.json"))

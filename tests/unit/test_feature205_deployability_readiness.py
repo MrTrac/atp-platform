@@ -8,7 +8,9 @@ from __future__ import annotations
 
 import json
 import subprocess
+import tempfile
 import unittest
+from collections import OrderedDict
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -18,9 +20,9 @@ CANONICAL_REQUEST = "tests/fixtures/requests/sample_request_slice02.yaml"
 class TestFeature205DeployabilityReadinessP1GapCapture(unittest.TestCase):
     """Capture the current deployability-readiness projection gap."""
 
-    def test_help_does_not_yet_advertise_deployability_check(self) -> None:
+    def test_request_bundle_has_no_deployability_readiness_surface(self) -> None:
         result = subprocess.run(
-            [str(ROOT_DIR / "atp"), "help"],
+            [str(ROOT_DIR / "atp"), "request-bundle", CANONICAL_REQUEST],
             check=False,
             capture_output=True,
             text=True,
@@ -28,8 +30,10 @@ class TestFeature205DeployabilityReadinessP1GapCapture(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0)
-        self.assertNotIn("deployability-check", result.stdout)
-        self.assertNotIn("Deployability readiness", result.stdout)
+        payload = json.loads(result.stdout)
+        self.assertNotIn("deployability_readiness", payload)
+        self.assertNotIn("deployability_readiness_projection", payload)
+        self.assertNotIn("deployability_readiness", str(payload))
 
     def test_integration_contract_has_no_deployability_projection(self) -> None:
         result = subprocess.run(
@@ -44,7 +48,6 @@ class TestFeature205DeployabilityReadinessP1GapCapture(unittest.TestCase):
         payload = json.loads(result.stdout)
         self.assertNotIn("deployability_readiness", payload)
         self.assertNotIn("deployability_readiness_projection", payload)
-        self.assertNotIn("deployability_readiness", str(payload))
 
     def test_compose_chain_has_no_deployability_readiness_surface(self) -> None:
         result = subprocess.run(
@@ -88,3 +91,94 @@ class TestFeature205DeployabilityReadinessP1GapCapture(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("smoke_verification: passed", result.stdout)
         self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
+
+class TestFeature205DeployabilityReadinessP2Surface(unittest.TestCase):
+    """Lock the bounded deployability-readiness surface."""
+
+    def test_help_exposes_deployability_check_command(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "help"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("deployability-check", result.stdout)
+        self.assertIn("./atp deployability-check", result.stdout)
+        self.assertIn("assessment_only_not_operationally_deployable", result.stdout)
+
+    def test_deployability_check_returns_bounded_readiness_json(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "deployability-check"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        self.assertEqual(payload["command"], "deployability-check")
+        self.assertEqual(payload["status"], "ok")
+        readiness = payload["deployability_readiness"]
+        self.assertEqual(readiness["assessment_mode"], "derived_read_only_assessment")
+        self.assertEqual(
+            readiness["overall_readiness_signal"],
+            "assessment_only_not_operationally_deployable",
+        )
+        self.assertEqual(
+            readiness["entry_point_check"]["cli_entrypoint"],
+            "./atp",
+        )
+        self.assertEqual(
+            readiness["workspace_path_requirements"]["runtime_workspace_root"],
+            "/Users/nguyenthanhthu/SOURCE_DEV/workspace",
+        )
+        self.assertIn("no_real_deployment_execution", readiness["blockers_by_design"])
+        self.assertIn(
+            "no_repo_dependency_manifest_detected",
+            readiness["configuration_surface_gaps"],
+        )
+
+    def test_deployability_check_export_writes_artifact_and_manifest(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                [str(ROOT_DIR / "atp"), "deployability-check", "--export-dir", tmp],
+                check=False,
+                capture_output=True,
+                text=True,
+                cwd=ROOT_DIR,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            run_id = "deployability-check-0001"
+            artifact_path = Path(tmp) / run_id / "deployability_readiness.json"
+            manifest_path = Path(tmp) / run_id / "export_manifest.json"
+            self.assertTrue(artifact_path.exists())
+            self.assertTrue(manifest_path.exists())
+            manifest = json.loads(manifest_path.read_text(), object_pairs_hook=OrderedDict)
+            self.assertEqual(manifest["command"], "deployability-check")
+            self.assertEqual(manifest["artifact_type"], "deployability_readiness")
+            self.assertNotIn("request_file", manifest)
+
+    def test_deployability_check_wording_stays_descriptive_only(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "deployability-check"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        readiness = payload["deployability_readiness"]
+        notes_text = " ".join(readiness["notes"]).lower()
+        self.assertIn("descriptive only", notes_text)
+        self.assertIn("does not deploy", notes_text)
+        self.assertNotIn("activated", notes_text)
+        self.assertNotIn("scheduler", notes_text)
+        self.assertNotIn("daemon", notes_text)

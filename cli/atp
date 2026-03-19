@@ -29,6 +29,7 @@ case "${1:-help}" in
     printf 'Bounded control-plane preparation commands:\n'
     printf '  execution-session  Inspect one bounded repo-local execution session from explicit request files.\n'
     printf '  integration-contract  Emit one bounded derived integration-contract projection document.\n'
+    printf '  deployability-check  Emit one bounded read-only deployability-readiness assessment.\n'
     printf '  run             Preview one bounded ATP v0 control-plane run surface from an explicit request file.\n'
     printf '  inspect         Inspect bounded ATP preview data or read-only current-task state only.\n'
     printf '  validate        Preview bounded ATP v0 validation readiness from an explicit request file.\n'
@@ -38,6 +39,7 @@ case "${1:-help}" in
     printf '  %s request-flow-multi tests/fixtures/requests/sample_request_slice02.yaml tests/fixtures/requests/sample_request_slice02_b.yaml\n' "$CLI_PATH"
     printf '  %s execution-session tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s integration-contract\n' "$CLI_PATH"
+    printf '  %s deployability-check\n' "$CLI_PATH"
     printf '  %s run tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s validate tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
     printf '  %s request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
@@ -66,9 +68,15 @@ case "${1:-help}" in
     printf '  control-plane -> preview/read-only surfaces only; no background execution or autonomous progression\n'
     printf '\n'
     printf 'Artifact export (v1.3 — opt-in only):\n'
-    printf '  flag    -> --export-dir <dir>  (request-flow / request-bundle / request-prompt / integration-contract)\n'
+    printf '  flag    -> --export-dir <dir>  (request-flow / request-bundle / request-prompt / integration-contract / deployability-check)\n'
     printf '  output  -> <dir>/<run-id>/<artifact_type>.json + export_manifest.json\n'
     printf '  posture -> stdout remains canonical primary; export is additive secondary; no background write\n'
+    printf '\n'
+    printf 'Deployability readiness (v1.3 phase — assessment only):\n'
+    printf '  command          -> ./atp deployability-check\n'
+    printf '  assessment_mode  -> derived_read_only_assessment\n'
+    printf '  readiness_signal -> assessment_only_not_operationally_deployable\n'
+    printf '  posture          -> descriptive only; no deploy / install / provision / external control\n'
     printf '\n'
     printf 'Integration readiness (v1.2 phase — signaling only):\n'
     printf '  readiness_scope  -> integration_preparation_signaling_only\n'
@@ -105,6 +113,9 @@ case "${1:-help}" in
     ;;
   integration-contract)
     exec python3 "$ROOT_DIR/cli/integration_contract.py" "${@:2}"
+    ;;
+  deployability-check)
+    exec python3 "$ROOT_DIR/cli/deployability_check.py" "${@:2}"
     ;;
   request-bundle)
     exec python3 "$ROOT_DIR/cli/request_bundle.py" "${@:2}"
