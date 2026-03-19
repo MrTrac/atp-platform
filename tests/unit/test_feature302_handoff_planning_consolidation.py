@@ -26,39 +26,11 @@ class TestFeature302HandoffPlanningConsolidationP1GapCapture(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0)
         payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
-        focused = payload["operator_review_summary"]["operator_review_path"][
-            "focused_supporting_surfaces"
-        ]
+        review_path = payload["operator_review_summary"]["operator_review_path"]
+        focused = review_path["focused_supporting_surfaces"]
         self.assertIn("./atp integration-contract", focused)
         self.assertIn("./atp deployability-check", focused)
-
-    def test_integration_contract_has_no_review_handoff_alignment_guidance(self) -> None:
-        result = subprocess.run(
-            [str(ROOT_DIR / "atp"), "integration-contract"],
-            check=False,
-            capture_output=True,
-            text=True,
-            cwd=ROOT_DIR,
-        )
-
-        self.assertEqual(result.returncode, 0)
-        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
-        self.assertNotIn("review_handoff_alignment", payload["integration_contract_projection"])
-        self.assertNotIn("review-summary", payload["operator_scan_summary"]["next_safe_bounded_action"])
-
-    def test_deployability_check_has_no_review_handoff_alignment_guidance(self) -> None:
-        result = subprocess.run(
-            [str(ROOT_DIR / "atp"), "deployability-check"],
-            check=False,
-            capture_output=True,
-            text=True,
-            cwd=ROOT_DIR,
-        )
-
-        self.assertEqual(result.returncode, 0)
-        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
-        self.assertNotIn("review_handoff_alignment", payload["deployability_readiness"])
-        self.assertNotIn("review-summary", payload["operator_scan_summary"]["next_safe_bounded_action"])
+        self.assertNotIn("supporting_surface_roles", review_path)
 
     def test_smoke_request_chain_still_passes_before_consolidation_exists(self) -> None:
         result = subprocess.run(
@@ -72,6 +44,60 @@ class TestFeature302HandoffPlanningConsolidationP1GapCapture(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("smoke_verification: passed", result.stdout)
         self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
+
+class TestFeature302HandoffPlanningConsolidationP2Surface(unittest.TestCase):
+    """Lock the narrow coherence refinement across relevant review/handoff surfaces."""
+
+    def test_integration_contract_includes_review_handoff_alignment(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "integration-contract"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        alignment = payload["integration_contract_projection"]["review_handoff_alignment"]
+        self.assertEqual(alignment["review_entrypoint"], "./atp review-summary")
+        self.assertEqual(alignment["surface_role"], "integration_boundary_review_support")
+        self.assertIn("handoff boundaries", alignment["operator_interpretation"])
+        self.assertIn("review-summary", payload["operator_scan_summary"]["next_safe_bounded_action"])
+
+    def test_deployability_check_includes_review_handoff_alignment(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "deployability-check"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        alignment = payload["deployability_readiness"]["review_handoff_alignment"]
+        self.assertEqual(alignment["review_entrypoint"], "./atp review-summary")
+        self.assertEqual(alignment["surface_role"], "deployability_boundary_review_support")
+        self.assertIn("deployability limits and gaps", alignment["operator_interpretation"])
+        self.assertIn("review-summary", payload["operator_scan_summary"]["next_safe_bounded_action"])
+
+    def test_review_summary_remains_distinct_from_supporting_surfaces(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "review-summary"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        summary = payload["operator_review_summary"]
+        self.assertNotIn("review_handoff_alignment", summary)
+        self.assertNotIn("integration_contract_projection", summary)
+        self.assertNotIn("deployability_readiness", summary)
 
 
 if __name__ == "__main__":

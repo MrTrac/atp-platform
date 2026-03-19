@@ -15,6 +15,7 @@ ASSESSMENT_MODE = "derived_read_only_assessment"
 ASSESSMENT_SCOPE = "repo_local_human_gated_deployability_review"
 OVERALL_READINESS_SIGNAL = "assessment_only_not_operationally_deployable"
 READINESS_ENTRYPOINT = "./atp deployability-check"
+REVIEW_ENTRYPOINT = "./atp review-summary"
 CANONICAL_CLI_ENTRYPOINT = "./atp"
 CANONICAL_WORKSPACE_ROOT = "/Users/nguyenthanhthu/SOURCE_DEV/workspace"
 CANONICAL_REQUEST_FIXTURE = "tests/fixtures/requests/sample_request_slice02.yaml"
@@ -115,6 +116,22 @@ def build_deployability_readiness(repo_root: Path) -> OrderedDict[str, object]:
                 ),
             ),
             (
+                "review_handoff_alignment",
+                OrderedDict(
+                    [
+                        ("review_entrypoint", REVIEW_ENTRYPOINT),
+                        (
+                            "surface_role",
+                            "deployability_boundary_review_support",
+                        ),
+                        (
+                            "operator_interpretation",
+                            "Use after review-summary when checking downstream deployability limits and gaps only.",
+                        ),
+                    ]
+                ),
+            ),
+            (
                 "assessed_artifact_classes",
                 [
                     "single_ai_execution_package",
@@ -161,7 +178,7 @@ def build_deployability_operator_scan_summary(
             ),
             (
                 "next_safe_bounded_action",
-                "review configuration_surface_gaps and blockers_by_design before any downstream deployment planning",
+                "start with ./atp review-summary, then review configuration_surface_gaps and blockers_by_design before any downstream deployment planning",
             ),
         ]
     )

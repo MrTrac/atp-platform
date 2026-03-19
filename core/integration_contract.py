@@ -25,6 +25,7 @@ CONTINUITY_SCOPE = "bounded_repo_local_within_invocation"
 TERMINAL_HANDOFF_ARTIFACT_TYPE = "one_shot_ai_ready_execution_prompt"
 TERMINAL_HANDOFF_MODE = "manual_single_ai_handoff"
 PROJECTION_ENTRYPOINT = "./atp integration-contract"
+REVIEW_ENTRYPOINT = "./atp review-summary"
 CANONICAL_CLI_ENTRYPOINT = "./atp"
 CANONICAL_SAMPLE_REQUEST = "tests/fixtures/requests/sample_request_slice02.yaml"
 
@@ -81,6 +82,22 @@ def build_integration_contract_projection() -> OrderedDict[str, object]:
                     ]
                 ),
             ),
+            (
+                "review_handoff_alignment",
+                OrderedDict(
+                    [
+                        ("review_entrypoint", REVIEW_ENTRYPOINT),
+                        (
+                            "surface_role",
+                            "integration_boundary_review_support",
+                        ),
+                        (
+                            "operator_interpretation",
+                            "Use after review-summary when checking integration-facing handoff boundaries only.",
+                        ),
+                    ]
+                ),
+            ),
             ("blocked_actions", list(BLOCKED_ACTIONS)),
             ("unsupported_features", list(UNSUPPORTED_FEATURES)),
             (
@@ -108,7 +125,7 @@ def build_integration_contract_operator_scan_summary(
             ("first_review_target", "integration_contract_projection.invocation_surface"),
             (
                 "next_safe_bounded_action",
-                "review invocation_surface and blocked_actions before any external integration planning",
+                "start with ./atp review-summary, then review invocation_surface and blocked_actions before any external integration planning",
             ),
         ]
     )
