@@ -24,6 +24,7 @@
 - `legacy-top-level-snapshot-docs/` — snapshot bundle từng nằm sai ở top-level `docs/`
 - `reports/` — báo cáo rà soát, consolidation, scope planning, và freeze close-out (ví dụ: `ATP_Docs_Review_Report_VI.md`, `ATP_v0_2_0_Freeze_Closeout.md`, `ATP_v0_4_0_Freeze_Closeout.md`, ATP v1.0 Slice D bundle: baseline `ATP_v1_0_Slice_D_*`, integration review, consolidation decision, freeze-readiness assessment, documentation governance close-out; ATP v1.0 Slice E baseline bundle: `ATP_v1_0_Slice_E_Resulting_Operational_State_Move_Closure_Contract.md`, `ATP_v1_0_Slice_E_Closure_State_Model.md`, `ATP_v1_0_Slice_E_Result_Traceability_Model.md`, `ATP_v1_0_Slice_E_Scope_and_NonGoals.md`, `ATP_v1_0_Slice_E_Baseline_Execution_Plan.md`)
   - current execution-line freeze close-out example: `ATP_v1_3_Freeze_Closeout.md`
+  - latest execution-line freeze close-out example: `ATP_v1_4_Freeze_Closeout.md`
 - `bundles/` — bản nén tài liệu trước governance (ví dụ: `docs_pre_governance_bundle.zip`)
 
 ## Tài liệu liên quan
