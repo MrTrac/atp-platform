@@ -5,7 +5,7 @@
 Tài liệu này định nghĩa ATP-local boundary cho **helper tooling** quanh mối quan hệ AI_OS ↔ ATP.
 
 Helper tooling ở đây chỉ là lớp hỗ trợ bounded.  
-Nó không phải runtime platform và không phải orchestration layer.
+Nó là lớp hỗ trợ **optional**, không phải runtime platform và không phải orchestration layer.
 
 ## Helper tooling được hiểu là gì
 
@@ -52,3 +52,11 @@ Tại thời điểm reference này được tạo, ATP vẫn:
 - không real deployment runtime
 
 Helper tooling, nếu có, chỉ là support cho governance/execution discipline chứ không vận hành ATP như một live managed system.
+
+## Boundary statements (locked)
+Các statement sau phải giữ nguyên **ý nghĩa** khi nhắc tới helper tooling:
+
+- **Helper tooling assists, not orchestrates.**
+- **AI_OS governs ATP, not operates ATP live.**
+- **ATP materializes the model, not a runtime control plane.**
+- **AI_OS ↔ ATP is a governance linkage, not an operational dependency.**

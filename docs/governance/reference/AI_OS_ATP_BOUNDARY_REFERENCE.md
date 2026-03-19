@@ -5,7 +5,7 @@
 Tài liệu này là ATP-local boundary interpretation cho mối quan hệ **AI_OS ↔ ATP**.
 
 Nó không phải canonical doctrine mới.  
-Canonical doctrine vẫn nằm ở AI_OS và các governance docs authoritative đã được ATP chấp nhận.
+Canonical doctrine cho connection model family vẫn nằm ở AI_OS. ATP chỉ giữ local interpretation/reference ngắn để áp dụng đúng boundary trong repo này.
 
 ## Canonical source orientation
 
@@ -85,3 +85,11 @@ Tại thời điểm reference này được tạo, ATP vẫn phải được hi
 - không provider abstraction
 - không real integration runtime
 - không real deployment runtime
+
+## Boundary statements (locked)
+Các statement sau phải giữ nguyên **ý nghĩa** và không được diễn giải lỏng hơn:
+
+- **AI_OS governs ATP, not operates ATP live.**
+- **ATP materializes the model, not a runtime control plane.**
+- **Helper tooling assists, not orchestrates.**
+- **AI_OS ↔ ATP is a governance linkage, not an operational dependency.**

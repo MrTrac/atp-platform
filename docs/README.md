@@ -1,6 +1,7 @@
 # Tài liệu ATP
 
-- **Mục đích:** Cây tài liệu authoritative cho ATP; nguồn sự thật duy nhất cho kiến trúc, thiết kế, vận hành, governance.
+- **Mục đích:** Cây tài liệu authoritative cho ATP **trong phạm vi repo ATP**; nguồn sự thật cho kiến trúc, thiết kế, vận hành, governance của ATP.  
+  Lưu ý: với mô hình kết nối **AI_OS ↔ ATP**, canonical source nằm ở **AI_OS**; ATP chỉ giữ local reference/projection (xem `docs/governance/reference/AI_OS_ATP_INTEGRATION_REFERENCE.md`).
 - **Phạm vi:** Toàn bộ tài liệu dưới `docs/`, bao gồm active docs, frozen snapshot packs, và archive.
 - **Trạng thái:** Active.
 
@@ -26,7 +27,7 @@
    Rule execution baseline: `governance/ATP_Development_Ruleset.md`
    Global Git branch guard runtime: `governance/Global_Safe_Git_Branch_Guard_Rule.md`
    Global shorthand / alias reference: `governance/reference/ATP_Global_Shorthand_and_Alias_Rules.md`
-   AI_OS ↔ ATP local reference pack: `governance/reference/AI_OS_ATP_INTEGRATION_REFERENCE.md` → `governance/reference/AI_OS_ATP_BOUNDARY_REFERENCE.md`
+   AI_OS ↔ ATP local reference pack: `governance/reference/AI_OS_ATP_INTEGRATION_REFERENCE.md` và các companion references trong `governance/reference/`
    Lineage continuity rule: `governance/framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md`
 4. **Freeze / baseline:** `architecture/ATP_MVP_v0_Freeze_Decision_Record.md` và snapshot bundles trong `architecture/`
 5. **Historical close-out:** các freeze close-out reports trong `archive/reports/`

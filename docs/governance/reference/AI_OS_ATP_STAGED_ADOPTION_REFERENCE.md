@@ -66,6 +66,14 @@ Staged adoption không có nghĩa:
 - forced repo churn
 - feature reopening by default
 
+## Boundary statements (locked)
+Các statement sau phải giữ nguyên **ý nghĩa** khi mô tả staged adoption:
+
+- **AI_OS governs ATP, not operates ATP live.**
+- **ATP materializes the model, not a runtime control plane.**
+- **Helper tooling assists, not orchestrates.**
+- **AI_OS ↔ ATP is a governance linkage, not an operational dependency.**
+
 ## Current ATP-local interpretation
 
 Sau `v1.4`, ATP chỉ nên được hiểu là đang ở mức:

@@ -47,6 +47,14 @@ Mối quan hệ AI_OS ↔ ATP hiện tại là:
 - không phải control plane sống
 - không phải provider/runtime dependency
 
+## Boundary statements (locked)
+Các statement sau phải giữ nguyên **ý nghĩa** xuyên suốt mọi tài liệu ATP-local reference:
+
+- **AI_OS governs ATP, not operates ATP live.**
+- **ATP materializes the model, not a runtime control plane.**
+- **Helper tooling assists, not orchestrates.**
+- **AI_OS ↔ ATP is a governance linkage, not an operational dependency.**
+
 ATP không được hiểu là:
 
 - runtime node dưới AI_OS
