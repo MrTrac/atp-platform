@@ -134,5 +134,64 @@ class TestFeature303ReviewabilityPostureGuardP2Surface(unittest.TestCase):
         self.assertIn("does not create a planning controller", interpretation)
 
 
+class TestFeature303ReviewabilityPostureGuardP3Confirmation(unittest.TestCase):
+    """Regression locks confirming the guard layer stays bounded and non-operational."""
+
+    def test_help_does_not_imply_reviewability_runtime_or_controller(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "help"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        lowered = result.stdout.lower()
+        self.assertNotIn("workflow engine", lowered)
+        self.assertNotIn("planning controller", lowered)
+        self.assertNotIn("control center", lowered)
+        self.assertNotIn("single source of truth", lowered)
+        self.assertNotIn("operational platform", lowered)
+
+    def test_guard_wording_is_not_spread_to_execution_session_or_request_flow(self) -> None:
+        session_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "execution-session", CANONICAL_REQUEST],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+        flow_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-flow", CANONICAL_REQUEST],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(session_result.returncode, 0)
+        self.assertEqual(flow_result.returncode, 0)
+        session_payload = json.loads(session_result.stdout, object_pairs_hook=OrderedDict)
+        flow_payload = json.loads(flow_result.stdout, object_pairs_hook=OrderedDict)
+        self.assertNotIn("review_handoff_alignment", session_payload)
+        self.assertNotIn("review_handoff_alignment", flow_payload)
+        self.assertNotIn("single_source_of_operational_truth", session_payload)
+        self.assertNotIn("single_source_of_operational_truth", flow_payload)
+
+    def test_smoke_request_chain_still_passes_with_guard_layer_in_place(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()
