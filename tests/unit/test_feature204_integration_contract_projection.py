@@ -81,6 +81,71 @@ class TestFeature204IntegrationContractProjection(unittest.TestCase):
             self.assertTrue(manifest["artifact_path"].endswith("/integration_contract.json"))
             self.assertNotIn("request_file", manifest)
 
+    def test_projection_wording_stays_derived_and_not_activated(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "integration-contract"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        projection = payload["integration_contract_projection"]
+        self.assertEqual(projection["integration_mode"], "not_activated")
+        notes_text = " ".join(projection["notes"]).lower()
+        self.assertIn("derived/static projection", notes_text)
+        self.assertIn("does not create a live api", notes_text)
+        self.assertNotIn("scheduler", notes_text)
+        self.assertNotIn("daemon", notes_text)
+        self.assertNotIn("background worker", notes_text)
+
+    def test_projection_is_not_spread_to_compose_chain_or_request_prompt(self) -> None:
+        compose_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "compose-chain", FIXTURE],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+        prompt_result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "request-prompt", FIXTURE],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(compose_result.returncode, 0)
+        self.assertEqual(prompt_result.returncode, 0)
+        compose_payload = json.loads(compose_result.stdout, object_pairs_hook=OrderedDict)
+        prompt_payload = json.loads(prompt_result.stdout, object_pairs_hook=OrderedDict)
+        self.assertNotIn("integration_contract_projection", compose_payload)
+        self.assertNotIn("integration_contract_projection", prompt_payload)
+        self.assertNotIn("integration_contract_projection", prompt_payload["review_summary"])
+
+    def test_smoke_request_chain_still_passes_without_projection_drift(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "smoke-request-chain"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("smoke_verification: passed", result.stdout)
+        self.assertIn("bounded_request_chain_completed: true", result.stdout)
+
+    def test_integration_contract_module_has_no_network_or_subprocess_imports(self) -> None:
+        module_path = ROOT_DIR / "core" / "integration_contract.py"
+        source = module_path.read_text()
+        self.assertNotIn("import requests", source)
+        self.assertNotIn("import urllib", source)
+        self.assertNotIn("import socket", source)
+        self.assertNotIn("import subprocess", source)
+
 
 if __name__ == "__main__":
     unittest.main()
