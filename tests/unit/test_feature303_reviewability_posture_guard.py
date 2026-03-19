@@ -81,5 +81,58 @@ class TestFeature303ReviewabilityPostureGuardP1GapCapture(unittest.TestCase):
         self.assertIn("bounded_request_chain_completed: true", result.stdout)
 
 
+class TestFeature303ReviewabilityPostureGuardP2Surface(unittest.TestCase):
+    """Lock the minimal posture guard wording added to v1.4 reviewability surfaces."""
+
+    def test_review_summary_explicitly_rejects_single_source_or_coordinator_semantics(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "review-summary"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        notes_text = " ".join(payload["operator_review_summary"]["notes"]).lower()
+        self.assertIn("not a single source of operational truth", notes_text)
+        self.assertIn("does not coordinate other atp surfaces", notes_text)
+
+    def test_integration_contract_marks_review_reference_as_interpretive_only(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "integration-contract"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        interpretation = payload["integration_contract_projection"]["review_handoff_alignment"][
+            "operator_interpretation"
+        ].lower()
+        self.assertIn("interpretive only", interpretation)
+        self.assertIn("does not create a planning controller", interpretation)
+
+    def test_deployability_check_marks_review_reference_as_interpretive_only(self) -> None:
+        result = subprocess.run(
+            [str(ROOT_DIR / "atp"), "deployability-check"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=ROOT_DIR,
+        )
+
+        self.assertEqual(result.returncode, 0)
+        payload = json.loads(result.stdout, object_pairs_hook=OrderedDict)
+        interpretation = payload["deployability_readiness"]["review_handoff_alignment"][
+            "operator_interpretation"
+        ].lower()
+        self.assertIn("interpretive only", interpretation)
+        self.assertIn("does not create a planning controller", interpretation)
+
+
 if __name__ == "__main__":
     unittest.main()

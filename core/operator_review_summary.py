@@ -121,6 +121,7 @@ def build_operator_review_summary() -> OrderedDict[str, object]:
                 [
                     "This review summary is descriptive only and exists for operator/reviewer interpretation.",
                     "It does not report live state, control ATP behavior, or create a registry/catalog of runtime activity.",
+                    "It is not a single source of operational truth and does not coordinate other ATP surfaces.",
                     "Use it to understand ATP's bounded review, handoff, projection, and assessment surfaces more quickly.",
                 ],
             ),

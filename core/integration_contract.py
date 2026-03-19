@@ -93,7 +93,7 @@ def build_integration_contract_projection() -> OrderedDict[str, object]:
                         ),
                         (
                             "operator_interpretation",
-                            "Use after review-summary when checking integration-facing handoff boundaries only.",
+                            "Use after review-summary when checking integration-facing handoff boundaries only. This reference is interpretive only and does not create a planning controller.",
                         ),
                     ]
                 ),

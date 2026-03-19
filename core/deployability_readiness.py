@@ -126,7 +126,7 @@ def build_deployability_readiness(repo_root: Path) -> OrderedDict[str, object]:
                         ),
                         (
                             "operator_interpretation",
-                            "Use after review-summary when checking downstream deployability limits and gaps only.",
+                            "Use after review-summary when checking downstream deployability limits and gaps only. This reference is interpretive only and does not create a planning controller.",
                         ),
                     ]
                 ),
