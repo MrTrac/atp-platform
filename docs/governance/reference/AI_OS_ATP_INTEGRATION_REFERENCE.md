@@ -12,6 +12,12 @@ Canonical source nằm ở repo **AI_OS**.
 Canonical document:
 - `AI_OS/40_INTEGRATIONS/AI_OS_ATP_INTEGRATION_MODEL.md`
 
+Canonical / local split:
+
+- **AI_OS** giữ canonical integration model và doctrine cấp cha
+- **ATP** chỉ giữ local reference / local projection docs ngắn để hỗ trợ reviewer trong repo này
+- ATP không tạo canonical copy thứ hai cho mô hình AI_OS ↔ ATP
+
 ## Ý nghĩa đối với ATP
 
 ATP được vận hành như một **project instance dưới AI_OS governance model**.
@@ -24,6 +30,12 @@ ATP được vận hành như một **project instance dưới AI_OS governance 
 - prompt-cmd model
 - review / verify / freeze / handoff discipline
 - safe Git discipline
+
+Approved 3-layer model ở ATP-local interpretation:
+
+- **governance/control model** nằm ở AI_OS doctrine và canonical integration model
+- **ATP project instance** là repo được govern theo model đó
+- **helper-tooling layer**, nếu có, chỉ được hiểu là bounded support cho context/handoff/checkpoint/validation; không phải live runtime coupling
 
 ## Boundary cần giữ
 
@@ -40,6 +52,7 @@ ATP không được hiểu là:
 - runtime node dưới AI_OS
 - orchestration worker
 - live managed project service
+- second canonical source cho integration model này
 
 ## Cách dùng reference này
 
@@ -57,3 +70,4 @@ Tại thời điểm reference này được tạo:
 - `v1.3` và `v1.4` đều đã freeze
 - không có active execution line mở mặc định
 - không có roadmap generation đang mở mặc định
+- ATP vẫn giữ posture bounded, non-operational, và không phụ thuộc vào AI_OS như một live orchestration runtime

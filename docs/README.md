@@ -26,6 +26,7 @@
    Rule execution baseline: `governance/ATP_Development_Ruleset.md`
    Global Git branch guard runtime: `governance/Global_Safe_Git_Branch_Guard_Rule.md`
    Global shorthand / alias reference: `governance/reference/ATP_Global_Shorthand_and_Alias_Rules.md`
+   AI_OS ↔ ATP local reference pack: `governance/reference/AI_OS_ATP_INTEGRATION_REFERENCE.md` → `governance/reference/AI_OS_ATP_BOUNDARY_REFERENCE.md`
    Lineage continuity rule: `governance/framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md`
 4. **Freeze / baseline:** `architecture/ATP_MVP_v0_Freeze_Decision_Record.md` và snapshot bundles trong `architecture/`
 5. **Historical close-out:** các freeze close-out reports trong `archive/reports/`
