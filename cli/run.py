@@ -60,10 +60,44 @@ from core.state.run_state import RunState, build_run_record
 from core.state.transitions import advance_run_state
 from core.validation.validator import validate_artifacts
 
+CANONICAL_SAMPLE_REQUEST = "tests/fixtures/requests/sample_request_slice02.yaml"
+
+
+class _RunCliParser(argparse.ArgumentParser):
+    """Parser with bounded repo-root guidance for control-plane run preview."""
+
+    def error(self, message: str) -> None:
+        if "request_file" in message:
+            self.print_usage(sys.stderr)
+            self.exit(
+                2,
+                (
+                    f"{self.prog}: error: {message}\n"
+                    "Next step: run this bounded control-plane preview surface from repo root with an explicit request file.\n"
+                    f"Example: {self.prog} {CANONICAL_SAMPLE_REQUEST}\n"
+                ),
+            )
+        super().error(message)
+
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Preview the ATP M1-M8 run flow.")
-    parser.add_argument("request_file", help="Path to a JSON or YAML request file.")
+    parser = _RunCliParser(
+        prog="./atp run",
+        description="Preview one bounded ATP v0 control-plane run surface from an explicit request file only.",
+        epilog=(
+            "Example:\n"
+            f"  ./atp run {CANONICAL_SAMPLE_REQUEST}\n"
+            "This command is a repo-local preview surface only. It does not enable background execution or autonomous progression."
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    parser.add_argument(
+        "request_file",
+        help=(
+            "Path to a JSON or YAML request file.\n"
+            f"Canonical repo-root sample: {CANONICAL_SAMPLE_REQUEST}"
+        ),
+    )
     parser.add_argument("--run-id", default="run-preview-0001", help="Optional preview run identifier.")
     return parser
 

@@ -33,6 +33,7 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 - roadmap continuity và freeze close-out discipline áp dụng xuyên suốt release governance
 - `ai-collaboration/` - quy tắc cộng tác với AI assistants
 - `reference/` - tài liệu reference dùng chung, bao gồm shorthand/alias authority reference và bootstrap template
+  - local AI_OS ↔ ATP reference pack: `reference/AI_OS_ATP_INTEGRATION_REFERENCE.md`, `reference/AI_OS_ATP_BOUNDARY_REFERENCE.md`, `reference/AI_OS_ATP_STAGED_ADOPTION_REFERENCE.md`, `reference/AI_OS_ATP_HELPER_TOOLING_REFERENCE.md`
 
 ## Thứ tự đọc khuyến nghị
 
@@ -47,6 +48,7 @@ Cây này định nghĩa các quy tắc vận hành authoritative cho các hoạ
 9. `ATP_3_Role_Workflow.md` khi phase liên quan phối hợp nhiều AI hoặc verification workflow
 10. các bundle domain còn lại theo đúng ngữ cảnh công việc
 11. `reference/ATP_Global_Shorthand_and_Alias_Rules.md` khi cần diễn giải shorthand / alias đang dùng trong ATP
+12. `reference/AI_OS_ATP_INTEGRATION_REFERENCE.md` khi cần local bridge ngắn tới canonical AI_OS ↔ ATP model mà không tạo dual authority
 
 ## Quy tắc áp dụng
 
@@ -77,3 +79,4 @@ Các governance artifact trong cây này áp dụng cho:
 - Khi một governance document trong cây này được review và promote thành authoritative, mọi actor tham gia phải tuân theo tài liệu đó cho đến khi có revision mới thay thế
 - Governance reference document phải sống dưới `docs/governance/reference/`, không tách sang domain khác nếu không có quyết định mới
 - Tài liệu seed hoặc tài liệu lịch sử không còn là authority path phải nằm trong `docs/archive/`
+- Local AI_OS ↔ ATP reference docs trong `reference/` chỉ có vai trò bridge/projection ngắn; canonical integration model vẫn nằm ở AI_OS

@@ -1,13 +1,99 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+SOURCE_PATH="${BASH_SOURCE[0]}"
+while [[ -L "$SOURCE_PATH" ]]; do
+  SOURCE_DIR="$(CDPATH='' cd -- "$(dirname -- "$SOURCE_PATH")" && pwd -P)"
+  SOURCE_PATH="$(readlink "$SOURCE_PATH")"
+  [[ "$SOURCE_PATH" != /* ]] && SOURCE_PATH="$SOURCE_DIR/$SOURCE_PATH"
+done
+ROOT_DIR="$(CDPATH='' cd -- "$(dirname -- "$SOURCE_PATH")/.." && pwd -P)"
+CLI_PATH="./atp"
+UNDERLYING_CLI_PATH="./cli/atp"
 
 case "${1:-help}" in
   help|-h|--help)
-    printf 'ATP v0 repo-local CLI\n'
-    printf 'Usage: %s <command> [args]\n' "$0"
-    printf 'Commands: run inspect validate\n'
+    printf 'ATP v1.1 execution CLI (repo-local)\n'
+    printf '\n'
+    printf 'Usage:\n'
+    printf '  %s <command> [args]\n' "$CLI_PATH"
+    printf '\n'
+    printf 'Bounded request-chain commands:\n'
+    printf '  request-flow    Build the Slice 02 normalized request flow and single-AI package.\n'
+    printf '  request-flow-multi  Build multiple Slice 02 request flows in explicit input order.\n'
+    printf '  request-bundle  Build the Slice 03 reviewable output bundle from the same request path.\n'
+    printf '  request-prompt  Build the Slice 04 one-shot AI-ready prompt artifact for manual handoff.\n'
+    printf '  compose-chain   Run the bounded 3-stage composition: request-flow -> request-bundle -> request-prompt.\n'
+    printf '  smoke-request-chain  Run the canonical repo-root smoke verification for the bounded chain.\n'
+    printf '\n'
+    printf 'Bounded control-plane preparation commands:\n'
+    printf '  execution-session  Inspect one bounded repo-local execution session from explicit request files.\n'
+    printf '  review-summary  Emit one bounded operator-facing review summary for ATP posture.\n'
+    printf '  integration-contract  Emit one bounded derived integration-contract projection document.\n'
+    printf '  deployability-check  Emit one bounded read-only deployability-readiness assessment.\n'
+    printf '  run             Preview one bounded ATP v0 control-plane run surface from an explicit request file.\n'
+    printf '  inspect         Inspect bounded ATP preview data or read-only current-task state only.\n'
+    printf '  validate        Preview bounded ATP v0 validation readiness from an explicit request file.\n'
+    printf '\n'
+    printf 'Canonical runnable example from repo root:\n'
+    printf '  %s request-flow tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s request-flow-multi tests/fixtures/requests/sample_request_slice02.yaml tests/fixtures/requests/sample_request_slice02_b.yaml\n' "$CLI_PATH"
+    printf '  %s execution-session tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s review-summary\n' "$CLI_PATH"
+    printf '  %s integration-contract\n' "$CLI_PATH"
+    printf '  %s deployability-check\n' "$CLI_PATH"
+    printf '  %s run tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s validate tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s request-prompt tests/fixtures/requests/sample_request_slice02.yaml\n' "$CLI_PATH"
+    printf '  %s inspect --workspace-root /Users/nguyenthanhthu/SOURCE_DEV/workspace --run-id run-preview-0001\n' "$CLI_PATH"
+    printf '\n'
+    printf 'Canonical bounded-chain fixture policy:\n'
+    printf '  tests/fixtures/requests/sample_request_slice02.yaml\n'
+    printf '  Use this same fixture for help examples, repo-root smoke verification, and bounded happy-path checks.\n'
+    printf '\n'
+    printf 'Canonical smoke verification from repo root:\n'
+    printf '  ./atp smoke-request-chain\n'
+    printf '  ./atp smoke-request-chain tests/fixtures/requests/sample_request_slice02.yaml\n'
+    printf '\n'
+    printf 'Canonical verification contract from repo root:\n'
+    printf '  verify-smoke  -> ./atp smoke-request-chain\n'
+    printf '  verify-flow   -> ./atp request-flow tests/fixtures/requests/sample_request_slice02.yaml\n'
+    printf '  verify-bundle -> ./atp request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n'
+    printf '  verify-prompt -> ./atp request-prompt tests/fixtures/requests/sample_request_slice02.yaml\n'
+    printf '  Expected bounded result: all commands exit cleanly on the canonical fixture without changing execution scope.\n'
+    printf '\n'
+    printf 'Execution control boundaries:\n'
+    printf '  control-mode  -> repo-local, human-gated, bounded single-AI execution only\n'
+    printf '  auto-execute  -> disabled\n'
+    printf '  release-gates -> merge main / push main / tag release remain unauthorized here\n'
+    printf '  control-plane -> preview/read-only surfaces only; no background execution or autonomous progression\n'
+    printf '\n'
+    printf 'Artifact export (v1.3 — opt-in only):\n'
+    printf '  flag    -> --export-dir <dir>  (request-flow / request-bundle / request-prompt / review-summary / integration-contract / deployability-check)\n'
+    printf '  output  -> <dir>/<run-id>/<artifact_type>.json + export_manifest.json\n'
+    printf '  posture -> stdout remains canonical primary; export is additive secondary; no background write\n'
+    printf '\n'
+    printf 'Deployability readiness (v1.3 phase — assessment only):\n'
+    printf '  command          -> ./atp deployability-check\n'
+    printf '  assessment_mode  -> derived_read_only_assessment\n'
+    printf '  readiness_signal -> assessment_only_not_operationally_deployable\n'
+    printf '  posture          -> descriptive only; no deploy / install / provision / external control\n'
+    printf '\n'
+    printf 'Integration readiness (v1.2 phase — signaling only):\n'
+    printf '  readiness_scope  -> integration_preparation_signaling_only\n'
+    printf '  integration_mode -> not_activated\n'
+    printf '  entrypoints      -> request-flow / request-bundle / request-prompt / execution-session / smoke-request-chain\n'
+    printf '  blocked          -> external integration / background execution / automated progression / bypass human gate\n'
+    printf '  surface          -> execution-session output includes compact integration_readiness_summary\n'
+    printf '\n'
+    printf 'Canonical bounded operator path from repo root:\n'
+    printf '  verify  -> ./atp smoke-request-chain\n'
+    printf '  review  -> ./atp request-bundle tests/fixtures/requests/sample_request_slice02.yaml\n'
+    printf '  handoff -> ./atp request-prompt tests/fixtures/requests/sample_request_slice02.yaml\n'
+    printf '\n'
+    printf 'Use `%s <command> -h` for command-specific help from repo root.\n' "$CLI_PATH"
+    printf 'Underlying launcher path remains `%s`.\n' "$UNDERLYING_CLI_PATH"
     ;;
   run)
     exec python3 "$ROOT_DIR/cli/run.py" "${@:2}"
@@ -17,6 +103,36 @@ case "${1:-help}" in
     ;;
   validate)
     exec python3 "$ROOT_DIR/cli/validate.py" "${@:2}"
+    ;;
+  request-flow)
+    exec python3 "$ROOT_DIR/cli/request_flow.py" "${@:2}"
+    ;;
+  request-flow-multi)
+    exec python3 "$ROOT_DIR/cli/request_flow_multi.py" "${@:2}"
+    ;;
+  execution-session)
+    exec python3 "$ROOT_DIR/cli/execution_session.py" "${@:2}"
+    ;;
+  review-summary)
+    exec python3 "$ROOT_DIR/cli/review_summary.py" "${@:2}"
+    ;;
+  integration-contract)
+    exec python3 "$ROOT_DIR/cli/integration_contract.py" "${@:2}"
+    ;;
+  deployability-check)
+    exec python3 "$ROOT_DIR/cli/deployability_check.py" "${@:2}"
+    ;;
+  request-bundle)
+    exec python3 "$ROOT_DIR/cli/request_bundle.py" "${@:2}"
+    ;;
+  request-prompt)
+    exec python3 "$ROOT_DIR/cli/request_prompt.py" "${@:2}"
+    ;;
+  compose-chain)
+    exec python3 "$ROOT_DIR/cli/compose_chain.py" "${@:2}"
+    ;;
+  smoke-request-chain)
+    exec "$ROOT_DIR/scripts/smoke_request_chain.sh" "${@:2}"
     ;;
   *)
     printf 'Unknown command: %s\n' "${1}" >&2

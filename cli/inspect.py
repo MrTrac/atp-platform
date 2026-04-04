@@ -13,12 +13,24 @@ if str(ROOT_DIR) not in sys.path:
 
 from core.intake.loader import RequestLoadError, load_request
 
+CANONICAL_WORKSPACE_ROOT = "/Users/nguyenthanhthu/SOURCE_DEV/workspace"
+
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Inspect ATP v0 preview summary data.")
-    parser.add_argument("input_file", nargs="?", help="Optional JSON or YAML summary file to inspect.")
-    parser.add_argument("--workspace-root", help="Optional SOURCE_DEV/workspace root for current-task inspection.")
-    parser.add_argument("--run-id", help="Optional run id for current-task inspection.")
+    parser = argparse.ArgumentParser(
+        prog="./atp inspect",
+        description="Inspect bounded ATP preview summaries or read-only current-task state only.",
+        epilog=(
+            "Examples:\n"
+            "  ./atp inspect preview-summary.json\n"
+            f"  ./atp inspect --workspace-root {CANONICAL_WORKSPACE_ROOT} --run-id run-preview-0001\n"
+            "This command is read-only. It does not resume execution, mutate pointers, or trigger background behavior."
+        ),
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
+    parser.add_argument("input_file", nargs="?", help="Optional JSON or YAML summary file to inspect read-only.")
+    parser.add_argument("--workspace-root", help="Optional SOURCE_DEV/workspace root for read-only current-task inspection.")
+    parser.add_argument("--run-id", help="Optional run id for read-only current-task inspection.")
     return parser
 
 

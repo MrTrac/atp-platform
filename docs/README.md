@@ -1,6 +1,7 @@
 # Tài liệu ATP
 
-- **Mục đích:** Cây tài liệu authoritative cho ATP; nguồn sự thật duy nhất cho kiến trúc, thiết kế, vận hành, governance.
+- **Mục đích:** Cây tài liệu authoritative cho ATP **trong phạm vi repo ATP**; nguồn sự thật cho kiến trúc, thiết kế, vận hành, governance của ATP.  
+  Lưu ý: với mô hình kết nối **AI_OS ↔ ATP**, canonical source nằm ở **AI_OS**; ATP chỉ giữ local reference/projection (xem `docs/governance/reference/AI_OS_ATP_INTEGRATION_REFERENCE.md`).
 - **Phạm vi:** Toàn bộ tài liệu dưới `docs/`, bao gồm active docs, frozen snapshot packs, và archive.
 - **Trạng thái:** Active.
 
@@ -14,6 +15,7 @@
 | `decisions/` | Chỉ mục decision records; authority path tới freeze artifact | Active |
 | `governance/` | Framework, Git, documentation, coding, release, AI collaboration | Active |
 | `roadmap/` | Product roadmap, stage roadmap, major roadmap, version roadmap, và inheritance rules | Active |
+| `execution/` | ATP project-instance execution plan layer: roadmap execution + prompt-cmd feature programs | Active |
 | `archive/` | Tài liệu lịch sử; seed bundle; bản sao cũ không còn authority | Archived (không phải source of truth) |
 
 ## Đọc gì trước
@@ -25,12 +27,20 @@
    Rule execution baseline: `governance/ATP_Development_Ruleset.md`
    Global Git branch guard runtime: `governance/Global_Safe_Git_Branch_Guard_Rule.md`
    Global shorthand / alias reference: `governance/reference/ATP_Global_Shorthand_and_Alias_Rules.md`
+   AI_OS ↔ ATP local reference pack: `governance/reference/AI_OS_ATP_INTEGRATION_REFERENCE.md` và các companion references trong `governance/reference/`
    Lineage continuity rule: `governance/framework/ATP_Version_Lineage_and_Documentation_Continuity_Rule.md`
 4. **Freeze / baseline:** `architecture/ATP_MVP_v0_Freeze_Decision_Record.md` và snapshot bundles trong `architecture/`
 5. **Historical close-out:** các freeze close-out reports trong `archive/reports/`
 6. **Roadmap continuity:** `roadmap/README.md` và các roadmap documents theo product/major/version
    Practical lineage map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
    Milestone templates: `roadmap/templates/milestones/`
+7. **Execution planning hiện hành:** `execution/v1_4/ROADMAP_EXECUTION.md` → `execution/v1_4/PROMPT_CMD/INDEX.md`
+   Supporting v1.4 feature programs: `execution/v1_4/PROMPT_CMD/`
+   Freeze baseline cho line mới: `archive/reports/ATP_v1_3_Freeze_Closeout.md`
+   Current close-out / freeze artifact for execution generation v1.4: `archive/reports/ATP_v1_4_Freeze_Closeout.md`
+   Completed baseline v1.3 generation: `execution/v1_3/ROADMAP_EXECUTION.md` → `execution/v1_3/PROMPT_CMD/INDEX.md`
+   Completed baseline v1.2: `execution/v1_2/ROADMAP_EXECUTION.md` → `execution/v1_2/PROMPT_CMD/INDEX.md`
+   Completed baseline v1.1: `execution/ROADMAP_EXECUTION.md` → `execution/PROMPT_CMD/INDEX.md`
 
 Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP ⇄ products`, không chỉ bám release chronology.
 
@@ -40,10 +50,19 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 - `operators/ai_os_thin_integration.md` — ATP-side bridge surface và verifier hooks cho AI_OS
 - Snapshot bundles: `architecture/ATP_v0_final_snapshot_docs/`, `architecture/ATP_v0_1_hardening_snapshot_docs/` (Frozen)
 - Freeze close-out reports: `archive/reports/ATP_v0_2_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_3_0_Freeze_Closeout.md`, `archive/reports/ATP_v0_4_0_Freeze_Closeout.md`
+- Current close-out / freeze artifact for execution generation v1.3: `archive/reports/ATP_v1_3_Freeze_Closeout.md`
+- Current close-out / freeze artifact for execution generation v1.4: `archive/reports/ATP_v1_4_Freeze_Closeout.md`
 - Roadmap layer: `roadmap/ATP_Product_Roadmap.md`, `roadmap/majors/`, `roadmap/versions/`
 - Stage roadmap: `roadmap/stages/ATP_Development_Stage_Roadmap.md`
 - Practical milestone map: `roadmap/stages/ATP_Practical_Milestone_Map.md`
 - Milestone template bundle: `roadmap/templates/milestones/`
+- Execution-plan instance layer:
+  - Current generation v1.4: `execution/v1_4/ROADMAP_EXECUTION.md`, `execution/v1_4/PROMPT_CMD/`
+  - Freeze baseline for v1.4 planning: `archive/reports/ATP_v1_3_Freeze_Closeout.md`
+  - Freeze close-out for completed v1.4 line: `archive/reports/ATP_v1_4_Freeze_Closeout.md`
+  - Completed baseline v1.3: `execution/v1_3/ROADMAP_EXECUTION.md`, `execution/v1_3/PROMPT_CMD/`
+  - Completed baseline v1.2: `execution/v1_2/ROADMAP_EXECUTION.md`, `execution/v1_2/PROMPT_CMD/`
+  - Completed baseline v1.1: `execution/ROADMAP_EXECUTION.md`, `execution/EXECUTION_MODEL_SOURCE.md`, `execution/PROMPT_CMD/`
 
 ---
 
@@ -55,6 +74,7 @@ Roadmap continuity phải luôn bám trục vận hành `requested user ⇄ ATP 
 - `decisions/` — chỉ mục cho decision records ngoài các mốc freeze chính
 - `governance/` — governance framework và các bundle đang có hiệu lực
 - `roadmap/` — roadmap layer cho product, major family, và version planning/inheritance
+- `execution/` — execution-plan instance layers cho ATP theo AI_OS canonical execution model; v1.1, v1.2, và v1.3 retained as completed baselines, v1.4 execution-design line đã complete và freeze artifact nằm trong `archive/reports/`
 - `archive/` — tài liệu lịch sử hoặc bản sao cũ đã bị thay thế về authority path (không phải nguồn chuẩn hiện hành)
 
 ## Quy tắc authority và placement

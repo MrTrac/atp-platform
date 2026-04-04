@@ -1,0 +1,18 @@
+request_id: req-atp-v1-1-slice02-0002
+product: ATP
+request_type: implementation
+execution_intent: preview
+payload:
+  input_text: Prepare a second bounded single-AI execution package for ATP request intake review
+  request_scope:
+    - single_ai_package_flow
+    - atp_repo_only
+  request_constraints:
+    - no_runtime_execution
+    - no_main_branch_changes
+  request_policy_context:
+    - explicit_scope_only
+    - bounded_execution_slice
+  request_traceability_seed: trace-slice02-0002
+metadata:
+  capability: shell_execution
