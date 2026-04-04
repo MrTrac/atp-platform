@@ -7,17 +7,22 @@ from typing import Any
 from adapters.subprocess.local_exec_adapter import LocalExecutionError, execute_local
 from adapters.ssh_remote.ssh_exec_adapter import execute_remote
 from adapters.ollama.ollama_adapter import execute_ollama
+from adapters.cloud.anthropic_adapter import execute_anthropic
+from core.routing.escalation_policy import should_escalate
 
 
 class ExecutionError(ValueError):
     """Raised when ATP cannot execute the selected route."""
 
 
-def _build_ollama_request(
+DEFAULT_CLOUD_MODEL = "claude-sonnet-4-20250514"
+
+
+def _build_llm_request(
     normalized_request: dict[str, Any],
     routing_result: dict[str, Any],
 ) -> dict[str, Any]:
-    """Extract model, prompt, and context from ATP request for the Ollama adapter."""
+    """Extract model, prompt, and context from ATP request for LLM adapters."""
     payload = normalized_request.get("payload", {})
     model = routing_result.get("selected_provider_model") or payload.get("model", "")
 
@@ -34,11 +39,18 @@ def _build_ollama_request(
         request["context"] = context
     if payload.get("options"):
         request["options"] = payload["options"]
+
+    # Carry escalation fields for policy evaluation
+    if payload.get("force_cloud") is True:
+        request["force_cloud"] = True
+    if payload.get("escalation_trigger"):
+        request["escalation_trigger"] = payload["escalation_trigger"]
+
     return request
 
 
-def _normalize_ollama_result(result: dict[str, Any]) -> dict[str, Any]:
-    """Bridge Ollama adapter result to the shape output_normalizer expects."""
+def _normalize_adapter_result(result: dict[str, Any], adapter_path: str) -> dict[str, Any]:
+    """Bridge an LLM adapter result to the shape output_normalizer expects."""
     succeeded = result.get("status") == "success"
     return {
         "exit_code": 0 if succeeded else 1,
@@ -47,7 +59,7 @@ def _normalize_ollama_result(result: dict[str, Any]) -> dict[str, Any]:
         "command": [],
         "status": "completed" if succeeded else "failed",
         "notes": [
-            "Executed through adapters/ollama/ollama_adapter.py",
+            f"Executed through {adapter_path}",
             f"provider={result.get('provider')}, model={result.get('model')}",
         ],
         "ollama_manifest": result.get("manifest"),
@@ -57,6 +69,35 @@ def _normalize_ollama_result(result: dict[str, Any]) -> dict[str, Any]:
             "escalation_triggered": result.get("escalation_triggered", False),
         },
     }
+
+
+def _try_escalate(
+    llm_request: dict[str, Any],
+    local_result: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Check escalation policy and call cloud adapter if triggered.
+
+    Returns the cloud result (normalized) if escalated, or None if not.
+    """
+    do_escalate, reason = should_escalate(llm_request, local_result)
+    if not do_escalate:
+        return None
+
+    cloud_request = dict(llm_request)
+    cloud_request["model"] = cloud_request.get("model") or DEFAULT_CLOUD_MODEL
+    # Always use the cloud default model for escalation
+    cloud_request["model"] = DEFAULT_CLOUD_MODEL
+
+    cloud_raw = execute_anthropic(cloud_request)
+    normalized = _normalize_adapter_result(
+        cloud_raw, "adapters/cloud/anthropic_adapter.py"
+    )
+    normalized["escalation"] = {
+        "escalated": True,
+        "reason": reason,
+        "local_status": local_result.get("status"),
+    }
+    return normalized
 
 
 def invoke_executor(
@@ -75,9 +116,24 @@ def invoke_executor(
             raise ExecutionError(str(exc)) from exc
 
     if provider == "ollama":
-        ollama_request = _build_ollama_request(normalized_request, routing_result)
-        raw_result = execute_ollama(ollama_request)
-        return _normalize_ollama_result(raw_result)
+        llm_request = _build_llm_request(normalized_request, routing_result)
+        raw_result = execute_ollama(llm_request)
+
+        # Check escalation policy
+        escalated = _try_escalate(llm_request, raw_result)
+        if escalated is not None:
+            return escalated
+
+        return _normalize_adapter_result(
+            raw_result, "adapters/ollama/ollama_adapter.py"
+        )
+
+    if provider == "anthropic":
+        llm_request = _build_llm_request(normalized_request, routing_result)
+        raw_result = execute_anthropic(llm_request)
+        return _normalize_adapter_result(
+            raw_result, "adapters/cloud/anthropic_adapter.py"
+        )
 
     if provider and node:
         return execute_remote(normalized_request)
