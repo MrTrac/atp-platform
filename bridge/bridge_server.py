@@ -24,6 +24,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
 
 # Ensure the ATP project root is on sys.path so we can import bridge modules
 _bridge_dir = os.path.dirname(os.path.abspath(__file__))
@@ -146,9 +147,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
             pass
 
 
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    """Handle each request in a separate thread so LLM calls don't block."""
+    daemon_threads = True
+
+
 def main() -> None:
     port = int(os.environ.get("ATP_BRIDGE_PORT", DEFAULT_PORT))
-    server = HTTPServer(("0.0.0.0", port), BridgeHandler)
+    server = ThreadedHTTPServer(("0.0.0.0", port), BridgeHandler)
     server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.timeout = 120
 
