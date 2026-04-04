@@ -32,6 +32,7 @@ if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
 from bridge.openclaw_bridge import bridge_request, BridgeError  # noqa: E402
+from bridge.governance_hook import run_governance_review  # noqa: E402
 
 
 ALLOWED_ORIGIN = os.environ.get("ATP_BRIDGE_CORS_ORIGIN", "http://localhost:3000")
@@ -51,12 +52,15 @@ class BridgeHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
-    def _send_json(self, status: int, body: dict) -> None:
+    def _send_json(self, status: int, body: dict, extra_headers: dict | None = None) -> None:
         try:
             payload = json.dumps(body, indent=2).encode("utf-8")
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self._set_cors_headers()
+            if extra_headers:
+                for key, value in extra_headers.items():
+                    self.send_header(key, value)
             self.end_headers()
             self.wfile.write(payload)
         except BrokenPipeError:
@@ -106,7 +110,17 @@ class BridgeHandler(BaseHTTPRequestHandler):
             result = bridge_request(incoming)
             elapsed_ms = round((time.monotonic() - start) * 1000)
             result["response_time_ms"] = elapsed_ms
-            self._send_json(200, result)
+
+            # Run AI_OS governance review on the artifact
+            gov = run_governance_review(result)
+            result["governance"] = gov
+
+            # Set governance header for human-required artifacts
+            extra_headers = {}
+            if gov.get("requires_human"):
+                extra_headers["X-Governance-Gate"] = "human-required"
+
+            self._send_json(200, result, extra_headers=extra_headers)
         except BridgeError as exc:
             self._send_json(400, {"status": "failed", "error": str(exc)})
         except Exception as exc:
@@ -136,7 +150,7 @@ def main() -> None:
     port = int(os.environ.get("ATP_BRIDGE_PORT", DEFAULT_PORT))
     server = HTTPServer(("0.0.0.0", port), BridgeHandler)
     server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.timeout = 30
+    server.timeout = 120
 
     def _handle_sigterm(signum: int, frame: object) -> None:
         print(f"\n[{_timestamp()}] Received SIGTERM, shutting down.", flush=True)
