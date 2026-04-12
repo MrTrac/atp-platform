@@ -1,0 +1,33 @@
+[project]
+name = "atp-platform"
+version = "1.5.0"
+description = "Autonomous Task Platform — Transformation Plane for the multi-AI ecosystem"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+authors = [
+    {name = "MrTrac"},
+]
+
+[project.urls]
+Repository = "https://github.com/MrTrac/atp-platform"
+
+# ATP uses stdlib only — no runtime dependencies.
+# External services (Ollama, AOKP) are accessed via HTTP.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
