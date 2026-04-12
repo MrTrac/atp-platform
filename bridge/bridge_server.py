@@ -35,6 +35,7 @@ if _project_root not in sys.path:
 
 from bridge.openclaw_bridge import bridge_request, BridgeError  # noqa: E402
 from bridge.governance_hook import run_governance_review  # noqa: E402
+from bridge.run_persistence import persist_bridge_run, list_runs, get_run  # noqa: E402
 from core.routing.route_prepare import _discover_active_providers, _discover_active_nodes  # noqa: E402
 
 
@@ -152,6 +153,15 @@ class BridgeHandler(BaseHTTPRequestHandler):
             self._send_json(200, _build_providers_response())
         elif self.path == "/capabilities":
             self._send_json(200, _build_capabilities_response())
+        elif self.path == "/runs":
+            self._send_json(200, {"runs": list_runs(), "count": len(list_runs())})
+        elif self.path.startswith("/runs/"):
+            run_id = self.path[len("/runs/"):]
+            run_data = get_run(run_id) if run_id else None
+            if run_data:
+                self._send_json(200, run_data)
+            else:
+                self._send_json(404, {"error": f"Run not found: {run_id}"})
         else:
             # Return 200 for any GET — external probes must never see 404
             self._send_json(200, {"status": "ok"})
@@ -190,6 +200,17 @@ class BridgeHandler(BaseHTTPRequestHandler):
             extra_headers = {}
             if gov.get("requires_human"):
                 extra_headers["X-Governance-Gate"] = "human-required"
+
+            # Optional run persistence
+            persistence = persist_bridge_run(
+                request_id=result.get("request_id", "unknown"),
+                normalized_request={"request_id": result.get("request_id"), "payload": incoming},
+                routing_result={"selected_provider": result.get("selected_provider"), "selected_node": result.get("selected_node")},
+                raw_result=result,
+                normalized_output=result,
+            )
+            if persistence.get("persisted"):
+                result["persistence"] = {"run_id": persistence["run_id"], "files": len(persistence.get("files_written", []))}
 
             self._send_json(200, result, extra_headers=extra_headers)
         except BridgeError as exc:
