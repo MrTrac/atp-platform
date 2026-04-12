@@ -5,6 +5,7 @@ status: active
 supported_provider_types:
   - execution
   - llm
+  - knowledge
 notes:
   - Preferred local node for ATP routing on macOS
-  - Supports both non-LLM execution and LLM providers (Ollama, Anthropic)
+  - Supports execution, LLM (Ollama, Anthropic), and knowledge (AOKP) providers
