@@ -1,0 +1,9 @@
+capability: graph_query
+description: Query knowledge graph for entity and relation lookup.
+category: knowledge
+supported_provider_types:
+  - knowledge
+notes:
+  - Input shape: term or entity_id
+  - Output shape: entities and relations with evidence trails
+  - Added in v1.3.0

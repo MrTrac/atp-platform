@@ -1,0 +1,10 @@
+capability: knowledge_retrieval
+description: Query knowledge base for context enrichment before execution.
+category: knowledge
+supported_provider_types:
+  - knowledge
+notes:
+  - Input shape: query + optional filters + optional top_k
+  - Output shape: ranked hits with traceability metadata
+  - Context enrichment surface, not execution
+  - Added in v1.3.0

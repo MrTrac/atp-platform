@@ -168,5 +168,37 @@ class TestSchemaMetadata(unittest.TestCase):
                 )
 
 
+class TestAokpRegistryEntries(unittest.TestCase):
+    """Verify AOKP-related registry entries are loadable."""
+
+    def test_aokp_provider_yaml_loadable(self) -> None:
+        from core.intake.loader import load_request
+        entry = load_request(REGISTRY_ROOT / "providers" / "aokp_knowledge.yaml")
+        self.assertEqual(entry["provider"], "aokp")
+        self.assertEqual(entry["provider_type"], "knowledge")
+        self.assertEqual(entry["status"], "active")
+
+    def test_knowledge_retrieval_capability_loadable(self) -> None:
+        from core.intake.loader import load_request
+        entry = load_request(REGISTRY_ROOT / "capabilities" / "knowledge_retrieval.yaml")
+        self.assertEqual(entry["capability"], "knowledge_retrieval")
+        self.assertEqual(entry["category"], "knowledge")
+
+    def test_graph_query_capability_loadable(self) -> None:
+        from core.intake.loader import load_request
+        entry = load_request(REGISTRY_ROOT / "capabilities" / "graph_query.yaml")
+        self.assertEqual(entry["capability"], "graph_query")
+
+    def test_local_mac_supports_knowledge_provider_type(self) -> None:
+        from core.intake.loader import load_request
+        node = load_request(REGISTRY_ROOT / "nodes" / "local_mac.yaml")
+        self.assertIn("knowledge", node["supported_provider_types"])
+
+    def test_discover_providers_includes_aokp(self) -> None:
+        providers = _discover_active_providers()
+        provider_names = [p.get("provider") for p in providers]
+        self.assertIn("aokp", provider_names)
+
+
 if __name__ == "__main__":
     unittest.main()

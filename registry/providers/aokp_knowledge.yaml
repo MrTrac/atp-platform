@@ -1,0 +1,17 @@
+provider: aokp
+provider_type: knowledge
+status: active
+supported_capabilities:
+  - knowledge_retrieval
+  - graph_query
+supported_nodes:
+  - local_mac
+interaction_pattern: http_local
+ownership_model: platform_managed
+cost_profile: low
+endpoint: http://localhost:3002
+notes:
+  - Knowledge plane integration via AOKP Phase 1 APIs
+  - Context enrichment source, not an executor
+  - Requires ATP_AOKP_ENABLED=true environment variable
+  - Added in v1.3.0

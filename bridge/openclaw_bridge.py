@@ -22,6 +22,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from bridge.context_enrichment import enrich_context
 from core.execution.executor import invoke_executor
 from core.execution.output_normalizer import normalize_output
 
@@ -84,6 +85,16 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
     if incoming.get("options"):
         normalized_request["payload"]["options"] = incoming["options"]
 
+    # Optional AOKP knowledge context enrichment
+    enriched = enrich_context(incoming)
+    if enriched.get("aokp_context"):
+        knowledge_block = enriched["aokp_context"]["context_text"]
+        existing_context = normalized_request["payload"].get("context", "")
+        normalized_request["payload"]["context"] = (
+            f"{existing_context}\n\n--- Knowledge Context (AOKP) ---\n{knowledge_block}"
+            if existing_context else knowledge_block
+        )
+
     # Build the routing result that steers the executor to the right adapter
     routing_result: dict[str, Any] = {
         "route_id": f"route-{request_id}",
@@ -120,6 +131,8 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
         normalized["ollama_manifest"] = raw_result["ollama_manifest"]
     if raw_result.get("ollama_routing"):
         normalized["ollama_routing"] = raw_result["ollama_routing"]
+    if enriched.get("aokp_context"):
+        normalized["aokp_enrichment"] = enriched["aokp_context"]["manifest"]
 
     return normalized
 
