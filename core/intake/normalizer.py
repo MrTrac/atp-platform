@@ -1,9 +1,16 @@
-"""Normalize ATP request payloads for the M1-M2 intake flow."""
+"""Normalize ATP request payloads for the M1-M2 intake flow.
+
+After normalization, an advisory schema validation pass is run against
+``request.schema.yaml``. Validation warnings are collected in
+``_validation_warnings`` but never block the flow.
+"""
 
 from __future__ import annotations
 
 from copy import deepcopy
 from typing import Any
+
+from core.validation.schema_validator import validate_against_schema
 
 
 def normalize_request(raw_request: dict[str, Any]) -> dict[str, Any]:
@@ -35,5 +42,10 @@ def normalize_request(raw_request: dict[str, Any]) -> dict[str, Any]:
     for key, value in request.items():
         if key not in normalized:
             normalized[key] = value
+
+    # Advisory schema validation — warnings only, never blocks
+    report = validate_against_schema(normalized, "request/request.schema.yaml")
+    if not report.valid:
+        normalized["_validation_warnings"] = report.errors
 
     return normalized
