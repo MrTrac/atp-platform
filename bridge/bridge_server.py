@@ -22,6 +22,7 @@ import signal
 import socket
 import sys
 import time
+from pathlib import Path
 from datetime import datetime, timezone
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
@@ -34,6 +35,7 @@ if _project_root not in sys.path:
 
 from bridge.openclaw_bridge import bridge_request, BridgeError  # noqa: E402
 from bridge.governance_hook import run_governance_review  # noqa: E402
+from core.routing.route_prepare import _discover_active_providers, _discover_active_nodes  # noqa: E402
 
 
 ALLOWED_ORIGIN = os.environ.get("ATP_BRIDGE_CORS_ORIGIN", "http://localhost:3000")
@@ -43,6 +45,68 @@ SERVER_VERSION = "1.0"
 
 def _timestamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def _build_status_response() -> dict:
+    """Build full ATP status for the /status endpoint."""
+    providers = _discover_active_providers()
+    nodes = _discover_active_nodes()
+    aokp_status = "disabled"
+    aokp_enabled = os.environ.get("ATP_AOKP_ENABLED", "").lower() in ("1", "true", "yes")
+    if aokp_enabled:
+        try:
+            from adapters.aokp.aokp_adapter import check_health
+            health = check_health(timeout=3)
+            aokp_status = health.get("status", "unknown")
+        except Exception:
+            aokp_status = "error"
+
+    return {
+        "status": "ok",
+        "version": SERVER_VERSION,
+        "providers": [p.get("provider") for p in providers],
+        "provider_count": len(providers),
+        "nodes": [n.get("node") for n in nodes],
+        "aokp": {"enabled": aokp_enabled, "status": aokp_status},
+        "timestamp": _timestamp(),
+    }
+
+
+def _build_providers_response() -> dict:
+    """Build provider list for the /providers endpoint."""
+    providers = _discover_active_providers()
+    return {
+        "providers": [
+            {
+                "provider": p.get("provider"),
+                "provider_type": p.get("provider_type"),
+                "status": p.get("status"),
+                "capabilities": p.get("supported_capabilities", []),
+                "cost_profile": p.get("cost_profile"),
+            }
+            for p in providers
+        ],
+        "count": len(providers),
+    }
+
+
+def _build_capabilities_response() -> dict:
+    """Build capability list for the /capabilities endpoint."""
+    from core.intake.loader import load_request
+    cap_dir = Path(_project_root) / "registry" / "capabilities"
+    capabilities = []
+    if cap_dir.is_dir():
+        for f in sorted(cap_dir.glob("*.yaml")):
+            try:
+                entry = load_request(f)
+                capabilities.append({
+                    "capability": entry.get("capability"),
+                    "category": entry.get("category"),
+                    "description": entry.get("description", ""),
+                })
+            except Exception:
+                continue
+    return {"capabilities": capabilities, "count": len(capabilities)}
 
 
 class BridgeHandler(BaseHTTPRequestHandler):
@@ -82,6 +146,12 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 "service": "ATP Bridge Server",
                 "version": SERVER_VERSION,
             })
+        elif self.path == "/status":
+            self._send_json(200, _build_status_response())
+        elif self.path == "/providers":
+            self._send_json(200, _build_providers_response())
+        elif self.path == "/capabilities":
+            self._send_json(200, _build_capabilities_response())
         else:
             # Return 200 for any GET — external probes must never see 404
             self._send_json(200, {"status": "ok"})
