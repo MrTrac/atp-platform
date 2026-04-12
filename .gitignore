@@ -1,9 +1,31 @@
+# Python
 __pycache__/
 *.pyc
-.DS_Store
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Testing
 .pytest_cache/
 .coverage
 htmlcov/
-.venv/
-dist/
-build/
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude Code
+.claude/
+
+# Environment
+.env
+.env.local
+
+# Runtime workspace (lives in SOURCE_DEV/workspace, not in repo)
+workspace/
