@@ -8,7 +8,7 @@ from core.decision_control.contract import (
     DECISION_CLASSES,
     DECISION_RESULTS,
     TRANSITION_CLASSES,
-    SliceDContractError,
+    DecisionContractError,
     build_decision_record,
     build_transition_record,
     validate_decision_record,
@@ -16,7 +16,7 @@ from core.decision_control.contract import (
 )
 
 __all__ = [
-    "SliceDContractError",
+    "DecisionContractError",
     "DECISION_CLASSES",
     "DECISION_RESULTS",
     "TRANSITION_CLASSES",

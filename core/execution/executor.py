@@ -1,8 +1,13 @@
-"""Map ATP routing results to execution adapters for M6."""
+"""Map ATP routing results to execution adapters for M6.
+
+Provider dispatch is registry-driven via EXECUTOR_MAP rather than
+hardcoded conditionals, allowing new providers to be registered
+without modifying this module's dispatch logic.
+"""
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 from adapters.subprocess.local_exec_adapter import LocalExecutionError, execute_local
 from adapters.ssh_remote.ssh_exec_adapter import execute_remote
@@ -100,41 +105,82 @@ def _try_escalate(
     return normalized
 
 
+# ---------------------------------------------------------------------------
+# Adapter handler functions — one per provider
+# ---------------------------------------------------------------------------
+
+def _handle_non_llm(
+    normalized_request: dict[str, Any],
+    routing_result: dict[str, Any],
+) -> dict[str, Any]:
+    """Handle non-LLM local subprocess execution."""
+    try:
+        return execute_local(normalized_request)
+    except LocalExecutionError as exc:
+        raise ExecutionError(str(exc)) from exc
+
+
+def _handle_ollama(
+    normalized_request: dict[str, Any],
+    routing_result: dict[str, Any],
+) -> dict[str, Any]:
+    """Handle Ollama local LLM execution with escalation policy."""
+    llm_request = _build_llm_request(normalized_request, routing_result)
+    raw_result = execute_ollama(llm_request)
+
+    escalated = _try_escalate(llm_request, raw_result)
+    if escalated is not None:
+        return escalated
+
+    return _normalize_adapter_result(
+        raw_result, "adapters/ollama/ollama_adapter.py"
+    )
+
+
+def _handle_anthropic(
+    normalized_request: dict[str, Any],
+    routing_result: dict[str, Any],
+) -> dict[str, Any]:
+    """Handle Anthropic cloud LLM execution."""
+    llm_request = _build_llm_request(normalized_request, routing_result)
+    raw_result = execute_anthropic(llm_request)
+    return _normalize_adapter_result(
+        raw_result, "adapters/cloud/anthropic_adapter.py"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Registry-driven dispatch map
+# ---------------------------------------------------------------------------
+
+ExecutorHandler = Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]]
+
+EXECUTOR_MAP: dict[str, ExecutorHandler] = {
+    "non_llm_execution": _handle_non_llm,
+    "ollama": _handle_ollama,
+    "anthropic": _handle_anthropic,
+}
+
+
+def register_executor(provider: str, handler: ExecutorHandler) -> None:
+    """Register a new provider handler at runtime."""
+    EXECUTOR_MAP[provider] = handler
+
+
 def invoke_executor(
     normalized_request: dict[str, Any],
     routing_result: dict[str, Any],
 ) -> dict[str, Any]:
-    """Invoke the adapter mapped from the selected provider and node."""
+    """Invoke the adapter mapped from the selected provider."""
 
     provider = routing_result.get("selected_provider")
     node = routing_result.get("selected_node")
 
-    if provider == "non_llm_execution" and node == "local_mac":
-        try:
-            return execute_local(normalized_request)
-        except LocalExecutionError as exc:
-            raise ExecutionError(str(exc)) from exc
+    handler = EXECUTOR_MAP.get(provider or "")
+    if handler is not None:
+        return handler(normalized_request, routing_result)
 
-    if provider == "ollama":
-        llm_request = _build_llm_request(normalized_request, routing_result)
-        raw_result = execute_ollama(llm_request)
-
-        # Check escalation policy
-        escalated = _try_escalate(llm_request, raw_result)
-        if escalated is not None:
-            return escalated
-
-        return _normalize_adapter_result(
-            raw_result, "adapters/ollama/ollama_adapter.py"
-        )
-
-    if provider == "anthropic":
-        llm_request = _build_llm_request(normalized_request, routing_result)
-        raw_result = execute_anthropic(llm_request)
-        return _normalize_adapter_result(
-            raw_result, "adapters/cloud/anthropic_adapter.py"
-        )
-
+    # Fallback: unknown provider with a node → attempt SSH remote (deferred)
     if provider and node:
         return execute_remote(normalized_request)
 

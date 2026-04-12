@@ -27,7 +27,7 @@ from output_contract import build_error_envelope, build_success_envelope, render
 CANONICAL_SAMPLE_REQUEST = "tests/fixtures/requests/sample_request_slice02.yaml"
 
 
-class _RequestCliParser(argparse.ArgumentParser):
+class _RequestBundleCliParser(argparse.ArgumentParser):
     """Parser with bounded operator guidance for missing request files."""
 
     def error(self, message: str) -> None:
@@ -45,7 +45,7 @@ class _RequestCliParser(argparse.ArgumentParser):
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = _RequestCliParser(
+    parser = _RequestBundleCliParser(
         prog="./atp request-bundle",
         description=(
             "Prepare the ATP Slice 03 reviewable bundle from the bounded request flow: "

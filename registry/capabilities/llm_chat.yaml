@@ -1,0 +1,9 @@
+capability: llm_chat
+description: Send prompts or message sequences to an LLM and receive generated text.
+category: llm
+supported_provider_types:
+  - llm
+notes:
+  - Input shape: model + prompt/messages + optional context/options
+  - Output shape: generated text + token count + completion status
+  - Added in v1.1.0 for Ollama and Anthropic adapters

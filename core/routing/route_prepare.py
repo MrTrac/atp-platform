@@ -1,11 +1,20 @@
-"""Prepare ATP M5 routing inputs from context packaging outputs."""
+"""Prepare ATP M5 routing inputs from context packaging outputs.
+
+Provider and node candidates are discovered from the registry
+directory rather than hardcoded, allowing new providers to be
+added by dropping a YAML file without modifying this module.
+"""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
-from core.intake.loader import RequestLoadError
+from core.intake.loader import RequestLoadError, load_request
 from core.resolution.registry_io import load_yaml_mapping
+
+
+REGISTRY_ROOT = Path(__file__).resolve().parents[2] / "registry"
 
 
 class RoutePreparationError(ValueError):
@@ -58,6 +67,38 @@ def _load_node(node_name: str) -> dict[str, Any]:
         raise RoutePreparationError(f"Node not found: {node_name}") from exc
 
 
+def _discover_active_providers() -> list[dict[str, Any]]:
+    """Scan registry/providers/ for active provider YAML entries."""
+    providers_dir = REGISTRY_ROOT / "providers"
+    if not providers_dir.is_dir():
+        return []
+    providers: list[dict[str, Any]] = []
+    for yaml_file in sorted(providers_dir.glob("*.yaml")):
+        try:
+            entry = load_request(yaml_file)
+        except RequestLoadError:
+            continue
+        if entry.get("status") == "active":
+            providers.append(entry)
+    return providers
+
+
+def _discover_active_nodes() -> list[dict[str, Any]]:
+    """Scan registry/nodes/ for active node YAML entries."""
+    nodes_dir = REGISTRY_ROOT / "nodes"
+    if not nodes_dir.is_dir():
+        return []
+    nodes: list[dict[str, Any]] = []
+    for yaml_file in sorted(nodes_dir.glob("*.yaml")):
+        try:
+            entry = load_request(yaml_file)
+        except RequestLoadError:
+            continue
+        if entry.get("status") == "active":
+            nodes.append(entry)
+    return nodes
+
+
 def prepare_route(
     normalized_request: dict[str, Any],
     classification: dict[str, Any],
@@ -87,10 +128,13 @@ def prepare_route(
         policy_ref for policy_ref in product_context.get("policy_refs", []) if "cost" in policy_ref
     ]
 
-    provider_names = ["non_llm_execution"]
-    candidate_providers = [_load_provider(provider_name) for provider_name in provider_names]
-    node_names = ["local_mac"]
-    candidate_nodes = [_load_node(node_name) for node_name in node_names]
+    candidate_providers = _discover_active_providers()
+    candidate_nodes = _discover_active_nodes()
+
+    if not candidate_providers:
+        raise RoutePreparationError("No active providers found in registry.")
+    if not candidate_nodes:
+        raise RoutePreparationError("No active nodes found in registry.")
 
     return {
         "request_id": request_id,

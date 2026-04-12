@@ -13,7 +13,7 @@ from core.decision_control import (
     DECISION_CLASSES,
     DECISION_RESULTS,
     TRANSITION_CLASSES,
-    SliceDContractError,
+    DecisionContractError,
     build_decision_record,
     build_transition_record,
     validate_decision_record,
@@ -111,7 +111,7 @@ class TestSliceDContract(unittest.TestCase):
             "requested_transition": "allowed_transition",
             "decision_result": "invalid_result",
         }
-        with self.assertRaises(SliceDContractError) as ctx:
+        with self.assertRaises(DecisionContractError) as ctx:
             validate_decision_record(record)
         self.assertIn("decision_result", str(ctx.exception))
 
@@ -128,7 +128,7 @@ class TestSliceDContract(unittest.TestCase):
             "decision_result": "allow",
             "permission_block_result": "allow",
         }
-        with self.assertRaises(SliceDContractError) as ctx:
+        with self.assertRaises(DecisionContractError) as ctx:
             validate_decision_record(record)
         self.assertIn("decision_class", str(ctx.exception))
 
@@ -157,7 +157,7 @@ class TestSliceDContract(unittest.TestCase):
             "resulting_state_or_move": "y",
             "status_summary": "ok",
         }
-        with self.assertRaises(SliceDContractError) as ctx:
+        with self.assertRaises(DecisionContractError) as ctx:
             validate_transition_record(record)
         self.assertIn("decision_record_ref", str(ctx.exception))
 
@@ -175,7 +175,7 @@ class TestSliceDContract(unittest.TestCase):
             "resulting_state_or_move": "y",
             "status_summary": "ok",
         }
-        with self.assertRaises(SliceDContractError) as ctx:
+        with self.assertRaises(DecisionContractError) as ctx:
             validate_transition_record(record)
         self.assertIn("transition_class", str(ctx.exception))
 
@@ -200,7 +200,7 @@ class TestSliceDContract(unittest.TestCase):
         validate_decision_record(rec)
 
     def test_build_decision_record_requires_slice_c_contract_id(self) -> None:
-        with self.assertRaises(SliceDContractError) as ctx:
+        with self.assertRaises(DecisionContractError) as ctx:
             build_decision_record(
                 request_id="req-1",
                 run_id="run-1",
@@ -246,7 +246,7 @@ class TestSliceDContract(unittest.TestCase):
             "decision_result": "allow",
             "permission_block_result": "allow",
         }
-        with self.assertRaises(SliceDContractError) as ctx:
+        with self.assertRaises(DecisionContractError) as ctx:
             validate_decision_record(record)
         self.assertIn("cannot create binding allow", str(ctx.exception))
 
@@ -263,7 +263,7 @@ class TestSliceDContract(unittest.TestCase):
             "decision_result": "allow",
             "permission_block_result": "allow",
         }
-        with self.assertRaises(SliceDContractError) as ctx:
+        with self.assertRaises(DecisionContractError) as ctx:
             validate_decision_record(record)
         self.assertIn("blocking_decision must produce", str(ctx.exception))
 
@@ -280,7 +280,7 @@ class TestSliceDContract(unittest.TestCase):
             "decision_result": "block",
             "permission_block_result": "block",
         }
-        with self.assertRaises(SliceDContractError) as ctx:
+        with self.assertRaises(DecisionContractError) as ctx:
             validate_decision_record(record)
         self.assertIn("cannot produce decision_result", str(ctx.exception))
 
@@ -362,7 +362,7 @@ class TestSliceDContract(unittest.TestCase):
         self.assertEqual(contract["transition_record"]["transition_class"], "deferred_transition")
 
     def test_build_decision_transition_control_contract_requires_oc_contract(self) -> None:
-        with self.assertRaises(SliceDContractError) as ctx:
+        with self.assertRaises(DecisionContractError) as ctx:
             build_decision_transition_control_contract(
                 run_id="run-1",
                 normalized_request={"request_id": "req-1"},
