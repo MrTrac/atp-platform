@@ -1,7 +1,12 @@
-"""Artifact shaping helpers for ATP M7."""
+"""Artifact shaping and optional persistence for ATP.
+
+When ``ATP_PERSIST_ARTIFACTS`` is enabled, ``store_artifact()`` writes
+artifact JSON to the workspace. Otherwise returns in-memory metadata only.
+"""
 
 from __future__ import annotations
 
+import os
 from copy import deepcopy
 from typing import Any
 
@@ -132,12 +137,49 @@ def summarize_artifacts(artifacts: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def store_artifact(artifact: dict[str, Any]) -> dict[str, Any]:
-    """Shape an artifact-like payload without persistence."""
+PERSIST_ARTIFACTS = os.environ.get("ATP_PERSIST_ARTIFACTS", "").lower() in ("1", "true", "yes")
+
+
+def store_artifact(
+    artifact: dict[str, Any],
+    *,
+    workspace_root: Any | None = None,
+) -> dict[str, Any]:
+    """Persist an artifact to the workspace when enabled, or return metadata only.
+
+    Parameters
+    ----------
+    artifact : dict
+        The artifact dict (must have ``artifact_id``).
+    workspace_root : Path | None
+        Override workspace root (for testing). If None, resolves from repo layout.
+    """
+    artifact_id = artifact.get("artifact_id", "artifact-unknown")
+    artifact_type = artifact.get("artifact_type", "execution_output")
+
+    if not PERSIST_ARTIFACTS and workspace_root is None:
+        return {
+            "artifact_id": artifact_id,
+            "artifact_type": artifact_type,
+            "stored": False,
+            "notes": ["Artifact persistence disabled (set ATP_PERSIST_ARTIFACTS=true to enable)."],
+        }
+
+    from adapters.filesystem.workspace_writer import (
+        _write_json,
+        resolve_workspace_root,
+    )
+    from pathlib import Path
+
+    ws = Path(workspace_root) if workspace_root else resolve_workspace_root()
+    artifact_dir = ws / "atp-artifacts" / artifact_id
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    artifact_path = _write_json(artifact_dir / "artifact.json", artifact)
 
     return {
-        "artifact_id": artifact.get("artifact_id", "artifact-unknown"),
-        "artifact_type": artifact.get("artifact_type", "execution_output"),
-        "stored": False,
-        "notes": ["Artifact persistence is deferred in M7."],
+        "artifact_id": artifact_id,
+        "artifact_type": artifact_type,
+        "stored": True,
+        "path": str(artifact_path),
+        "notes": ["Artifact persisted to workspace."],
     }
