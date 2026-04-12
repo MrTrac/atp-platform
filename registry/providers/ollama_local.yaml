@@ -1,0 +1,16 @@
+provider: ollama
+provider_type: llm
+status: active
+supported_capabilities:
+  - llm_chat
+  - llm_completion
+supported_nodes:
+  - local_mac
+interaction_pattern: http_local
+ownership_model: platform_managed
+cost_profile: low
+endpoint: http://localhost:11434
+notes:
+  - Local LLM execution via Ollama API
+  - Primary models: qwen3:14b, qwen3:8b, deepseek-r1:8b
+  - Added in v1.1.0

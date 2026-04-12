@@ -2,16 +2,21 @@
 
 ATP là `platform repository` tại `SOURCE_DEV/platforms/ATP`.
 
-ATP MVP v0 là một `shape-correct MVP`: giữ đúng boundary của repo, hình thái control-plane, registry, adapter, artifact lifecycle, và flow human-gated đã được freeze. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
+ATP là một governance-first platform tại baseline **v1.1.0**, phát triển từ v0 shape-correct MVP qua 9 PRs. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
 
-Trạng thái baseline đã freeze:
+Trạng thái release:
 
-- `v0.1.0` — hardening baseline
-- `v0.2.0` — consolidated runtime materialization baseline
-- `v0.3.0` — consolidated exchange boundary và continuity baseline
-- `v0.4.0` — consolidated current-task persistence, recovery, pointer, và inspect baseline
+- `v0.1.0` — `v0.4.0` — frozen v0 baselines (hardening → materialization → exchange → persistence)
+- `v1.0.0` — `v1.0.4` — frozen v1 slices A–E
+- **`v1.1.0`** — **current released baseline** (Ollama adapter, Anthropic cloud escalation, HTTP bridge, AI_OS governance gate; 312 tests passing)
 
-Branch hiện tại có thể đi tiếp sang planning phase mới, nhưng không được ghi đè historical facts của các version đã freeze.
+Runtime components (v1.1.0):
+
+- **Ollama adapter** — local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b)
+- **Anthropic adapter** — cloud escalation path
+- **Bridge server** — HTTP at `localhost:8765` (ThreadingHTTPServer)
+- **Governance hook** — aios-gate integration (artifact tier A–E classification)
+- **OpenClaw bridge** — end-to-end request flow integration
 
 ATP không phải là một closed snapshot architecture và cũng không phải một ad hoc open architecture.
 

@@ -1,0 +1,16 @@
+provider: anthropic
+provider_type: llm
+status: active
+supported_capabilities:
+  - llm_chat
+  - llm_completion
+supported_nodes:
+  - local_mac
+interaction_pattern: http_cloud
+ownership_model: external_api
+cost_profile: high
+notes:
+  - Cloud LLM execution via Anthropic Messages API
+  - Escalation path when Ollama cannot satisfy request
+  - Requires ANTHROPIC_API_KEY environment variable
+  - Added in v1.1.0

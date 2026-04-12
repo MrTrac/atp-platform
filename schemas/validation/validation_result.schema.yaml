@@ -1,0 +1,30 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+title: ATP Validation Result
+x-schema-version: "1.0"
+type: object
+required:
+  - validation_id
+  - request_id
+  - validation_status
+properties:
+  validation_id:
+    type: string
+  request_id:
+    type: string
+  validation_status:
+    type: string
+  exit_code:
+    type: integer
+  execution_status:
+    type: string
+  stdout_preview:
+    type: string
+  stderr_preview:
+    type: string
+  checked_keys:
+    type: array
+  artifact_ids:
+    type: array
+  notes:
+    type: array
+additionalProperties: true

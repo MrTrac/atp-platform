@@ -4,5 +4,7 @@ locality: local
 status: active
 supported_provider_types:
   - execution
+  - llm
 notes:
-  - Preferred local node for ATP v0 routing preview on macOS
+  - Preferred local node for ATP routing on macOS
+  - Supports both non-LLM execution and LLM providers (Ollama, Anthropic)

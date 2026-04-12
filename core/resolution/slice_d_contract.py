@@ -14,7 +14,7 @@ from core.decision_control.contract import (
     DECISION_CLASSES,
     DECISION_RESULTS,
     TRANSITION_CLASSES,
-    SliceDContractError,
+    DecisionContractError,
     build_decision_record,
     build_transition_record,
     validate_decision_record,
@@ -25,7 +25,7 @@ __all__ = [
     "DECISION_CLASSES",
     "DECISION_RESULTS",
     "TRANSITION_CLASSES",
-    "SliceDContractError",
+    "DecisionContractError",
     "build_decision_record",
     "build_transition_record",
     "build_decision_transition_control_contract",
@@ -61,10 +61,10 @@ def build_decision_transition_control_contract(
     """Build composite Slice D contract. Uses authority core.decision_control."""
     request_id = str(normalized_request.get("request_id", "")).strip()
     if not request_id:
-        raise SliceDContractError("request_id is required for the decision transition control contract.")
+        raise DecisionContractError("request_id is required for the decision transition control contract.")
 
     if not str(run_id).strip():
-        raise SliceDContractError("run_id is required for the decision transition control contract.")
+        raise DecisionContractError("run_id is required for the decision transition control contract.")
 
     oc_contract = operational_continuity_gate_followup_state_contract
     decision_class, decision_result, transition_class = _derive_decision_and_transition_from_continuity(

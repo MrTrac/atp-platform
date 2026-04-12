@@ -1,0 +1,8 @@
+capability: llm_completion
+description: Single-turn text completion from an LLM provider.
+category: llm
+supported_provider_types:
+  - llm
+notes:
+  - Subset of llm_chat for simpler single-prompt flows
+  - Added in v1.1.0

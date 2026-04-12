@@ -46,23 +46,23 @@ DECISION_TO_TRANSITION = {
 }
 
 
-class SliceDContractError(ValueError):
+class DecisionContractError(ValueError):
     """Raised when a Slice D contract field is invalid or missing."""
 
 
 def _require_non_empty(value: Any, field_name: str) -> str:
     if value is None:
-        raise SliceDContractError(f"Missing required field: {field_name}")
+        raise DecisionContractError(f"Missing required field: {field_name}")
     v = str(value).strip()
     if not v:
-        raise SliceDContractError(f"Empty required field: {field_name}")
+        raise DecisionContractError(f"Empty required field: {field_name}")
     return v
 
 
 def _require_one_of(value: Any, allowed: frozenset[str], field_name: str) -> str:
     v = _require_non_empty(value, field_name)
     if v not in allowed:
-        raise SliceDContractError(
+        raise DecisionContractError(
             f"Invalid {field_name}: {v!r}. Must be one of: {sorted(allowed)}"
         )
     return v
@@ -70,23 +70,23 @@ def _require_one_of(value: Any, allowed: frozenset[str], field_name: str) -> str
 
 def _validate_source_state_ref(ref: Any, *, field_name: str = "source_state_ref") -> dict[str, Any]:
     if ref is None:
-        raise SliceDContractError(f"Missing required field: {field_name}")
+        raise DecisionContractError(f"Missing required field: {field_name}")
     if not isinstance(ref, dict):
         contract_id = _require_non_empty(ref, field_name)
         if not contract_id.startswith(SLICE_C_CONTRACT_ID_PREFIX):
-            raise SliceDContractError(
+            raise DecisionContractError(
                 f"{field_name} must reference canonical Slice C contract_id."
             )
         return {"contract_id": contract_id}
 
     contract_id = _require_non_empty(ref.get("contract_id"), f"{field_name}.contract_id")
     if not contract_id.startswith(SLICE_C_CONTRACT_ID_PREFIX):
-        raise SliceDContractError(
+        raise DecisionContractError(
             f"{field_name}.contract_id must reference canonical Slice C continuity-state contract."
         )
     _require_non_empty(ref.get("state_scope"), f"{field_name}.state_scope")
     if ref.get("state_scope") != SLICE_C_STATE_SCOPE:
-        raise SliceDContractError(
+        raise DecisionContractError(
             f"{field_name}.state_scope must be {SLICE_C_STATE_SCOPE!r}."
         )
     _require_non_empty(ref.get("continuity_state"), f"{field_name}.continuity_state")
@@ -109,19 +109,19 @@ def _validate_decision_semantics(record: dict[str, Any]) -> None:
         "permission_block_result",
     )
     if permission_block_result != decision_result:
-        raise SliceDContractError(
+        raise DecisionContractError(
             "permission_block_result must match decision_result for Slice D traceability."
         )
     if decision_class in {"observational_decision", "advisory_decision"} and decision_result == "allow":
-        raise SliceDContractError(
+        raise DecisionContractError(
             f"{decision_class} cannot create binding allow result."
         )
     if decision_class == "blocking_decision" and decision_result != "block":
-        raise SliceDContractError(
+        raise DecisionContractError(
             "blocking_decision must produce decision_result='block'."
         )
     if decision_class == "conditional_binding_decision" and decision_result == "block":
-        raise SliceDContractError(
+        raise DecisionContractError(
             "conditional_binding_decision cannot produce decision_result='block'."
         )
 
@@ -129,7 +129,7 @@ def _validate_decision_semantics(record: dict[str, Any]) -> None:
 def _validate_transition_semantics(record: dict[str, Any]) -> None:
     decision_ref = record.get("decision_record_ref")
     if not isinstance(decision_ref, dict):
-        raise SliceDContractError(
+        raise DecisionContractError(
             "decision_record_ref must be a dict with traceability fields."
         )
     _require_non_empty(decision_ref.get("record_id"), "decision_record_ref.record_id")
@@ -150,11 +150,11 @@ def _validate_transition_semantics(record: dict[str, Any]) -> None:
     )
     expected_transition = DECISION_TO_TRANSITION[decision_result]
     if transition_class != expected_transition:
-        raise SliceDContractError(
+        raise DecisionContractError(
             "transition_class must align with decision_record_ref.decision_result."
         )
     if decision_class in {"observational_decision", "advisory_decision"} and transition_class == "allowed_transition":
-        raise SliceDContractError(
+        raise DecisionContractError(
             f"{decision_class} cannot justify allowed_transition."
         )
 
@@ -162,7 +162,7 @@ def _validate_transition_semantics(record: dict[str, Any]) -> None:
 def validate_decision_record(record: dict[str, Any]) -> None:
     """Validate decision record has required fields and valid enums.
 
-    Raises SliceDContractError if invalid.
+    Raises DecisionContractError if invalid.
     """
     _require_non_empty(record.get("record_id"), "record_id")
     _validate_source_state_ref(record.get("source_state_ref"))
@@ -177,12 +177,12 @@ def validate_decision_record(record: dict[str, Any]) -> None:
 def validate_transition_record(record: dict[str, Any]) -> None:
     """Validate transition record has required fields and valid enums.
 
-    Raises SliceDContractError if invalid.
+    Raises DecisionContractError if invalid.
     """
     _require_non_empty(record.get("record_id"), "record_id")
     _validate_source_state_ref(record.get("source_state_ref"))
     if record.get("decision_record_ref") is None:
-        raise SliceDContractError("Missing required field: decision_record_ref")
+        raise DecisionContractError("Missing required field: decision_record_ref")
     _require_non_empty(record.get("permission_block_basis"), "permission_block_basis")
     _require_non_empty(
         record.get("resulting_state_or_move"),
@@ -209,11 +209,11 @@ def build_decision_record(
 ) -> dict[str, Any]:
     """Build a Slice D decision record linked to Slice C continuity state."""
     if decision_class not in DECISION_CLASSES:
-        raise SliceDContractError(
+        raise DecisionContractError(
             f"decision_class must be one of {sorted(DECISION_CLASSES)}"
         )
     if decision_result not in DECISION_RESULTS:
-        raise SliceDContractError(
+        raise DecisionContractError(
             f"decision_result must be one of {sorted(DECISION_RESULTS)}"
         )
 
@@ -221,18 +221,18 @@ def build_decision_record(
         operational_continuity_state_contract.get("contract_id", "")
     ).strip()
     if not contract_id:
-        raise SliceDContractError(
+        raise DecisionContractError(
             "operational_continuity_state_contract must contain contract_id (Slice C source)."
         )
     if not contract_id.startswith(SLICE_C_CONTRACT_ID_PREFIX):
-        raise SliceDContractError(
+        raise DecisionContractError(
             "operational_continuity_state_contract.contract_id must reference canonical Slice C continuity-state contract."
         )
     state_scope = str(
         operational_continuity_state_contract.get("state_scope", "")
     ).strip()
     if state_scope and state_scope != SLICE_C_STATE_SCOPE:
-        raise SliceDContractError(
+        raise DecisionContractError(
             f"operational_continuity_state_contract.state_scope must be {SLICE_C_STATE_SCOPE!r}."
         )
     continuity_state = ""
@@ -240,7 +240,7 @@ def build_decision_record(
     if isinstance(oc_state, dict):
         continuity_state = str(oc_state.get("continuity_state", "")).strip()
     if not continuity_state:
-        raise SliceDContractError(
+        raise DecisionContractError(
             "operational_continuity_state_contract.operational_continuity_state.continuity_state is required."
         )
 
@@ -290,13 +290,13 @@ def build_transition_record(
 ) -> dict[str, Any]:
     """Build a Slice D transition record linked to source state and decision record."""
     if transition_class not in TRANSITION_CLASSES:
-        raise SliceDContractError(
+        raise DecisionContractError(
             f"transition_class must be one of {sorted(TRANSITION_CLASSES)}"
         )
 
     decision_record_id = str(decision_record.get("record_id", "")).strip()
     if not decision_record_id:
-        raise SliceDContractError(
+        raise DecisionContractError(
             "decision_record must contain record_id for traceability."
         )
 
