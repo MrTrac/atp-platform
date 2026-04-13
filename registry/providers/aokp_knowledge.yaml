@@ -1,17 +1,26 @@
 provider: aokp
 provider_type: knowledge
 status: active
+version: v2.3.1
 supported_capabilities:
   - knowledge_retrieval
   - graph_query
+  - chat
+  - graph_rag
+  - temporal_analysis
+  - health_check
 supported_nodes:
   - local_mac
 interaction_pattern: http_local
 ownership_model: platform_managed
 cost_profile: low
 endpoint: http://localhost:3002
+health_endpoint: /api/health
 notes:
-  - Knowledge plane integration via AOKP Phase 1 APIs
+  - Knowledge plane integration via AOKP v2.3.x APIs
   - Context enrichment source, not an executor
   - Requires ATP_AOKP_ENABLED=true environment variable
-  - Added in v1.3.0
+  - Added in v1.3.0, upgraded to v2.3.x in v1.7.0
+  - 8 AI/ML pipelines (CRAG, GraphRAG, ReAct, ToT, Temporal KG, Federation, RAGAS, Streaming)
+  - NVI (Natural Vietnamese Intelligence) for locale-aware responses
+  - 732 graph entities + 797 relations (ManagAIR KB v1.3.0)

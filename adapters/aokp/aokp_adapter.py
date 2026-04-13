@@ -1,8 +1,11 @@
-"""ATP AOKP adapter — knowledge retrieval via AOKP Phase 1 HTTP APIs.
+"""ATP AOKP adapter — knowledge retrieval via AOKP v2.3.x HTTP APIs.
 
 Provides context enrichment by querying the AOKP knowledge platform.
 AOKP is a context source, not an executor — results enrich request
 context before execution, never replace execution output.
+
+Capabilities: knowledge_retrieval, graph_query, chat, graph_rag,
+temporal_analysis, health_check.
 
 Follows the Ollama adapter pattern: stdlib urllib, structured error
 results, manifest metadata on every call.
@@ -41,7 +44,7 @@ def check_health(
         ``{"status": "unavailable", ...}`` otherwise. Never raises.
     """
     timestamp = datetime.now(timezone.utc).isoformat()
-    url = f"{base_url}/api/phase1/status"
+    url = f"{base_url}/api/health"
 
     try:
         req = Request(url, method="GET")
@@ -50,14 +53,18 @@ def check_health(
         return {
             "status": "ok",
             "provider": "aokp",
-            "aokp_status": body,
+            "aokp_version": body.get("version", "unknown"),
+            "aokp_health": body.get("status", "unknown"),
+            "aokp_checks": body.get("checks", {}),
             "timestamp": timestamp,
         }
     except (URLError, OSError, json.JSONDecodeError, ValueError):
         return {
             "status": "unavailable",
             "provider": "aokp",
-            "aokp_status": None,
+            "aokp_version": None,
+            "aokp_health": None,
+            "aokp_checks": None,
             "timestamp": timestamp,
         }
 
@@ -191,6 +198,205 @@ def query_graph(
             "relation_count": len(relations),
         },
         "error": None,
+    }
+
+
+def query_chat(
+    request: dict[str, Any],
+    *,
+    base_url: str = AOKP_BASE_URL,
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
+) -> dict[str, Any]:
+    """Query AOKP unified chat endpoint with NVI and pipeline routing.
+
+    Parameters
+    ----------
+    request : dict
+        Must contain ``query``. Optional: ``pipeline``, ``sessionId``.
+
+    Returns
+    -------
+    dict
+        Structured result with answer, sections, suggestions, citations.
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+    start_time = time.monotonic()
+
+    query = (request.get("query") or "").strip()
+    if not query:
+        return _chat_error_result("'query' is required.", timestamp, start_time)
+
+    payload: dict[str, Any] = {"query": query}
+    if request.get("pipeline"):
+        payload["pipeline"] = request["pipeline"]
+    if request.get("sessionId"):
+        payload["sessionId"] = request["sessionId"]
+
+    url = f"{base_url}/api/chat"
+
+    try:
+        http_req = Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(http_req, timeout=timeout) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+    except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        return _chat_error_result(f"AOKP chat request failed: {exc}", timestamp, start_time)
+
+    elapsed_ms = int((time.monotonic() - start_time) * 1000)
+
+    return {
+        "status": "success" if body.get("answer") else "empty",
+        "provider": "aokp",
+        "answer": body.get("answer", ""),
+        "sections": body.get("sections", []),
+        "suggestions": body.get("suggestions", []),
+        "citations": body.get("citations", []),
+        "locale": body.get("locale", "en"),
+        "pipeline": body.get("pipeline", "unknown"),
+        "qualityScore": body.get("qualityScore"),
+        "manifest": {
+            "timestamp": timestamp,
+            "response_time_ms": elapsed_ms,
+            "query": query,
+            "pipeline": body.get("pipeline", "unknown"),
+            "locale": body.get("locale", "en"),
+        },
+        "error": None,
+    }
+
+
+def query_graph_rag(
+    request: dict[str, Any],
+    *,
+    base_url: str = AOKP_BASE_URL,
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
+) -> dict[str, Any]:
+    """Query AOKP GraphRAG endpoint for community-based search.
+
+    Parameters
+    ----------
+    request : dict
+        Must contain ``query``. Optional: ``mode`` (local/global).
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+    start_time = time.monotonic()
+
+    query = (request.get("query") or "").strip()
+    if not query:
+        return _error_result("'query' is required.", timestamp, start_time)
+
+    payload: dict[str, Any] = {"query": query}
+    if request.get("mode"):
+        payload["mode"] = request["mode"]
+
+    url = f"{base_url}/api/graph-rag"
+
+    try:
+        http_req = Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(http_req, timeout=timeout) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+    except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        return _error_result(f"AOKP graph-rag request failed: {exc}", timestamp, start_time)
+
+    elapsed_ms = int((time.monotonic() - start_time) * 1000)
+
+    return {
+        "status": "success",
+        "provider": "aokp",
+        "result": body,
+        "manifest": {
+            "timestamp": timestamp,
+            "response_time_ms": elapsed_ms,
+            "query": query,
+            "mode": request.get("mode", "local"),
+        },
+        "error": None,
+    }
+
+
+def query_temporal(
+    request: dict[str, Any],
+    *,
+    base_url: str = AOKP_BASE_URL,
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
+) -> dict[str, Any]:
+    """Query AOKP temporal causal knowledge graph.
+
+    Parameters
+    ----------
+    request : dict
+        Must contain ``query``. Optional: ``direction`` (forward/root_cause).
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+    start_time = time.monotonic()
+
+    query = (request.get("query") or "").strip()
+    if not query:
+        return _error_result("'query' is required.", timestamp, start_time)
+
+    payload: dict[str, Any] = {"query": query}
+    if request.get("direction"):
+        payload["direction"] = request["direction"]
+
+    url = f"{base_url}/api/temporal-graph"
+
+    try:
+        http_req = Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(http_req, timeout=timeout) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+    except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        return _error_result(f"AOKP temporal-graph request failed: {exc}", timestamp, start_time)
+
+    elapsed_ms = int((time.monotonic() - start_time) * 1000)
+
+    return {
+        "status": "success",
+        "provider": "aokp",
+        "result": body,
+        "manifest": {
+            "timestamp": timestamp,
+            "response_time_ms": elapsed_ms,
+            "query": query,
+            "direction": request.get("direction", "forward"),
+        },
+        "error": None,
+    }
+
+
+def _chat_error_result(message: str, timestamp: str, start_time: float) -> dict[str, Any]:
+    elapsed_ms = int((time.monotonic() - start_time) * 1000)
+    return {
+        "status": "failed",
+        "provider": "aokp",
+        "answer": "",
+        "sections": [],
+        "suggestions": [],
+        "citations": [],
+        "locale": None,
+        "pipeline": None,
+        "qualityScore": None,
+        "manifest": {
+            "timestamp": timestamp,
+            "response_time_ms": elapsed_ms,
+            "query": None,
+            "pipeline": None,
+            "locale": None,
+        },
+        "error": message,
     }
 
 
