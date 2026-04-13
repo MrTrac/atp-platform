@@ -137,15 +137,19 @@ def execute_ollama(
     output_text = (body.get("message", {}).get("content") or "").strip()
 
     # Gap 2 — Artifact manifest
+    token_count = _extract_token_count(body)
     manifest = {
         "timestamp": timestamp,
         "response_time_ms": elapsed_ms,
-        "token_count": _extract_token_count(body),
+        "token_count": token_count,
         "completion_validated": is_valid,
+        "cost_usd": 0.0,  # Ollama is local — no per-token cost
     }
 
+    error_msg = None if is_valid else "Completion validation failed: empty response."
+
     # Gap 5 — Freeze/handoff: structured, JSON-serializable result
-    return {
+    result: dict[str, Any] = {
         "status": "success" if is_valid else "failed",
         # Gap 4 — Routing metadata
         "route_type": "local",
@@ -154,8 +158,12 @@ def execute_ollama(
         "output": output_text,
         "manifest": manifest,
         "escalation_triggered": False,
-        "error": None if is_valid else "Completion validation failed: empty response.",
+        "error": error_msg,
     }
+    if error_msg:
+        from core.error_codes import classify_error, to_dict
+        result["error_classification"] = to_dict(classify_error(error_msg))
+    return result
 
 
 def _error_result(
@@ -165,6 +173,8 @@ def _error_result(
     start_time: float,
 ) -> dict[str, Any]:
     """Build a structured error result."""
+    from core.error_codes import classify_error, to_dict
+
     elapsed_ms = int((time.monotonic() - start_time) * 1000)
     return {
         "status": "failed",
@@ -177,7 +187,9 @@ def _error_result(
             "response_time_ms": elapsed_ms,
             "token_count": None,
             "completion_validated": False,
+            "cost_usd": 0.0,
         },
         "escalation_triggered": False,
         "error": message,
+        "error_classification": to_dict(classify_error(message)),
     }

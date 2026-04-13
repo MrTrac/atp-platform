@@ -176,16 +176,28 @@ def execute_anthropic(
     is_valid = _validate_completion(body)
     output_text = _extract_output(body)
 
-    # Artifact manifest
+    # Artifact manifest with cost tracking
+    token_count = _extract_token_count(body)
+    usage = body.get("usage", {})
+    input_tokens = int(usage.get("input_tokens", 0))
+    output_tokens = int(usage.get("output_tokens", 0))
+    # Claude Sonnet 4: $3/MTok input, $15/MTok output (approximate)
+    cost_usd = (input_tokens * 3 + output_tokens * 15) / 1_000_000
+
     manifest = {
         "timestamp": timestamp,
         "response_time_ms": elapsed_ms,
-        "token_count": _extract_token_count(body),
+        "token_count": token_count,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
         "completion_validated": is_valid,
+        "cost_usd": round(cost_usd, 6),
     }
 
+    error_msg = None if is_valid else "Completion validation failed: empty response."
+
     # Structured result — same shape as Ollama adapter
-    return {
+    result: dict[str, Any] = {
         "status": "success" if is_valid else "failed",
         "route_type": "cloud",
         "provider": "anthropic",
@@ -193,8 +205,12 @@ def execute_anthropic(
         "output": output_text,
         "manifest": manifest,
         "escalation_triggered": True,
-        "error": None if is_valid else "Completion validation failed: empty response.",
+        "error": error_msg,
     }
+    if error_msg:
+        from core.error_codes import classify_error, to_dict
+        result["error_classification"] = to_dict(classify_error(error_msg))
+    return result
 
 
 def _error_result(
@@ -204,6 +220,8 @@ def _error_result(
     start_time: float,
 ) -> dict[str, Any]:
     """Build a structured error result."""
+    from core.error_codes import classify_error, to_dict
+
     elapsed_ms = int((time.monotonic() - start_time) * 1000)
     return {
         "status": "failed",
@@ -216,7 +234,9 @@ def _error_result(
             "response_time_ms": elapsed_ms,
             "token_count": None,
             "completion_validated": False,
+            "cost_usd": 0.0,
         },
         "escalation_triggered": True,
         "error": message,
+        "error_classification": to_dict(classify_error(message)),
     }
