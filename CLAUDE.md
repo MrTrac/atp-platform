@@ -12,6 +12,7 @@ Use this handoff file for session continuity:
 
 Global rules:
 - /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/AI_Dev_Governance_Rules.md
+- /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/Global_Post_Dev_Version_Bump_Rule.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/AI_Dev_Personal_Procedures.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/GLOBAL_SHORTHAND_RULES.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/AI_Chat_Handoff_Rule.md
@@ -19,7 +20,18 @@ Global rules:
 Approval gates:
 - merge main
 - push main
-- tag release
+- tag release → MUST run `uv` (version sync) BEFORE tagging
+
+Version sync rule (`uv` — Global_Post_Dev_Version_Bump_Rule.md):
+When tagging a release, ALL of these files MUST be updated in the same PR:
+- VERSION (repo root)
+- pyproject.toml version field
+- CHANGELOG.md (new entry)
+- README.md (baseline version)
+- AGENTS.md (baseline version)
+- ~/AI_OS/20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
+- ~/AI_OS/20_PROJECTS/ATP/AI_NEXT_STEP.md
+DO NOT propose `git tag` if any of these files still reference an old version.
 
 If AI_OS and repo authority docs conflict, stop and report the gap.
 <!-- AI_OS:END project=ATP target=claude -->

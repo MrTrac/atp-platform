@@ -73,6 +73,24 @@ Runtime artifacts, run outputs, exchange bundles, logs, and similar operational 
 - Do not create new modules or contracts without basis
 - Prefer documenting the gap, conflict, or required decision
 
+## Version sync rule (mandatory before tag release)
+
+Authority: `00_AUTHORITY/Global_Post_Dev_Version_Bump_Rule.md`
+Shorthand: `uv` = execute this rule
+
+When preparing a tag release, ALL these files MUST be updated atomically:
+
+1. `VERSION` — bump to new version
+2. `pyproject.toml` — version field
+3. `CHANGELOG.md` — new entry with date and changes
+4. `README.md` — baseline version reference
+5. `AGENTS.md` — this file, version in identity section
+6. `~/AI_OS/20_PROJECTS/ATP/AI_CURRENT_BASELINE.md` — version, commit, lineage
+7. `~/AI_OS/20_PROJECTS/ATP/AI_NEXT_STEP.md` — phase, current state
+
+DO NOT run `git tag` if any file above still references an old version.
+If version mismatch detected, fix ALL files first, then tag.
+
 ## Working principle
 
 Preserve boundaries strictly. Follow the source of truth in order. Make the smallest justified change. Keep ATP human-gated.
@@ -91,6 +109,7 @@ Continuity handoff source:
 
 Global rules:
 - /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/AI_Dev_Governance_Rules.md
+- /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/Global_Post_Dev_Version_Bump_Rule.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/AI_Dev_Personal_Procedures.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/GLOBAL_SHORTHAND_RULES.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/AI_Chat_Handoff_Rule.md
@@ -98,7 +117,7 @@ Global rules:
 Approval gates:
 - merge main
 - push main
-- tag release
+- tag release → MUST run `uv` (version sync) first
 
 If any conflict appears between repo-local governance and AI_OS, do not guess. Surface the conflict.
 <!-- AI_OS:END project=ATP target=agents -->
