@@ -6,13 +6,16 @@ This file is the mandatory governance file for AI agents operating in ATP. These
 
 ATP is a platform repository at `SOURCE_DEV/platforms/ATP`.
 
-ATP is a governance-first platform at v1.1.0 baseline, evolved from the v0 shape-correct MVP through 9 PRs adding Ollama adapter, Anthropic cloud escalation, HTTP bridge server, and AI_OS governance gate. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
+ATP is a governance-first platform at v1.6.0 baseline. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
 
-Current runtime components:
+Current runtime components (v1.6.0):
 - **Ollama adapter:** local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b)
-- **Anthropic adapter:** cloud escalation path
-- **Bridge server:** HTTP at localhost:8765 (ThreadingHTTPServer)
+- **Anthropic adapter:** cloud escalation path with cost tracking
+- **AOKP adapter:** knowledge context enrichment (opt-in)
+- **Bridge server:** HTTP at localhost:8765 (9 endpoints, structured logging)
 - **Governance hook:** aios-gate integration (tier A-E classification)
+- **Persistence:** artifact store + run history (opt-in)
+- **Observability:** central config, structured JSON logging, typed error codes
 
 ## Binding source-of-truth order
 

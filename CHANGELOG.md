@@ -2,6 +2,19 @@
 
 All notable changes to ATP are documented here.
 
+## [1.6.0] — 2026-04-13
+
+### Added
+- Central config module (`core/config.py`): single source of truth for all env vars with startup validation
+- Structured JSON logging (`core/structured_log.py`): JSON-lines to stderr with request_id, provider, cost, error_code
+- Error classification (`core/error_codes.py`): typed codes (network_error, timeout, contract_violation, etc.)
+- Cost tracking: Anthropic adapter estimates USD from token counts; Ollama marks cost=0.0
+- Request body size limit (`ATP_BRIDGE_MAX_BODY`, default 10 MB)
+- Model allowlist (`ATP_MODEL_ALLOWLIST`, optional comma-separated)
+- Config validation at bridge server startup with structured warnings
+- Bridge server version bumped to 1.6 with updated docstring for all 9 endpoints
+- 18 new tests covering config, error codes, structured logging, and security
+
 ## [1.5.0] — 2026-04-12
 
 ### Added

@@ -2,15 +2,20 @@
 
 ATP là `platform repository` tại `SOURCE_DEV/platforms/ATP`.
 
-ATP là một governance-first platform tại baseline **v1.1.0**, phát triển từ v0 shape-correct MVP qua 9 PRs. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
+ATP là một governance-first platform tại baseline **v1.6.0**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
 
 Trạng thái release:
 
-- `v0.1.0` — `v0.4.0` — frozen v0 baselines (hardening → materialization → exchange → persistence)
+- `v0.1.0` — `v0.4.0` — frozen v0 baselines
 - `v1.0.0` — `v1.0.4` — frozen v1 slices A–E
-- **`v1.1.0`** — **current released baseline** (Ollama adapter, Anthropic cloud escalation, HTTP bridge, AI_OS governance gate; 312 tests passing)
+- `v1.1.0` — Ollama + Anthropic + bridge + governance gate
+- `v1.2.0` — Structural hardening (registry-driven dispatch)
+- `v1.3.0` — AOKP Phase 1 knowledge integration
+- `v1.4.0` — Schema validation + bridge introspection + docs
+- `v1.5.0` — Artifact persistence (M8)
+- **`v1.6.0`** — **current released baseline** (observability + hardening)
 
-Runtime components (v1.1.0):
+Runtime components:
 
 - **Ollama adapter** — local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b)
 - **Anthropic adapter** — cloud escalation path
