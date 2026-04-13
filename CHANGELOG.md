@@ -2,6 +2,16 @@
 
 All notable changes to ATP are documented here.
 
+## [1.7.0] — 2026-04-14
+
+### Added
+- Cloud API key passthrough: accept `api_key` from request body with env-var fallback (Anthropic adapter, executor, bridge)
+- Model auto-detection in OpenClaw bridge: auto-detect cloud provider from model name prefix (`claude-*` → anthropic, `gpt-*/o1/o3` → openai)
+
+### Changed
+- Anthropic adapter: catch `HTTPError` separately and read response body for detailed error diagnostics
+- Bridge server: include top-level `error` field in response when `status=failed` for AIOS-OC consumption
+
 ## [1.6.0] — 2026-04-13
 
 ### Added

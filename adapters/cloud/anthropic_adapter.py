@@ -17,7 +17,7 @@ import os
 import time
 from datetime import datetime, timezone
 from typing import Any
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
@@ -130,11 +130,11 @@ def execute_anthropic(
     timestamp = datetime.now(timezone.utc).isoformat()
     start_time = time.monotonic()
 
-    # Check API key first
-    api_key = _get_api_key()
+    # Check API key: request body → environment variable
+    api_key = request.get("api_key") or _get_api_key()
     if not api_key:
         return _error_result(
-            "ANTHROPIC_API_KEY environment variable is not set.",
+            "ANTHROPIC_API_KEY not set. Provide api_key in request or set the environment variable.",
             request.get("model") or DEFAULT_MODEL,
             timestamp,
             start_time,
@@ -162,6 +162,21 @@ def execute_anthropic(
         with urlopen(http_request, timeout=timeout) as resp:
             raw = resp.read().decode("utf-8")
             body = json.loads(raw)
+    except HTTPError as exc:
+        # Capture the actual error body from Anthropic for diagnostics
+        error_body = ""
+        try:
+            error_body = exc.read().decode("utf-8", errors="replace")
+            error_detail = json.loads(error_body).get("error", {}).get("message", "")
+        except Exception:
+            error_detail = error_body[:500] if error_body else ""
+        detail_suffix = f" — {error_detail}" if error_detail else ""
+        return _error_result(
+            f"Anthropic API error {exc.code}: {exc.reason}{detail_suffix}",
+            request["model"],
+            timestamp,
+            start_time,
+        )
     except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
         return _error_result(
             f"Anthropic request failed: {exc}",

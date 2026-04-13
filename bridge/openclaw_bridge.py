@@ -44,7 +44,13 @@ def _parse_model_spec(model_spec: str) -> tuple[str, str]:
         provider = provider.strip() or DEFAULT_PROVIDER
         model = model.strip() or DEFAULT_MODEL
         return provider, model
-    return DEFAULT_PROVIDER, model_spec.strip()
+    # Auto-detect provider from well-known model name prefixes
+    name = model_spec.strip()
+    if name.startswith("claude"):
+        return "anthropic", name
+    if name.startswith("gpt-") or name.startswith("o1") or name.startswith("o3"):
+        return "openai", name
+    return DEFAULT_PROVIDER, name
 
 
 def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
@@ -84,6 +90,8 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
         normalized_request["payload"]["context"] = str(incoming["context"])
     if incoming.get("options"):
         normalized_request["payload"]["options"] = incoming["options"]
+    if incoming.get("api_key"):
+        normalized_request["payload"]["api_key"] = incoming["api_key"]
 
     # Optional AOKP knowledge context enrichment
     enriched = enrich_context(incoming)

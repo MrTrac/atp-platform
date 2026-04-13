@@ -50,6 +50,9 @@ def _build_llm_request(
         request["force_cloud"] = True
     if payload.get("escalation_trigger"):
         request["escalation_trigger"] = payload["escalation_trigger"]
+    # Pass through per-request API key for cloud providers
+    if payload.get("api_key"):
+        request["api_key"] = payload["api_key"]
 
     return request
 

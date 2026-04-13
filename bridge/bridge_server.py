@@ -50,7 +50,7 @@ ALLOWED_ORIGIN = config.BRIDGE_CORS_ORIGIN
 DEFAULT_PORT = config.BRIDGE_PORT
 MAX_BODY_BYTES = config.BRIDGE_MAX_BODY_BYTES
 MODEL_ALLOWLIST = config.MODEL_ALLOWLIST
-SERVER_VERSION = "1.6"
+SERVER_VERSION = "1.7"
 
 
 def _timestamp() -> str:
@@ -214,6 +214,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
             result = bridge_request(incoming)
             elapsed_ms = round((time.monotonic() - start) * 1000)
             result["response_time_ms"] = elapsed_ms
+
+            # Ensure top-level 'error' field for failed requests (AIOS-OC reads this)
+            if result.get("status") == "failed" and not result.get("error"):
+                result["error"] = result.get("stderr") or "Execution failed (no details)."
 
             # Run AI_OS governance review on the artifact
             gov = run_governance_review(result)
