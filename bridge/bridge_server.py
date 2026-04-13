@@ -3,10 +3,15 @@
 Exposes the ATP bridge as an HTTP service for AIOS-OC integration.
 
 Endpoints:
-    POST /run    — accept JSON body, run bridge_request(), return result
-    GET  /health — return {"status": "ok", "version": "1.0"}
-    GET  /       — return {"status": "ok", "service": "ATP Bridge Server"}
-    GET  *       — return 200 with {"status": "ok"} (never 404 for GET)
+    POST /run          — execute task via bridge
+    GET  /health       — basic health check
+    GET  /status       — full ATP status (providers, nodes, AOKP, config)
+    GET  /providers    — active provider list from registry
+    GET  /capabilities — active capability list from registry
+    GET  /runs         — list persisted run history
+    GET  /runs/<id>    — detail for a specific run
+    GET  /             — service info
+    OPTIONS *          — CORS preflight
 
 Usage:
     python3 bridge/bridge_server.py
@@ -37,11 +42,15 @@ from bridge.openclaw_bridge import bridge_request, BridgeError  # noqa: E402
 from bridge.governance_hook import run_governance_review  # noqa: E402
 from bridge.run_persistence import persist_bridge_run, list_runs, get_run  # noqa: E402
 from core.routing.route_prepare import _discover_active_providers, _discover_active_nodes  # noqa: E402
+from core import config  # noqa: E402
+from core.structured_log import log_event  # noqa: E402
 
 
-ALLOWED_ORIGIN = os.environ.get("ATP_BRIDGE_CORS_ORIGIN", "http://localhost:3000")
-DEFAULT_PORT = 8765
-SERVER_VERSION = "1.0"
+ALLOWED_ORIGIN = config.BRIDGE_CORS_ORIGIN
+DEFAULT_PORT = config.BRIDGE_PORT
+MAX_BODY_BYTES = config.BRIDGE_MAX_BODY_BYTES
+MODEL_ALLOWLIST = config.MODEL_ALLOWLIST
+SERVER_VERSION = "1.6"
 
 
 def _timestamp() -> str:
@@ -53,7 +62,7 @@ def _build_status_response() -> dict:
     providers = _discover_active_providers()
     nodes = _discover_active_nodes()
     aokp_status = "disabled"
-    aokp_enabled = os.environ.get("ATP_AOKP_ENABLED", "").lower() in ("1", "true", "yes")
+    aokp_enabled = config.AOKP_ENABLED
     if aokp_enabled:
         try:
             from adapters.aokp.aokp_adapter import check_health
@@ -69,6 +78,7 @@ def _build_status_response() -> dict:
         "provider_count": len(providers),
         "nodes": [n.get("node") for n in nodes],
         "aokp": {"enabled": aokp_enabled, "status": aokp_status},
+        "config": config.summary(),
         "timestamp": _timestamp(),
     }
 
@@ -176,6 +186,11 @@ class BridgeHandler(BaseHTTPRequestHandler):
             self._send_json(400, {"status": "failed", "error": "Empty request body"})
             return
 
+        # Security: reject oversized payloads
+        if content_length > MAX_BODY_BYTES:
+            self._send_json(413, {"status": "failed", "error": f"Request body too large ({content_length} bytes, max {MAX_BODY_BYTES})"})
+            return
+
         raw_body = self.rfile.read(content_length)
 
         try:
@@ -183,6 +198,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
         except json.JSONDecodeError as exc:
             self._send_json(400, {"status": "failed", "error": f"Invalid JSON: {exc}"})
             return
+
+        # Security: validate model against allowlist if configured
+        if MODEL_ALLOWLIST and incoming.get("model"):
+            model_spec = incoming["model"]
+            model_name = model_spec.split("/")[-1] if "/" in model_spec else model_spec
+            if model_name not in MODEL_ALLOWLIST:
+                self._send_json(403, {"status": "failed", "error": f"Model not in allowlist: {model_name}", "allowed": MODEL_ALLOWLIST})
+                return
 
         self._log(f"POST /run — text={incoming.get('text', '')[:80]!r}")
         start = time.monotonic()
@@ -212,10 +235,26 @@ class BridgeHandler(BaseHTTPRequestHandler):
             if persistence.get("persisted"):
                 result["persistence"] = {"run_id": persistence["run_id"], "files": len(persistence.get("files_written", []))}
 
+            # Structured logging
+            manifest = result.get("ollama_manifest") or result.get("manifest") or {}
+            log_event(
+                "bridge.request",
+                request_id=result.get("request_id"),
+                provider=result.get("selected_provider"),
+                model=result.get("bridge", {}).get("resolved_model"),
+                duration_ms=elapsed_ms,
+                status=result.get("status"),
+                tokens=manifest.get("token_count"),
+                cost_usd=manifest.get("cost_usd"),
+                error_code=result.get("error_classification", {}).get("code") if result.get("error_classification") else None,
+            )
+
             self._send_json(200, result, extra_headers=extra_headers)
         except BridgeError as exc:
+            log_event("bridge.error", error=str(exc), error_code="contract_violation")
             self._send_json(400, {"status": "failed", "error": str(exc)})
         except Exception as exc:
+            log_event("bridge.error", error=str(exc), error_code="unknown_error")
             self._send_json(500, {"status": "failed", "error": f"Bridge execution failed: {exc}"})
 
     def _log(self, message: str) -> None:
@@ -244,25 +283,35 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 
 def main() -> None:
-    port = int(os.environ.get("ATP_BRIDGE_PORT", DEFAULT_PORT))
+    # Startup config validation
+    warnings = config.validate()
+    for w in warnings:
+        log_event("config.warning", key=w.key, error=w.message)
+    log_event("server.startup", **config.summary())
+
+    port = config.BRIDGE_PORT
     server = ThreadedHTTPServer(("0.0.0.0", port), BridgeHandler)
     server.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.timeout = 120
 
     def _handle_sigterm(signum: int, frame: object) -> None:
-        print(f"\n[{_timestamp()}] Received SIGTERM, shutting down.", flush=True)
+        log_event("server.shutdown", reason="SIGTERM")
         server.shutdown()
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, _handle_sigterm)
 
-    print(f"[{_timestamp()}] ATP Bridge Server starting on port {port}", flush=True)
+    print(f"[{_timestamp()}] ATP Bridge Server v{SERVER_VERSION} starting on port {port}", flush=True)
     print(f"[{_timestamp()}] CORS allowed origin: {ALLOWED_ORIGIN}", flush=True)
+    if MODEL_ALLOWLIST:
+        print(f"[{_timestamp()}] Model allowlist: {MODEL_ALLOWLIST}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
+        log_event("server.shutdown", reason="keyboard_interrupt")
         print(f"\n[{_timestamp()}] Shutting down.", flush=True)
     except Exception as exc:
+        log_event("server.error", error=str(exc))
         print(f"[{_timestamp()}] Server error: {exc}", file=sys.stderr, flush=True)
         sys.exit(1)
     finally:
