@@ -2,7 +2,7 @@
 
 ATP là `platform repository` tại `SOURCE_DEV/platforms/ATP`.
 
-ATP là một governance-first platform tại baseline **v1.6.0**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
+ATP là một governance-first platform tại baseline **v1.7.0**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
 
 Trạng thái release:
 
@@ -13,15 +13,17 @@ Trạng thái release:
 - `v1.3.0` — AOKP Phase 1 knowledge integration
 - `v1.4.0` — Schema validation + bridge introspection + docs
 - `v1.5.0` — Artifact persistence (M8)
-- **`v1.6.0`** — **current released baseline** (observability + hardening)
+- `v1.6.0` — Observability + hardening
+- **`v1.7.0`** — **current released baseline** (cloud API key passthrough, model auto-detection, AOKP v2.3.x)
 
-Runtime components:
+Runtime components (v1.7.0):
 
 - **Ollama adapter** — local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b)
-- **Anthropic adapter** — cloud escalation path
-- **Bridge server** — HTTP at `localhost:8765` (ThreadingHTTPServer)
+- **Anthropic adapter** — cloud escalation + API key passthrough + detailed error diagnostics
+- **AOKP adapter (v2.3.x)** — 6 endpoints: health, search, graph, chat, graph-rag, temporal
+- **Bridge server** — HTTP at `localhost:8765` (9 endpoints, model auto-detection)
 - **Governance hook** — aios-gate integration (artifact tier A–E classification)
-- **OpenClaw bridge** — end-to-end request flow integration
+- **OpenClaw bridge** — end-to-end request flow with model auto-detection
 
 ATP không phải là một closed snapshot architecture và cũng không phải một ad hoc open architecture.
 
