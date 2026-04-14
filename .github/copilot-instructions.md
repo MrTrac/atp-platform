@@ -1,17 +1,20 @@
 <!-- AI_OS:BEGIN project=ATP target=copilot -->
-This repository uses an external AI operating context stored at:
+External AI operating context lives outside this repo at:
 /Users/nguyenthanhthu/AI_OS
 
-Read in order before acting:
+Read before any task:
 1. /Users/nguyenthanhthu/AI_OS/20_PROJECTS/ATP/AI_NEXT_STEP.md
 2. /Users/nguyenthanhthu/AI_OS/20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
 3. /Users/nguyenthanhthu/AI_OS/20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
 
-Use handoff continuity from:
+Use this handoff file for session continuity:
 - /Users/nguyenthanhthu/AI_OS/20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
 
 Global rules:
 - /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/AI_Dev_Governance_Rules.md
+- /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/Global_Post_Dev_Version_Bump_Rule.md
+- /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/Global_Auto_Integration_and_Execution_Rule.md
+- /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/Global_Safe_Git_Branch_Guard_Rule.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/AI_Dev_Personal_Procedures.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/GLOBAL_SHORTHAND_RULES.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/AI_Chat_Handoff_Rule.md
@@ -19,7 +22,18 @@ Global rules:
 Approval gates:
 - merge main
 - push main
-- tag release
+- tag release → MUST run `uv` (version sync) BEFORE tagging
 
-When AI_OS conflicts with authority docs in the repo, stop and report the conflict.
+Version sync rule (`uv` — Global_Post_Dev_Version_Bump_Rule.md):
+When tagging a release, ALL of these files MUST be updated in the same PR:
+- VERSION (repo root)
+- pyproject.toml version field
+- CHANGELOG.md (new entry)
+- README.md (baseline version)
+- AGENTS.md (baseline version)
+- ~/AI_OS/20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
+- ~/AI_OS/20_PROJECTS/ATP/AI_NEXT_STEP.md
+DO NOT propose `git tag` if any of these files still reference an old version.
+
+If AI_OS and repo authority docs conflict, stop and report the gap.
 <!-- AI_OS:END project=ATP target=copilot -->

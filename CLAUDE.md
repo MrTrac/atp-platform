@@ -13,6 +13,8 @@ Use this handoff file for session continuity:
 Global rules:
 - /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/AI_Dev_Governance_Rules.md
 - /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/Global_Post_Dev_Version_Bump_Rule.md
+- /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/Global_Auto_Integration_and_Execution_Rule.md
+- /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/Global_Safe_Git_Branch_Guard_Rule.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/AI_Dev_Personal_Procedures.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/GLOBAL_SHORTHAND_RULES.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/AI_Chat_Handoff_Rule.md

@@ -6,13 +6,13 @@ This file is the mandatory governance file for AI agents operating in ATP. These
 
 ATP is a platform repository at `SOURCE_DEV/platforms/ATP`.
 
-ATP is a governance-first platform at v1.6.0 baseline. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
+ATP is a governance-first platform at v1.7.0 baseline. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
 
-Current runtime components (v1.6.0):
+Current runtime components (v1.7.0):
 - **Ollama adapter:** local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b)
-- **Anthropic adapter:** cloud escalation path with cost tracking
-- **AOKP adapter:** knowledge context enrichment (opt-in)
-- **Bridge server:** HTTP at localhost:8765 (9 endpoints, structured logging)
+- **Anthropic adapter:** cloud escalation + API key passthrough + detailed error diagnostics
+- **AOKP adapter (v2.3.x):** 6 endpoints — health, search, graph, chat, graph-rag, temporal (opt-in)
+- **Bridge server:** HTTP at localhost:8765 (9 endpoints, model auto-detection, top-level error field)
 - **Governance hook:** aios-gate integration (tier A-E classification)
 - **Persistence:** artifact store + run history (opt-in)
 - **Observability:** central config, structured JSON logging, typed error codes
@@ -110,6 +110,8 @@ Continuity handoff source:
 Global rules:
 - /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/AI_Dev_Governance_Rules.md
 - /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/Global_Post_Dev_Version_Bump_Rule.md
+- /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/Global_Auto_Integration_and_Execution_Rule.md
+- /Users/nguyenthanhthu/AI_OS/00_AUTHORITY/Global_Safe_Git_Branch_Guard_Rule.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/AI_Dev_Personal_Procedures.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/GLOBAL_SHORTHAND_RULES.md
 - /Users/nguyenthanhthu/AI_OS/01_PERSONAL/AI_Chat_Handoff_Rule.md
