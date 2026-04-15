@@ -2,6 +2,48 @@
 
 All notable changes to ATP are documented here.
 
+## [2.0.0] — 2026-04-15
+
+### Added — Streaming & Cancellation (BREAKING)
+- **SSE streaming endpoint** `POST /run/stream` — Server-Sent Events streaming for cloud adapters
+  - Events: `start`, `token`, `tool_call`, `manifest`, `error`, `done`, `aborted`
+  - Supported by Anthropic and OpenAI (Ollama/local not supported in v2.0.0)
+  - Optional `request_id` in body; auto-generated `stream-<hash>` if omitted
+  - Respects `MODEL_ALLOWLIST` + `MAX_BODY_BYTES` security checks
+- **Request cancellation** `DELETE /runs/<id>` — abort in-flight request
+  - Sets abort event on in-flight tracker; adapter checks between SSE chunks
+  - Adapter yields `aborted` event and stops when flag set
+  - Returns 200 `{cancelled: true}` for active requests, 404 otherwise
+- **In-flight tracker** (`core/in_flight_tracker.py`) — thread-safe request registry
+  - `register(request_id, provider, model)` → `threading.Event`
+  - `cancel(request_id)` → bool
+  - `list_active()` → snapshot of active requests
+  - `GET /runs/active` lists in-flight requests for AIOS-OC monitoring
+- **SSE formatter** (`core/streaming.py`) — canonical event emission
+- **Anthropic streaming** (`execute_anthropic_stream`) — uses `stream=true` Messages API
+  - Parses `content_block_delta`, `content_block_start/stop`, `message_delta`
+  - Streams text deltas + accumulated tool_use input JSON
+  - Captures `stop_reason`, token usage at stream end
+- **OpenAI streaming** (`execute_openai_stream`) — uses `stream=true` + `stream_options.include_usage`
+  - Aggregates tool_calls piecewise (OpenAI streams function arguments as partial strings)
+  - Captures `finish_reason`, token usage from final chunk
+
+### Changed
+- Bridge server docstring updated for 3 new endpoints
+- AIOS-OC v2.9.1 abort feature now has end-to-end ATP integration (finally wire-compatible)
+
+### Why this is v2.0.0 (not v1.10.0)
+New endpoints + new event-stream protocol = API-level addition. Existing `/run` stays fully
+backwards-compatible, but clients adopting SSE must handle new event types and request lifecycle.
+
+### Tests
+- 29 new tests in `tests/unit/test_v20_features.py`
+  - In-flight tracker (8): register/cancel/list, thread safety
+  - SSE formatter (7): all 6 event types produce valid SSE
+  - Anthropic streaming (5): tokens, tool_use, missing key, missing model, abort
+  - OpenAI streaming (6): tokens, tool_call delta aggregation, error paths, abort
+  - Bridge cancellation integration (3): active cancel, post-unregister, abort state
+
 ## [1.9.0] — 2026-04-15
 
 ### Added — Agentic Capabilities

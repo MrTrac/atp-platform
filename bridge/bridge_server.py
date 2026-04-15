@@ -3,15 +3,18 @@
 Exposes the ATP bridge as an HTTP service for AIOS-OC integration.
 
 Endpoints:
-    POST /run          — execute task via bridge
-    GET  /health       — basic health check
-    GET  /status       — full ATP status (providers, nodes, AOKP, config)
-    GET  /providers    — active provider list from registry
-    GET  /capabilities — active capability list from registry
-    GET  /runs         — list persisted run history
-    GET  /runs/<id>    — detail for a specific run
-    GET  /             — service info
-    OPTIONS *          — CORS preflight
+    POST /run            — execute task via bridge (blocking, single response)
+    POST /run/stream     — execute task with SSE streaming (v2.0.0)
+    GET  /health         — basic health check
+    GET  /status         — full ATP status (providers, nodes, AOKP, config)
+    GET  /providers      — active provider list from registry
+    GET  /capabilities   — active capability list from registry
+    GET  /runs           — list persisted run history
+    GET  /runs/active    — list in-flight requests (v2.0.0)
+    GET  /runs/<id>      — detail for a specific run
+    DELETE /runs/<id>    — cancel an in-flight request (v2.0.0)
+    GET  /               — service info
+    OPTIONS *            — CORS preflight
 
 Usage:
     python3 bridge/bridge_server.py
@@ -38,11 +41,14 @@ _project_root = os.path.dirname(_bridge_dir)
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
-from bridge.openclaw_bridge import bridge_request, BridgeError  # noqa: E402
+from bridge.openclaw_bridge import bridge_request, BridgeError, _parse_model_spec  # noqa: E402
 from bridge.governance_hook import run_governance_review  # noqa: E402
 from bridge.run_persistence import persist_bridge_run, list_runs, get_run  # noqa: E402
+from bridge.context_enrichment import enrich_context  # noqa: E402
 from core.routing.route_prepare import _discover_active_providers, _discover_active_nodes  # noqa: E402
 from core import config  # noqa: E402
+from core import in_flight_tracker  # noqa: E402
+from core import streaming as sse  # noqa: E402
 from core.structured_log import log_event  # noqa: E402
 
 
@@ -165,6 +171,9 @@ class BridgeHandler(BaseHTTPRequestHandler):
             self._send_json(200, _build_capabilities_response())
         elif self.path == "/runs":
             self._send_json(200, {"runs": list_runs(), "count": len(list_runs())})
+        elif self.path == "/runs/active":
+            active = in_flight_tracker.list_active()
+            self._send_json(200, {"active": active, "count": len(active)})
         elif self.path.startswith("/runs/"):
             run_id = self.path[len("/runs/"):]
             run_data = get_run(run_id) if run_id else None
@@ -176,7 +185,26 @@ class BridgeHandler(BaseHTTPRequestHandler):
             # Return 200 for any GET — external probes must never see 404
             self._send_json(200, {"status": "ok"})
 
+    def do_DELETE(self) -> None:  # noqa: N802
+        """Cancel an in-flight request (v2.0.0)."""
+        if self.path.startswith("/runs/"):
+            run_id = self.path[len("/runs/"):]
+            if not run_id:
+                self._send_json(400, {"error": "Missing run_id"})
+                return
+            cancelled = in_flight_tracker.cancel(run_id)
+            if cancelled:
+                log_event("bridge.cancel", request_id=run_id, status="cancelled")
+                self._send_json(200, {"request_id": run_id, "cancelled": True})
+            else:
+                self._send_json(404, {"request_id": run_id, "cancelled": False, "error": "Not active"})
+        else:
+            self._send_json(404, {"error": f"Not found: {self.path}"})
+
     def do_POST(self) -> None:  # noqa: N802
+        if self.path == "/run/stream":
+            self._handle_stream()
+            return
         if self.path != "/run":
             self._send_json(404, {"error": f"Not found: {self.path}"})
             return
@@ -260,6 +288,158 @@ class BridgeHandler(BaseHTTPRequestHandler):
         except Exception as exc:
             log_event("bridge.error", error=str(exc), error_code="unknown_error")
             self._send_json(500, {"status": "failed", "error": f"Bridge execution failed: {exc}"})
+
+    def _handle_stream(self) -> None:
+        """SSE streaming endpoint (v2.0.0) — POST /run/stream."""
+        import uuid
+        content_length = int(self.headers.get("Content-Length", 0))
+        if content_length == 0:
+            self._send_json(400, {"status": "failed", "error": "Empty request body"})
+            return
+        if content_length > MAX_BODY_BYTES:
+            self._send_json(413, {"status": "failed", "error": f"Request body too large ({content_length} > {MAX_BODY_BYTES})"})
+            return
+
+        raw_body = self.rfile.read(content_length)
+        try:
+            incoming = json.loads(raw_body)
+        except json.JSONDecodeError as exc:
+            self._send_json(400, {"status": "failed", "error": f"Invalid JSON: {exc}"})
+            return
+
+        text = (incoming.get("text") or "").strip()
+        if not text:
+            self._send_json(400, {"status": "failed", "error": "'text' is required"})
+            return
+
+        # Security: model allowlist
+        if MODEL_ALLOWLIST and incoming.get("model"):
+            model_spec = incoming["model"]
+            model_name = model_spec.split("/")[-1] if "/" in model_spec else model_spec
+            if model_name not in MODEL_ALLOWLIST:
+                self._send_json(403, {"status": "failed", "error": f"Model not in allowlist: {model_name}"})
+                return
+
+        provider, model = _parse_model_spec(incoming.get("model", ""))
+        request_id = incoming.get("request_id") or f"stream-{uuid.uuid4().hex[:12]}"
+
+        # Only cloud providers support streaming in v2.0.0
+        if provider not in ("anthropic", "openai"):
+            self._send_json(
+                400,
+                {
+                    "status": "failed",
+                    "error": f"Streaming not supported for provider '{provider}' (v2.0.0 supports anthropic + openai)",
+                },
+            )
+            return
+
+        # Send SSE headers
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "keep-alive")
+            self.send_header("X-Accel-Buffering", "no")  # disable nginx buffering
+            self._set_cors_headers()
+            self.end_headers()
+        except BrokenPipeError:
+            return
+
+        # Register in-flight and stream
+        abort_event = in_flight_tracker.register(request_id, provider=provider, model=model)
+        log_event("bridge.stream.start", request_id=request_id, provider=provider, model=model)
+
+        # Optional AOKP enrichment (same pattern as bridge_request)
+        enriched = enrich_context(incoming)
+        aokp_ctx_text = ""
+        if enriched.get("aokp_context"):
+            aokp_ctx_text = enriched["aokp_context"].get("context_text", "")
+
+        # Build adapter request
+        adapter_req: dict = {
+            "model": model,
+            "prompt": text,
+        }
+        if incoming.get("context") or aokp_ctx_text:
+            ctx_parts = []
+            if incoming.get("context"):
+                ctx_parts.append(str(incoming["context"]))
+            if aokp_ctx_text:
+                ctx_parts.append(f"--- Knowledge Context (AOKP) ---\n{aokp_ctx_text}")
+            adapter_req["context"] = "\n\n".join(ctx_parts)
+        if incoming.get("api_key"):
+            adapter_req["api_key"] = incoming["api_key"]
+        if incoming.get("options"):
+            adapter_req["options"] = incoming["options"]
+        if incoming.get("tools"):
+            adapter_req["tools"] = incoming["tools"]
+        if incoming.get("tool_choice"):
+            adapter_req["tool_choice"] = incoming["tool_choice"]
+        if incoming.get("json_mode"):
+            adapter_req["json_mode"] = bool(incoming["json_mode"])
+
+        # Select streaming function
+        if provider == "anthropic":
+            from adapters.cloud.anthropic_adapter import execute_anthropic_stream as stream_fn
+        else:
+            from adapters.cloud.openai_adapter import execute_openai_stream as stream_fn
+
+        final_manifest: dict = {}
+        aborted = False
+        try:
+            # Send start event
+            self.wfile.write(sse.format_start(request_id, provider, model))
+            self.wfile.flush()
+
+            for event_kind, data in stream_fn(adapter_req, abort_event=abort_event):
+                if event_kind == "token":
+                    self.wfile.write(sse.format_token(data["text"]))
+                elif event_kind == "tool_call":
+                    self.wfile.write(sse.format_tool_delta(data))
+                elif event_kind == "manifest":
+                    final_manifest = data.get("manifest", {})
+                    self.wfile.write(sse.format_manifest(final_manifest))
+                elif event_kind == "error":
+                    self.wfile.write(sse.format_error(data.get("message", ""), data.get("error_code")))
+                elif event_kind == "aborted":
+                    aborted = True
+                    self.wfile.write(sse.format_aborted(data.get("reason", "client_cancelled")))
+                try:
+                    self.wfile.flush()
+                except BrokenPipeError:
+                    # Client disconnected — treat as abort
+                    abort_event.set()
+                    aborted = True
+                    break
+
+            if not aborted:
+                self.wfile.write(sse.format_done())
+                try:
+                    self.wfile.flush()
+                except BrokenPipeError:
+                    pass
+        except BrokenPipeError:
+            abort_event.set()
+            aborted = True
+        except Exception as exc:
+            try:
+                self.wfile.write(sse.format_error(f"Stream execution failed: {exc}"))
+                self.wfile.flush()
+            except BrokenPipeError:
+                pass
+            log_event("bridge.stream.error", request_id=request_id, error=str(exc))
+        finally:
+            in_flight_tracker.unregister(request_id)
+            log_event(
+                "bridge.stream.end",
+                request_id=request_id,
+                provider=provider,
+                model=model,
+                status="aborted" if aborted else "completed",
+                tokens=final_manifest.get("token_count"),
+                cost_usd=final_manifest.get("cost_usd"),
+            )
 
     def _log(self, message: str) -> None:
         print(f"[{_timestamp()}] {message}", flush=True)

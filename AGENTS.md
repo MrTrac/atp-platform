@@ -6,14 +6,17 @@ This file is the mandatory governance file for AI agents operating in ATP. These
 
 ATP is a platform repository at `SOURCE_DEV/platforms/ATP`.
 
-ATP is a governance-first platform at v1.9.0 baseline. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
+ATP is a governance-first platform at v2.0.0 baseline. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
 
-Current runtime components (v1.9.0):
+Current runtime components (v2.0.0):
 - **Ollama adapter:** local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b)
-- **Anthropic adapter:** cloud + retry + pricing + tool use + JSON mode + vision
-- **OpenAI adapter:** gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision
+- **Anthropic adapter:** cloud + retry + pricing + tool use + JSON mode + vision + streaming
+- **OpenAI adapter:** gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision + streaming
 - **AOKP adapter (v2.3.x):** 6 endpoints — health, search, graph, chat, graph-rag, temporal (opt-in)
-- **Bridge server:** HTTP at localhost:8765 (9 endpoints, agentic propagation)
+- **Bridge server:** HTTP at localhost:8765 (12 endpoints incl. /run/stream, /runs/active, DELETE /runs/<id>)
+- **SSE streaming:** `POST /run/stream` emits event-stream (start/token/tool_call/manifest/done/aborted)
+- **Request cancellation:** `DELETE /runs/<id>` aborts in-flight via threading.Event
+- **In-flight tracker:** core/in_flight_tracker.py (thread-safe registry)
 - **Capabilities matrix:** llm_chat, llm_completion, llm_tool_use, llm_json_mode, llm_vision
 - **Pricing registry:** registry/pricing/model_prices.json (13 models)
 - **Retry logic:** core/retry.py (exponential backoff for 429/5xx/network)
