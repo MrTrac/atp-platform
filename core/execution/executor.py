@@ -13,6 +13,7 @@ from adapters.subprocess.local_exec_adapter import LocalExecutionError, execute_
 from adapters.ssh_remote.ssh_exec_adapter import execute_remote
 from adapters.ollama.ollama_adapter import execute_ollama
 from adapters.cloud.anthropic_adapter import execute_anthropic
+from adapters.cloud.openai_adapter import execute_openai
 from core.routing.escalation_policy import should_escalate
 
 
@@ -152,6 +153,18 @@ def _handle_anthropic(
     )
 
 
+def _handle_openai(
+    normalized_request: dict[str, Any],
+    routing_result: dict[str, Any],
+) -> dict[str, Any]:
+    """Handle OpenAI cloud LLM execution."""
+    llm_request = _build_llm_request(normalized_request, routing_result)
+    raw_result = execute_openai(llm_request)
+    return _normalize_adapter_result(
+        raw_result, "adapters/cloud/openai_adapter.py"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Registry-driven dispatch map
 # ---------------------------------------------------------------------------
@@ -162,6 +175,7 @@ EXECUTOR_MAP: dict[str, ExecutorHandler] = {
     "non_llm_execution": _handle_non_llm,
     "ollama": _handle_ollama,
     "anthropic": _handle_anthropic,
+    "openai": _handle_openai,
 }
 
 

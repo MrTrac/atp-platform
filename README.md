@@ -2,7 +2,7 @@
 
 ATP là `platform repository` tại `SOURCE_DEV/platforms/ATP`.
 
-ATP là một governance-first platform tại baseline **v1.7.0**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
+ATP là một governance-first platform tại baseline **v1.8.0**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
 
 Trạng thái release:
 
@@ -14,16 +14,20 @@ Trạng thái release:
 - `v1.4.0` — Schema validation + bridge introspection + docs
 - `v1.5.0` — Artifact persistence (M8)
 - `v1.6.0` — Observability + hardening
-- **`v1.7.0`** — **current released baseline** (cloud API key passthrough, model auto-detection, AOKP v2.3.x)
+- `v1.7.0` — Cloud API key passthrough, model auto-detection, AOKP v2.3.x
+- **`v1.8.0`** — **current released baseline** (OpenAI adapter, retry/backoff, per-model cost & timeout)
 
-Runtime components (v1.7.0):
+Runtime components (v1.8.0):
 
 - **Ollama adapter** — local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b)
-- **Anthropic adapter** — cloud escalation + API key passthrough + detailed error diagnostics
+- **Anthropic adapter** — cloud escalation + retry/backoff + per-model pricing
+- **OpenAI adapter** — cloud LLM (gpt-4o, gpt-5, o1, o3) + retry + per-model pricing + reasoning model support
 - **AOKP adapter (v2.3.x)** — 6 endpoints: health, search, graph, chat, graph-rag, temporal
 - **Bridge server** — HTTP at `localhost:8765` (9 endpoints, model auto-detection)
+- **Pricing registry** — `registry/pricing/model_prices.json` (13 models, provider defaults)
+- **Retry logic** — `core/retry.py` (exponential backoff, Retry-After honored, 3 attempts max)
+- **Per-model timeout** — `ATP_MODEL_TIMEOUTS` env var override
 - **Governance hook** — aios-gate integration (artifact tier A–E classification)
-- **OpenClaw bridge** — end-to-end request flow with model auto-detection
 
 ATP không phải là một closed snapshot architecture và cũng không phải một ad hoc open architecture.
 

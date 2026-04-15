@@ -1,0 +1,19 @@
+provider: openai
+provider_type: llm
+status: active
+supported_capabilities:
+  - llm_chat
+  - llm_completion
+supported_nodes:
+  - local_mac
+interaction_pattern: http_cloud
+ownership_model: external_api
+cost_profile: high
+endpoint: https://api.openai.com/v1/chat/completions
+notes:
+  - Cloud LLM execution via OpenAI Chat Completions API
+  - Auto-detected from model prefixes gpt-*, o1*, o3*
+  - Requires OPENAI_API_KEY environment variable (or api_key in request)
+  - Supports retry with exponential backoff for 429/502/503/504
+  - Per-model pricing via registry/pricing/model_prices.yaml
+  - Added in v1.8.0

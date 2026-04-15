@@ -2,6 +2,44 @@
 
 All notable changes to ATP are documented here.
 
+## [1.8.0] — 2026-04-15
+
+### Added — Cloud Foundations
+- **OpenAI adapter** (`adapters/cloud/openai_adapter.py`) — cloud LLM via OpenAI Chat Completions API
+  - Supports gpt-4, gpt-4o, gpt-5, o1/o1-preview/o1-mini, o3-mini
+  - Auto-uses `max_completion_tokens` for o1/o3 reasoning models
+  - Same input/output contract as Anthropic adapter
+  - `api_key` passthrough (request body → `OPENAI_API_KEY` env fallback)
+  - HTTPError diagnostic body capture
+- **Retry/backoff** (`core/retry.py`) — exponential backoff with jitter for transient errors
+  - Retries on 429, 502, 503, 504, network errors (URLError)
+  - Honors `Retry-After` header when present
+  - Caps: 3 attempts, 30s per attempt, 120s total wait
+  - Wired into both Anthropic and OpenAI adapters
+- **Per-model cost table** (`registry/pricing/model_prices.json` + `core/pricing.py`)
+  - 13 models with accurate pricing (Claude Sonnet/Opus/Haiku, GPT-4/4o/5, o1/o3)
+  - Provider defaults as fallback for unknown models
+  - JSON format (ATP YAML loader doesn't support nested dict-of-dicts)
+- **Per-model timeout** (`ATP_MODEL_TIMEOUTS` env var, `core/config.get_timeout_for_model()`)
+  - Overrides default 120s for specific models (e.g., `o1=600` for reasoning)
+- **Registry**: `registry/providers/openai_cloud.yaml` — OpenAI provider entry
+- **EXECUTOR_MAP**: `openai` handler registered (auto-detection now end-to-end)
+- **Config**: `OPENAI_API_KEY`, `OPENAI_TIMEOUT` (default 300s), `MODEL_TIMEOUTS` env vars
+
+### Changed
+- Anthropic adapter now uses `core.pricing.calculate_cost()` instead of hardcoded Sonnet 4 rates
+  (Haiku now ~6x cheaper as expected; Opus ~5x more expensive)
+- Anthropic adapter wrapped in `with_retry()` for 429 handling
+
+### Tests
+- 37 new tests in `tests/unit/test_v18_features.py`
+  - Pricing table (10): all model lookups, fallbacks, edge cases
+  - Retry logic (12): retryable/non-retryable, exponential delay, Retry-After
+  - OpenAI adapter (10): success, API key flows, o1/gpt distinction, errors
+  - Executor dispatch (2): EXECUTOR_MAP completeness
+  - Per-model timeout (2): defaults + overrides
+  - Anthropic pricing migration (1): Haiku now uses Haiku rates
+
 ## [1.7.0] — 2026-04-14
 
 ### Added

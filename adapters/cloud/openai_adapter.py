@@ -1,13 +1,16 @@
-"""ATP Anthropic cloud adapter — cloud LLM inference via Anthropic Messages API.
+"""ATP OpenAI cloud adapter — cloud LLM inference via OpenAI Chat Completions API.
 
-Same provider-agnostic interface as the Ollama adapter:
-- Same input contract: {model, prompt/messages, context, options}
+Same provider-agnostic interface as the Ollama and Anthropic adapters:
+- Same input contract: {model, prompt/messages, context, options, api_key}
 - Same output structure: {status, route_type, provider, model, output, manifest, ...}
 
 Differences:
 - route_type = "cloud"
 - escalation_triggered = True (cloud calls are escalation by design)
-- Requires ANTHROPIC_API_KEY environment variable
+- Requires OPENAI_API_KEY environment variable (or api_key in request)
+- Uses Authorization: Bearer header
+
+Supports: gpt-4, gpt-4o, gpt-5, o1, o3 model families.
 """
 
 from __future__ import annotations
@@ -24,104 +27,114 @@ from core.pricing import calculate_cost
 from core.retry import with_retry
 
 
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-ANTHROPIC_API_VERSION = "2023-06-01"
-DEFAULT_MODEL = "claude-sonnet-4-20250514"
+OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
+DEFAULT_MODEL = "gpt-4o-mini"
 DEFAULT_MAX_TOKENS = 4096
 DEFAULT_TIMEOUT_SECONDS = 120
 
 
-class AnthropicAdapterError(ValueError):
-    """Raised when the Anthropic adapter cannot fulfil a request."""
+class OpenAIAdapterError(ValueError):
+    """Raised when the OpenAI adapter cannot fulfil a request."""
 
 
 def _get_api_key() -> str | None:
     """Read API key from environment."""
-    return os.environ.get("ANTHROPIC_API_KEY")
+    return os.environ.get("OPENAI_API_KEY")
 
 
 def _validate_input(request: dict[str, Any]) -> None:
     """Execution contract: require model + prompt/messages."""
     if not request.get("model"):
-        raise AnthropicAdapterError("Execution contract violated: 'model' is required.")
+        raise OpenAIAdapterError("Execution contract violated: 'model' is required.")
     if not request.get("prompt") and not request.get("messages"):
-        raise AnthropicAdapterError(
+        raise OpenAIAdapterError(
             "Execution contract violated: 'prompt' or 'messages' is required."
         )
 
 
 def _build_payload(request: dict[str, Any]) -> dict[str, Any]:
-    """Build the Anthropic Messages API payload."""
+    """Build the OpenAI Chat Completions API payload."""
     messages: list[dict[str, str]] = []
+
+    # System prompt first if context provided
+    if request.get("context"):
+        messages.append({"role": "system", "content": str(request["context"])})
+
     if request.get("messages"):
-        messages = list(request["messages"])
+        messages.extend(list(request["messages"]))
     elif request.get("prompt"):
-        messages = [{"role": "user", "content": str(request["prompt"])}]
+        messages.append({"role": "user", "content": str(request["prompt"])})
 
     payload: dict[str, Any] = {
         "model": request["model"],
         "messages": messages,
-        "max_tokens": request.get("options", {}).get("max_tokens", DEFAULT_MAX_TOKENS),
     }
 
-    if request.get("context"):
-        payload["system"] = str(request["context"])
+    opts = request.get("options") or {}
+    # o1/o3 reasoning models use max_completion_tokens, others use max_tokens
+    model = request["model"]
+    if model.startswith("o1") or model.startswith("o3"):
+        payload["max_completion_tokens"] = opts.get("max_tokens", DEFAULT_MAX_TOKENS)
+    else:
+        payload["max_tokens"] = opts.get("max_tokens", DEFAULT_MAX_TOKENS)
 
-    if request.get("options"):
-        opts = request["options"]
-        if "temperature" in opts:
-            payload["temperature"] = opts["temperature"]
-        if "top_p" in opts:
-            payload["top_p"] = opts["top_p"]
+    if "temperature" in opts:
+        payload["temperature"] = opts["temperature"]
+    if "top_p" in opts:
+        payload["top_p"] = opts["top_p"]
 
     return payload
 
 
 def _validate_completion(response_body: dict[str, Any]) -> bool:
-    """Completion validation: non-empty, non-error response."""
-    content_blocks = response_body.get("content", [])
-    for block in content_blocks:
-        if block.get("type") == "text" and (block.get("text") or "").strip():
+    """Completion validation: non-empty choice content."""
+    choices = response_body.get("choices", [])
+    for choice in choices:
+        message = choice.get("message", {})
+        content = (message.get("content") or "").strip()
+        if content:
             return True
     return False
 
 
 def _extract_output(response_body: dict[str, Any]) -> str:
-    """Extract text from Anthropic response content blocks."""
+    """Extract text from OpenAI response choices."""
     parts: list[str] = []
-    for block in response_body.get("content", []):
-        if block.get("type") == "text":
-            text = (block.get("text") or "").strip()
-            if text:
-                parts.append(text)
+    for choice in response_body.get("choices", []):
+        message = choice.get("message", {})
+        content = (message.get("content") or "").strip()
+        if content:
+            parts.append(content)
     return "\n\n".join(parts)
 
 
-def _extract_token_count(response_body: dict[str, Any]) -> int | None:
-    """Extract token count from Anthropic usage field."""
+def _extract_token_counts(response_body: dict[str, Any]) -> tuple[int | None, int, int]:
+    """Extract (total, input, output) token counts from OpenAI usage field."""
     usage = response_body.get("usage")
-    if usage:
-        input_tokens = usage.get("input_tokens", 0)
-        output_tokens = usage.get("output_tokens", 0)
-        return int(input_tokens) + int(output_tokens)
-    return None
+    if not usage:
+        return None, 0, 0
+    input_tokens = int(usage.get("prompt_tokens", 0))
+    output_tokens = int(usage.get("completion_tokens", 0))
+    total = input_tokens + output_tokens
+    return total, input_tokens, output_tokens
 
 
-def execute_anthropic(
+def execute_openai(
     request: dict[str, Any],
     *,
-    api_url: str = ANTHROPIC_API_URL,
+    api_url: str = OPENAI_API_URL,
     timeout: int = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict[str, Any]:
-    """Execute an LLM inference request via Anthropic and return structured result.
+    """Execute an LLM inference request via OpenAI and return structured result.
 
     Parameters
     ----------
     request : dict
         Must contain ``model`` and either ``prompt`` or ``messages``.
-        Optional: ``context`` (system prompt), ``options`` (temperature, max_tokens, etc.).
+        Optional: ``context`` (system prompt), ``options`` (temperature, max_tokens, etc.),
+        ``api_key`` (overrides OPENAI_API_KEY env var).
     api_url : str
-        Anthropic Messages API URL.
+        OpenAI Chat Completions API URL.
     timeout : int
         HTTP request timeout in seconds.
 
@@ -133,25 +146,25 @@ def execute_anthropic(
     timestamp = datetime.now(timezone.utc).isoformat()
     start_time = time.monotonic()
 
-    # Check API key: request body → environment variable
+    # API key: request body → env var fallback
     api_key = request.get("api_key") or _get_api_key()
     if not api_key:
         return _error_result(
-            "ANTHROPIC_API_KEY not set. Provide api_key in request or set the environment variable.",
+            "OPENAI_API_KEY not set. Provide api_key in request or set the environment variable.",
             request.get("model") or DEFAULT_MODEL,
             timestamp,
             start_time,
         )
 
-    # Execution contract validation
+    # Execution contract
     try:
         _validate_input(request)
-    except AnthropicAdapterError as exc:
+    except OpenAIAdapterError as exc:
         return _error_result(str(exc), request.get("model"), timestamp, start_time)
 
     payload = _build_payload(request)
 
-    # Per-model timeout override
+    # Per-model timeout override (e.g., o1 reasoning needs 600s)
     from core.config import get_timeout_for_model
     effective_timeout = get_timeout_for_model(request["model"], timeout)
 
@@ -161,8 +174,7 @@ def execute_anthropic(
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
-                "x-api-key": api_key,
-                "anthropic-version": ANTHROPIC_API_VERSION,
+                "Authorization": f"Bearer {api_key}",
             },
             method="POST",
         )
@@ -170,10 +182,10 @@ def execute_anthropic(
             raw = resp.read().decode("utf-8")
             return json.loads(raw)
 
+    # Wrap in retry for 429/502/503/504/network errors
     try:
         body = with_retry(_do_request)
     except HTTPError as exc:
-        # Capture the actual error body from Anthropic for diagnostics
         error_body = ""
         try:
             error_body = exc.read().decode("utf-8", errors="replace")
@@ -182,14 +194,14 @@ def execute_anthropic(
             error_detail = error_body[:500] if error_body else ""
         detail_suffix = f" — {error_detail}" if error_detail else ""
         return _error_result(
-            f"Anthropic API error {exc.code}: {exc.reason}{detail_suffix}",
+            f"OpenAI HTTP {exc.code}: {exc.reason}{detail_suffix}",
             request["model"],
             timestamp,
             start_time,
         )
     except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
         return _error_result(
-            f"Anthropic request failed: {exc}",
+            f"OpenAI request failed: {exc}",
             request["model"],
             timestamp,
             start_time,
@@ -197,23 +209,15 @@ def execute_anthropic(
 
     elapsed_ms = int((time.monotonic() - start_time) * 1000)
 
-    # Completion validation
     is_valid = _validate_completion(body)
     output_text = _extract_output(body)
-
-    # Artifact manifest with cost tracking (per-model pricing from registry)
-    token_count = _extract_token_count(body)
-    usage = body.get("usage", {})
-    input_tokens = int(usage.get("input_tokens", 0))
-    output_tokens = int(usage.get("output_tokens", 0))
-    cost_usd = calculate_cost(
-        request["model"], input_tokens, output_tokens, provider="anthropic"
-    )
+    total_tokens, input_tokens, output_tokens = _extract_token_counts(body)
+    cost_usd = calculate_cost(request["model"], input_tokens, output_tokens, provider="openai")
 
     manifest = {
         "timestamp": timestamp,
         "response_time_ms": elapsed_ms,
-        "token_count": token_count,
+        "token_count": total_tokens,
         "input_tokens": input_tokens,
         "output_tokens": output_tokens,
         "completion_validated": is_valid,
@@ -222,11 +226,10 @@ def execute_anthropic(
 
     error_msg = None if is_valid else "Completion validation failed: empty response."
 
-    # Structured result — same shape as Ollama adapter
     result: dict[str, Any] = {
         "status": "success" if is_valid else "failed",
         "route_type": "cloud",
-        "provider": "anthropic",
+        "provider": "openai",
         "model": request["model"],
         "output": output_text,
         "manifest": manifest,
@@ -252,7 +255,7 @@ def _error_result(
     return {
         "status": "failed",
         "route_type": "cloud",
-        "provider": "anthropic",
+        "provider": "openai",
         "model": model or "unknown",
         "output": "",
         "manifest": {

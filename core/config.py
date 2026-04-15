@@ -38,9 +38,29 @@ PERSIST_RUNS: bool = _bool_env("ATP_PERSIST_RUNS")
 # Providers
 # ---------------------------------------------------------------------------
 ANTHROPIC_API_KEY: str | None = os.environ.get("ANTHROPIC_API_KEY")
+OPENAI_API_KEY: str | None = os.environ.get("OPENAI_API_KEY")
 OLLAMA_BASE_URL: str = os.environ.get("ATP_OLLAMA_URL", "http://127.0.0.1:11434")
 OLLAMA_TIMEOUT: int = int(os.environ.get("ATP_OLLAMA_TIMEOUT", "120"))
 ANTHROPIC_TIMEOUT: int = int(os.environ.get("ATP_ANTHROPIC_TIMEOUT", "120"))
+OPENAI_TIMEOUT: int = int(os.environ.get("ATP_OPENAI_TIMEOUT", "300"))  # higher for o1 reasoning models
+
+# Per-model timeout overrides (comma-separated key=value pairs).
+# Example: ATP_MODEL_TIMEOUTS="o1=600,o1-preview=600,gpt-5=300"
+MODEL_TIMEOUTS: dict[str, int] = {}
+_raw_timeouts = os.environ.get("ATP_MODEL_TIMEOUTS", "")
+if _raw_timeouts.strip():
+    for pair in _raw_timeouts.split(","):
+        if "=" in pair:
+            k, _, v = pair.partition("=")
+            try:
+                MODEL_TIMEOUTS[k.strip()] = int(v.strip())
+            except ValueError:
+                pass
+
+
+def get_timeout_for_model(model: str, default: int) -> int:
+    """Return the configured timeout for a specific model, or the default."""
+    return MODEL_TIMEOUTS.get(model, default)
 
 # ---------------------------------------------------------------------------
 # Security
@@ -68,7 +88,10 @@ def validate() -> list[ConfigWarning]:
         warnings.append(ConfigWarning("ATP_BRIDGE_PORT", f"Invalid port: {BRIDGE_PORT}"))
 
     if not ANTHROPIC_API_KEY:
-        warnings.append(ConfigWarning("ANTHROPIC_API_KEY", "Not set — cloud escalation will fail"))
+        warnings.append(ConfigWarning("ANTHROPIC_API_KEY", "Not set — Anthropic cloud calls will require api_key in request"))
+
+    if not OPENAI_API_KEY:
+        warnings.append(ConfigWarning("OPENAI_API_KEY", "Not set — OpenAI cloud calls will require api_key in request"))
 
     if AOKP_ENABLED and not AOKP_BASE_URL:
         warnings.append(ConfigWarning("ATP_AOKP_URL", "AOKP enabled but URL not set"))
@@ -87,6 +110,11 @@ def summary() -> dict[str, object]:
         "persist_artifacts": PERSIST_ARTIFACTS,
         "persist_runs": PERSIST_RUNS,
         "anthropic_api_key_set": ANTHROPIC_API_KEY is not None,
+        "openai_api_key_set": OPENAI_API_KEY is not None,
         "ollama_base_url": OLLAMA_BASE_URL,
+        "ollama_timeout": OLLAMA_TIMEOUT,
+        "anthropic_timeout": ANTHROPIC_TIMEOUT,
+        "openai_timeout": OPENAI_TIMEOUT,
+        "model_timeouts": MODEL_TIMEOUTS,
         "model_allowlist": MODEL_ALLOWLIST,
     }
