@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHONPATH := .
 export PYTHONPATH
 
-.PHONY: help tree validate-registry smoke test test-unit test-integration bridge version \
+.PHONY: help tree validate-registry smoke test test-unit test-integration bridge bridge-raw version \
         aios-context aios-status aios-authority aios-verify
 
 help:
@@ -15,7 +15,8 @@ help:
 	@printf '  test               Run all tests (unit + integration)\n'
 	@printf '  test-unit          Run unit tests only\n'
 	@printf '  test-integration   Run integration tests only\n'
-	@printf '  bridge             Start ATP bridge server (localhost:8765)\n'
+	@printf '  bridge             Start ATP bridge server (loads API keys from macOS Keychain)\n'
+	@printf '  bridge-raw         Start ATP bridge server without keychain lookup (env-only)\n'
 	@printf '  aios-context       Print ATP-side AI_OS bridge context\n'
 	@printf '  aios-status        Print ATP-side AI_OS bridge context plus git status\n'
 	@printf '  aios-authority     Print ATP authority and bridge paths for AI_OS\n'
@@ -42,6 +43,9 @@ test-integration:
 	@python3 -m unittest discover -s tests/integration -p 'test_*.py'
 
 bridge:
+	@./scripts/bridge_with_keychain.sh
+
+bridge-raw:
 	@python3 bridge/bridge_server.py
 
 aios-context:
