@@ -319,3 +319,164 @@ def _error_result(
         "error": message,
         "error_classification": to_dict(classify_error(message)),
     }
+
+
+# ---------------------------------------------------------------------------
+# Streaming (v2.0.0)
+# ---------------------------------------------------------------------------
+
+def execute_openai_stream(
+    request: dict[str, Any],
+    *,
+    api_url: str = OPENAI_API_URL,
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    abort_event: "threading.Event | None" = None,
+):
+    """Stream LLM inference via OpenAI Chat Completions API with SSE.
+
+    Yields tuples of (event_kind, data) where event_kind is one of:
+    - "token"     — incremental text chunk (str)
+    - "tool_call" — complete tool_call (dict) emitted when finish_reason=tool_calls
+    - "manifest"  — final manifest (dict) emitted at end
+    - "error"     — error message (dict with message + error_code)
+    - "aborted"   — request aborted by client (dict with reason)
+    """
+    import threading  # noqa: F401
+
+    timestamp = datetime.now(timezone.utc).isoformat()
+    start_time = time.monotonic()
+
+    api_key = request.get("api_key") or _get_api_key()
+    if not api_key:
+        yield ("error", {"message": "OPENAI_API_KEY not set", "error_code": "contract_violation"})
+        return
+
+    try:
+        _validate_input(request)
+    except OpenAIAdapterError as exc:
+        yield ("error", {"message": str(exc), "error_code": "contract_violation"})
+        return
+
+    payload = _build_payload(request)
+    payload["stream"] = True
+    # OpenAI requires stream_options for usage tracking in streaming mode
+    payload["stream_options"] = {"include_usage": True}
+
+    from core.config import get_timeout_for_model
+    effective_timeout = get_timeout_for_model(request["model"], timeout)
+
+    http_request = Request(
+        api_url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+            "Accept": "text/event-stream",
+        },
+        method="POST",
+    )
+
+    accumulated_text: list[str] = []
+    # Tool call accumulators keyed by index (OpenAI streams tool_calls piecewise)
+    tool_call_builders: dict[int, dict[str, Any]] = {}
+    input_tokens = 0
+    output_tokens = 0
+    finish_reason: str | None = None
+
+    try:
+        with urlopen(http_request, timeout=effective_timeout) as resp:
+            for raw_line in resp:
+                if abort_event is not None and abort_event.is_set():
+                    yield ("aborted", {"reason": "client_cancelled"})
+                    return
+                line = raw_line.decode("utf-8", errors="replace").strip()
+                if not line.startswith("data:"):
+                    continue
+                data_str = line[5:].strip()
+                if not data_str or data_str == "[DONE]":
+                    continue
+                try:
+                    chunk = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+
+                # Usage on final chunk when stream_options.include_usage=true
+                usage = chunk.get("usage")
+                if usage:
+                    input_tokens = int(usage.get("prompt_tokens", 0))
+                    output_tokens = int(usage.get("completion_tokens", 0))
+
+                choices = chunk.get("choices", [])
+                if not choices:
+                    continue
+                choice = choices[0]
+                delta = choice.get("delta", {})
+
+                # Text delta
+                content_delta = delta.get("content")
+                if content_delta:
+                    accumulated_text.append(content_delta)
+                    yield ("token", {"text": content_delta})
+
+                # Tool call deltas — OpenAI streams these piecewise
+                for tc in (delta.get("tool_calls") or []):
+                    idx = tc.get("index", 0)
+                    builder = tool_call_builders.setdefault(idx, {"id": "", "name": "", "_args_parts": []})
+                    if tc.get("id"):
+                        builder["id"] = tc["id"]
+                    func = tc.get("function", {})
+                    if func.get("name"):
+                        builder["name"] = func["name"]
+                    if func.get("arguments"):
+                        builder["_args_parts"].append(func["arguments"])
+
+                if choice.get("finish_reason"):
+                    finish_reason = choice["finish_reason"]
+
+    except HTTPError as exc:
+        error_body = ""
+        try:
+            error_body = exc.read().decode("utf-8", errors="replace")
+            error_detail = json.loads(error_body).get("error", {}).get("message", "")
+        except Exception:
+            error_detail = error_body[:500] if error_body else ""
+        from core.error_codes import classify_error
+        msg = f"OpenAI HTTP {exc.code}: {exc.reason}"
+        if error_detail:
+            msg = f"{msg} — {error_detail}"
+        yield ("error", {"message": msg, "error_code": classify_error(msg).code})
+        return
+    except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        from core.error_codes import classify_error
+        msg = f"OpenAI stream failed: {exc}"
+        yield ("error", {"message": msg, "error_code": classify_error(msg).code})
+        return
+
+    # Finalize tool calls from accumulated deltas
+    finalized_tool_calls: list[dict[str, Any]] = []
+    for idx in sorted(tool_call_builders.keys()):
+        b = tool_call_builders[idx]
+        args_raw = "".join(b["_args_parts"])
+        try:
+            args = json.loads(args_raw) if args_raw else {}
+        except json.JSONDecodeError:
+            args = {"_raw": args_raw}
+        finalized_tool_calls.append({"id": b["id"], "name": b["name"], "input": args})
+
+    for tc in finalized_tool_calls:
+        yield ("tool_call", dict(tc))
+
+    elapsed_ms = int((time.monotonic() - start_time) * 1000)
+    cost_usd = calculate_cost(request["model"], input_tokens, output_tokens, provider="openai")
+    manifest = {
+        "timestamp": timestamp,
+        "response_time_ms": elapsed_ms,
+        "token_count": (input_tokens + output_tokens) if (input_tokens or output_tokens) else None,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "completion_validated": bool(accumulated_text or finalized_tool_calls),
+        "cost_usd": cost_usd,
+        "finish_reason": finish_reason,
+        "tool_calls_count": len(finalized_tool_calls),
+    }
+    yield ("manifest", {"manifest": manifest})

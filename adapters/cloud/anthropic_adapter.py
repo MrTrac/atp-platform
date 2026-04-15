@@ -310,3 +310,166 @@ def _error_result(
         "error": message,
         "error_classification": to_dict(classify_error(message)),
     }
+
+
+# ---------------------------------------------------------------------------
+# Streaming (v2.0.0)
+# ---------------------------------------------------------------------------
+
+def execute_anthropic_stream(
+    request: dict[str, Any],
+    *,
+    api_url: str = ANTHROPIC_API_URL,
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    abort_event: "threading.Event | None" = None,
+):
+    """Stream LLM inference via Anthropic Messages API with SSE.
+
+    Yields tuples of (event_kind, data) where event_kind is one of:
+    - "token"     — incremental text chunk (str)
+    - "tool_call" — complete tool_use block (dict)
+    - "manifest"  — final manifest (dict) emitted at end
+    - "error"     — error message (dict with message + error_code)
+    - "aborted"   — request aborted by client (dict with reason)
+
+    Uses Anthropic's stream=True with SSE responses.
+    """
+    import threading  # noqa: F401
+
+    timestamp = datetime.now(timezone.utc).isoformat()
+    start_time = time.monotonic()
+
+    api_key = request.get("api_key") or _get_api_key()
+    if not api_key:
+        yield ("error", {"message": "ANTHROPIC_API_KEY not set", "error_code": "contract_violation"})
+        return
+
+    try:
+        _validate_input(request)
+    except AnthropicAdapterError as exc:
+        yield ("error", {"message": str(exc), "error_code": "contract_violation"})
+        return
+
+    payload = _build_payload(request)
+    payload["stream"] = True
+
+    from core.config import get_timeout_for_model
+    effective_timeout = get_timeout_for_model(request["model"], timeout)
+
+    http_request = Request(
+        api_url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": api_key,
+            "anthropic-version": ANTHROPIC_API_VERSION,
+            "Accept": "text/event-stream",
+        },
+        method="POST",
+    )
+
+    accumulated_text: list[str] = []
+    accumulated_tool_calls: list[dict[str, Any]] = []
+    current_tool_input: list[str] = []
+    current_tool: dict[str, Any] | None = None
+    input_tokens = 0
+    output_tokens = 0
+    stop_reason: str | None = None
+
+    try:
+        with urlopen(http_request, timeout=effective_timeout) as resp:
+            for raw_line in resp:
+                if abort_event is not None and abort_event.is_set():
+                    yield ("aborted", {"reason": "client_cancelled"})
+                    return
+                line = raw_line.decode("utf-8", errors="replace").strip()
+                if not line.startswith("data:"):
+                    continue
+                data_str = line[5:].strip()
+                if not data_str or data_str == "[DONE]":
+                    continue
+                try:
+                    event_obj = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+
+                event_type = event_obj.get("type", "")
+
+                if event_type == "content_block_delta":
+                    delta = event_obj.get("delta", {})
+                    if delta.get("type") == "text_delta":
+                        text = delta.get("text", "")
+                        if text:
+                            accumulated_text.append(text)
+                            yield ("token", {"text": text})
+                    elif delta.get("type") == "input_json_delta":
+                        # Partial tool input JSON
+                        current_tool_input.append(delta.get("partial_json", ""))
+
+                elif event_type == "content_block_start":
+                    block = event_obj.get("content_block", {})
+                    if block.get("type") == "tool_use":
+                        current_tool = {
+                            "id": block.get("id", ""),
+                            "name": block.get("name", ""),
+                            "input": {},
+                        }
+                        current_tool_input = []
+
+                elif event_type == "content_block_stop":
+                    if current_tool is not None:
+                        try:
+                            current_tool["input"] = json.loads("".join(current_tool_input)) if current_tool_input else {}
+                        except json.JSONDecodeError:
+                            current_tool["input"] = {"_raw": "".join(current_tool_input)}
+                        accumulated_tool_calls.append(current_tool)
+                        yield ("tool_call", dict(current_tool))
+                        current_tool = None
+
+                elif event_type == "message_delta":
+                    usage = event_obj.get("usage", {})
+                    if "output_tokens" in usage:
+                        output_tokens = int(usage["output_tokens"])
+                    delta = event_obj.get("delta", {})
+                    if delta.get("stop_reason"):
+                        stop_reason = delta["stop_reason"]
+
+                elif event_type == "message_start":
+                    msg = event_obj.get("message", {})
+                    usage = msg.get("usage", {})
+                    if "input_tokens" in usage:
+                        input_tokens = int(usage["input_tokens"])
+
+    except HTTPError as exc:
+        error_body = ""
+        try:
+            error_body = exc.read().decode("utf-8", errors="replace")
+            error_detail = json.loads(error_body).get("error", {}).get("message", "")
+        except Exception:
+            error_detail = error_body[:500] if error_body else ""
+        from core.error_codes import classify_error
+        msg = f"Anthropic API error {exc.code}: {exc.reason}"
+        if error_detail:
+            msg = f"{msg} — {error_detail}"
+        yield ("error", {"message": msg, "error_code": classify_error(msg).code})
+        return
+    except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        from core.error_codes import classify_error
+        msg = f"Anthropic stream failed: {exc}"
+        yield ("error", {"message": msg, "error_code": classify_error(msg).code})
+        return
+
+    elapsed_ms = int((time.monotonic() - start_time) * 1000)
+    cost_usd = calculate_cost(request["model"], input_tokens, output_tokens, provider="anthropic")
+    manifest = {
+        "timestamp": timestamp,
+        "response_time_ms": elapsed_ms,
+        "token_count": input_tokens + output_tokens,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "completion_validated": bool(accumulated_text or accumulated_tool_calls),
+        "cost_usd": cost_usd,
+        "stop_reason": stop_reason,
+        "tool_calls_count": len(accumulated_tool_calls),
+    }
+    yield ("manifest", {"manifest": manifest})
