@@ -53,8 +53,16 @@ def _validate_input(request: dict[str, Any]) -> None:
 
 
 def _build_payload(request: dict[str, Any]) -> dict[str, Any]:
-    """Build the OpenAI Chat Completions API payload."""
-    messages: list[dict[str, str]] = []
+    """Build the OpenAI Chat Completions API payload.
+
+    Supports v1.9.0 agentic capabilities:
+    - ``tools`` — function/tool definitions for tool use
+    - ``tool_choice`` — control how/when tools are used
+    - ``json_mode`` — when true, sets response_format = {"type": "json_object"}
+    - vision — image inputs are passed through messages naturally (OpenAI
+      content parts support `{"type": "image_url", "image_url": {...}}`)
+    """
+    messages: list[dict[str, Any]] = []
 
     # System prompt first if context provided
     if request.get("context"):
@@ -83,16 +91,29 @@ def _build_payload(request: dict[str, Any]) -> dict[str, Any]:
     if "top_p" in opts:
         payload["top_p"] = opts["top_p"]
 
+    # JSON mode (v1.9.0)
+    if request.get("json_mode"):
+        payload["response_format"] = {"type": "json_object"}
+
+    # Tool use (v1.9.0)
+    if request.get("tools"):
+        payload["tools"] = list(request["tools"])
+        if request.get("tool_choice"):
+            payload["tool_choice"] = request["tool_choice"]
+
     return payload
 
 
 def _validate_completion(response_body: dict[str, Any]) -> bool:
-    """Completion validation: non-empty choice content."""
+    """Completion validation: non-empty content OR tool_calls present."""
     choices = response_body.get("choices", [])
     for choice in choices:
         message = choice.get("message", {})
         content = (message.get("content") or "").strip()
         if content:
+            return True
+        # Tool calls are also valid completion (model decided to call functions)
+        if message.get("tool_calls"):
             return True
     return False
 
@@ -106,6 +127,28 @@ def _extract_output(response_body: dict[str, Any]) -> str:
         if content:
             parts.append(content)
     return "\n\n".join(parts)
+
+
+def _extract_tool_calls(response_body: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extract tool_calls from OpenAI response choices."""
+    tool_calls: list[dict[str, Any]] = []
+    for choice in response_body.get("choices", []):
+        message = choice.get("message", {})
+        for call in (message.get("tool_calls") or []):
+            func = call.get("function", {})
+            arguments_raw = func.get("arguments", "{}")
+            # OpenAI returns arguments as a JSON string; parse for caller convenience
+            try:
+                import json as _json
+                arguments = _json.loads(arguments_raw) if isinstance(arguments_raw, str) else arguments_raw
+            except (ValueError, TypeError):
+                arguments = {"_raw": arguments_raw}
+            tool_calls.append({
+                "id": call.get("id", ""),
+                "name": func.get("name", ""),
+                "input": arguments,
+            })
+    return tool_calls
 
 
 def _extract_token_counts(response_body: dict[str, Any]) -> tuple[int | None, int, int]:
@@ -224,6 +267,10 @@ def execute_openai(
         "cost_usd": cost_usd,
     }
 
+    # Tool calls (v1.9.0)
+    tool_calls = _extract_tool_calls(body)
+    finish_reason = (body.get("choices") or [{}])[0].get("finish_reason")
+
     error_msg = None if is_valid else "Completion validation failed: empty response."
 
     result: dict[str, Any] = {
@@ -236,6 +283,9 @@ def execute_openai(
         "escalation_triggered": True,
         "error": error_msg,
     }
+    if tool_calls:
+        result["tool_calls"] = tool_calls
+        manifest["finish_reason"] = finish_reason
     if error_msg:
         from core.error_codes import classify_error, to_dict
         result["error_classification"] = to_dict(classify_error(error_msg))

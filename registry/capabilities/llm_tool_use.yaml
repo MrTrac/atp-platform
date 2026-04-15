@@ -1,0 +1,11 @@
+capability: llm_tool_use
+description: Function/tool calling — model can invoke caller-defined tools.
+category: llm
+supported_provider_types:
+  - llm
+notes:
+  - Input shape: tools = list of tool definitions (Anthropic or OpenAI format)
+  - Optional tool_choice = "auto" | "any" | {"type": "tool", "name": "..."}
+  - Output: result.tool_calls = [{"id", "name", "input"}]
+  - Anthropic native format; OpenAI uses "type": "function" wrapper
+  - Added in v1.9.0

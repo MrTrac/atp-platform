@@ -1,0 +1,12 @@
+capability: llm_vision
+description: Multimodal input — model accepts images alongside text.
+category: llm
+supported_provider_types:
+  - llm
+notes:
+  - Pass-through via messages array (no special flag)
+  - Anthropic content block format; "type": "image" with "source" object
+  - OpenAI content part format; "type": "image_url" with "image_url" object
+  - Supported by claude-3*, claude-sonnet-4*, gpt-4o*, gpt-5
+  - Not supported by o1*, o3* (text-only reasoning models)
+  - Added in v1.9.0

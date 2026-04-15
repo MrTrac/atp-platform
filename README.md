@@ -15,19 +15,21 @@ Trạng thái release:
 - `v1.5.0` — Artifact persistence (M8)
 - `v1.6.0` — Observability + hardening
 - `v1.7.0` — Cloud API key passthrough, model auto-detection, AOKP v2.3.x
-- **`v1.8.0`** — **current released baseline** (OpenAI adapter, retry/backoff, per-model cost & timeout)
+- `v1.8.0` — OpenAI adapter, retry/backoff, per-model cost & timeout
+- **`v1.9.0`** — **current released baseline** (tool use, JSON mode, vision, capabilities matrix)
 
-Runtime components (v1.8.0):
+Runtime components (v1.9.0):
 
 - **Ollama adapter** — local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b)
-- **Anthropic adapter** — cloud escalation + retry/backoff + per-model pricing
-- **OpenAI adapter** — cloud LLM (gpt-4o, gpt-5, o1, o3) + retry + per-model pricing + reasoning model support
+- **Anthropic adapter** — cloud + retry + per-model pricing + tool use + JSON mode + vision
+- **OpenAI adapter** — gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision
 - **AOKP adapter (v2.3.x)** — 6 endpoints: health, search, graph, chat, graph-rag, temporal
-- **Bridge server** — HTTP at `localhost:8765` (9 endpoints, model auto-detection)
-- **Pricing registry** — `registry/pricing/model_prices.json` (13 models, provider defaults)
-- **Retry logic** — `core/retry.py` (exponential backoff, Retry-After honored, 3 attempts max)
-- **Per-model timeout** — `ATP_MODEL_TIMEOUTS` env var override
-- **Governance hook** — aios-gate integration (artifact tier A–E classification)
+- **Bridge server** — HTTP at `localhost:8765` (9 endpoints, agentic field propagation)
+- **Pricing registry** — 13 models in `registry/pricing/model_prices.json`
+- **Capabilities matrix** — `llm_chat`, `llm_completion`, `llm_tool_use`, `llm_json_mode`, `llm_vision`
+- **Retry logic** — exponential backoff for 429/5xx/network
+- **Per-model timeout** — `ATP_MODEL_TIMEOUTS` env override
+- **Governance hook** — aios-gate integration (tier A–E)
 
 ATP không phải là một closed snapshot architecture và cũng không phải một ad hoc open architecture.
 
