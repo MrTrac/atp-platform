@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "updated": "2026-04-15",
+  "notes": "USD per 1M tokens. Update when providers change pricing.",
+  "models": {
+    "claude-sonnet-4-20250514": {"provider": "anthropic", "input_per_mtok": 3.00, "output_per_mtok": 15.00},
+    "claude-opus-4-20250514":   {"provider": "anthropic", "input_per_mtok": 15.00, "output_per_mtok": 75.00},
+    "claude-3-5-sonnet-20241022": {"provider": "anthropic", "input_per_mtok": 3.00, "output_per_mtok": 15.00},
+    "claude-3-5-haiku-20241022":  {"provider": "anthropic", "input_per_mtok": 0.80, "output_per_mtok": 4.00},
+    "claude-3-opus-20240229":     {"provider": "anthropic", "input_per_mtok": 15.00, "output_per_mtok": 75.00},
+    "gpt-5":          {"provider": "openai", "input_per_mtok": 5.00, "output_per_mtok": 15.00},
+    "gpt-4o":         {"provider": "openai", "input_per_mtok": 2.50, "output_per_mtok": 10.00},
+    "gpt-4o-mini":    {"provider": "openai", "input_per_mtok": 0.15, "output_per_mtok": 0.60},
+    "gpt-4-turbo":    {"provider": "openai", "input_per_mtok": 10.00, "output_per_mtok": 30.00},
+    "o1":             {"provider": "openai", "input_per_mtok": 15.00, "output_per_mtok": 60.00},
+    "o1-preview":     {"provider": "openai", "input_per_mtok": 15.00, "output_per_mtok": 60.00},
+    "o1-mini":        {"provider": "openai", "input_per_mtok": 3.00, "output_per_mtok": 12.00},
+    "o3-mini":        {"provider": "openai", "input_per_mtok": 1.10, "output_per_mtok": 4.40}
+  },
+  "defaults": {
+    "anthropic": {"input_per_mtok": 3.00, "output_per_mtok": 15.00},
+    "openai":    {"input_per_mtok": 5.00, "output_per_mtok": 15.00},
+    "ollama":    {"input_per_mtok": 0.00, "output_per_mtok": 0.00}
+  }
+}
