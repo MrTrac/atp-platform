@@ -4,6 +4,9 @@ status: active
 supported_capabilities:
   - llm_chat
   - llm_completion
+  - llm_tool_use
+  - llm_json_mode
+  - llm_vision
 supported_nodes:
   - local_mac
 interaction_pattern: http_cloud
@@ -12,5 +15,8 @@ cost_profile: high
 notes:
   - Cloud LLM execution via Anthropic Messages API
   - Escalation path when Ollama cannot satisfy request
-  - Requires ANTHROPIC_API_KEY environment variable
+  - Requires ANTHROPIC_API_KEY environment variable (or api_key in request, v1.7.0+)
+  - Retry/backoff for 429/5xx (v1.8.0+)
+  - Per-model pricing via registry/pricing/model_prices.json (v1.8.0+)
+  - Tool use, JSON mode, vision (v1.9.0+)
   - Added in v1.1.0

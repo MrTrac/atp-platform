@@ -92,6 +92,13 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
         normalized_request["payload"]["options"] = incoming["options"]
     if incoming.get("api_key"):
         normalized_request["payload"]["api_key"] = incoming["api_key"]
+    # v1.9.0 agentic capabilities
+    if incoming.get("tools"):
+        normalized_request["payload"]["tools"] = incoming["tools"]
+    if incoming.get("tool_choice"):
+        normalized_request["payload"]["tool_choice"] = incoming["tool_choice"]
+    if incoming.get("json_mode"):
+        normalized_request["payload"]["json_mode"] = bool(incoming["json_mode"])
 
     # Optional AOKP knowledge context enrichment
     enriched = enrich_context(incoming)
@@ -139,6 +146,8 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
         normalized["ollama_manifest"] = raw_result["ollama_manifest"]
     if raw_result.get("ollama_routing"):
         normalized["ollama_routing"] = raw_result["ollama_routing"]
+    if raw_result.get("tool_calls"):
+        normalized["tool_calls"] = raw_result["tool_calls"]
     if enriched.get("aokp_context"):
         normalized["aokp_enrichment"] = enriched["aokp_context"]["manifest"]
 

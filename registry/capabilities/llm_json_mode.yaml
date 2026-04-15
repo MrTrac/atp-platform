@@ -1,0 +1,11 @@
+capability: llm_json_mode
+description: Force model output to valid JSON only.
+category: llm
+supported_provider_types:
+  - llm
+notes:
+  - Input: json_mode = true
+  - Anthropic — appends JSON-only instruction to system prompt
+  - OpenAI — sets response_format = {"type": "json_object"} (requires "json" in messages)
+  - Output: model output is a JSON string ready for json.loads()
+  - Added in v1.9.0

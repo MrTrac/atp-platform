@@ -2,6 +2,33 @@
 
 All notable changes to ATP are documented here.
 
+## [1.9.0] — 2026-04-15
+
+### Added — Agentic Capabilities
+- **Tool use / function calling** — both Anthropic and OpenAI adapters
+  - Pass `tools` (list of definitions) and optional `tool_choice`
+  - Tool use blocks/calls extracted into `result.tool_calls = [{id, name, input}]`
+  - Tool-only responses (no text) treated as valid completion
+- **JSON mode** — both adapters
+  - Pass `json_mode=true`
+  - Anthropic: appends "Respond ONLY with valid JSON…" to system prompt
+  - OpenAI: sets `response_format = {"type": "json_object"}`
+- **Vision** — pass-through via messages array
+  - Anthropic: `{"type": "image", "source": {...}}` content blocks
+  - OpenAI: `{"type": "image_url", "image_url": {...}}` content parts
+  - Supported by claude-3*, claude-sonnet-4*, gpt-4o*, gpt-5
+  - NOT supported by o1/o3 (text-only reasoning models)
+- **Capabilities matrix** expansion (`registry/capabilities/`)
+  - `llm_tool_use.yaml` — function calling capability
+  - `llm_json_mode.yaml` — structured JSON output
+  - `llm_vision.yaml` — multimodal image inputs
+- **Provider registry** updated: anthropic + openai now declare 5 capabilities
+- **Bridge propagation**: `tools`, `tool_choice`, `json_mode` flow incoming → executor → adapter
+- **Result surfacing**: `tool_calls` bubbles up through normalize_adapter_result → bridge_request
+
+### Tests
+- 29 new tests in `tests/unit/test_v19_features.py` (tool use, JSON mode, vision, capabilities, propagation, end-to-end)
+
 ## [1.8.0] — 2026-04-15
 
 ### Added — Cloud Foundations

@@ -51,8 +51,16 @@ def _validate_input(request: dict[str, Any]) -> None:
 
 
 def _build_payload(request: dict[str, Any]) -> dict[str, Any]:
-    """Build the Anthropic Messages API payload."""
-    messages: list[dict[str, str]] = []
+    """Build the Anthropic Messages API payload.
+
+    Supports v1.9.0 agentic capabilities:
+    - ``tools`` — function/tool definitions for tool use
+    - ``tool_choice`` — control how/when tools are used
+    - ``json_mode`` — when true, append JSON-only system instruction
+    - vision — image inputs are passed through messages naturally (Anthropic
+      content blocks support `{"type": "image", "source": {...}}`)
+    """
+    messages: list[dict[str, Any]] = []
     if request.get("messages"):
         messages = list(request["messages"])
     elif request.get("prompt"):
@@ -64,8 +72,20 @@ def _build_payload(request: dict[str, Any]) -> dict[str, Any]:
         "max_tokens": request.get("options", {}).get("max_tokens", DEFAULT_MAX_TOKENS),
     }
 
-    if request.get("context"):
-        payload["system"] = str(request["context"])
+    # System prompt (v1.0)
+    system_prompt = request.get("context", "")
+    # JSON mode: append instruction to system prompt
+    if request.get("json_mode"):
+        json_instruction = "Respond ONLY with valid JSON. No markdown, no commentary. Pure JSON output only."
+        system_prompt = f"{system_prompt}\n\n{json_instruction}".strip() if system_prompt else json_instruction
+    if system_prompt:
+        payload["system"] = system_prompt
+
+    # Tool use (v1.9.0)
+    if request.get("tools"):
+        payload["tools"] = list(request["tools"])
+        if request.get("tool_choice"):
+            payload["tool_choice"] = request["tool_choice"]
 
     if request.get("options"):
         opts = request["options"]
@@ -78,10 +98,14 @@ def _build_payload(request: dict[str, Any]) -> dict[str, Any]:
 
 
 def _validate_completion(response_body: dict[str, Any]) -> bool:
-    """Completion validation: non-empty, non-error response."""
+    """Completion validation: non-empty text or tool_use block."""
     content_blocks = response_body.get("content", [])
     for block in content_blocks:
-        if block.get("type") == "text" and (block.get("text") or "").strip():
+        block_type = block.get("type")
+        if block_type == "text" and (block.get("text") or "").strip():
+            return True
+        # Tool use is also a valid completion (model decided to call a tool)
+        if block_type == "tool_use" and block.get("name"):
             return True
     return False
 
@@ -95,6 +119,19 @@ def _extract_output(response_body: dict[str, Any]) -> str:
             if text:
                 parts.append(text)
     return "\n\n".join(parts)
+
+
+def _extract_tool_calls(response_body: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extract tool_use blocks from Anthropic response."""
+    tool_calls: list[dict[str, Any]] = []
+    for block in response_body.get("content", []):
+        if block.get("type") == "tool_use":
+            tool_calls.append({
+                "id": block.get("id", ""),
+                "name": block.get("name", ""),
+                "input": block.get("input", {}),
+            })
+    return tool_calls
 
 
 def _extract_token_count(response_body: dict[str, Any]) -> int | None:
@@ -220,6 +257,10 @@ def execute_anthropic(
         "cost_usd": cost_usd,
     }
 
+    # Tool calls (v1.9.0)
+    tool_calls = _extract_tool_calls(body)
+    stop_reason = body.get("stop_reason")
+
     error_msg = None if is_valid else "Completion validation failed: empty response."
 
     # Structured result — same shape as Ollama adapter
@@ -233,6 +274,9 @@ def execute_anthropic(
         "escalation_triggered": True,
         "error": error_msg,
     }
+    if tool_calls:
+        result["tool_calls"] = tool_calls
+        manifest["stop_reason"] = stop_reason
     if error_msg:
         from core.error_codes import classify_error, to_dict
         result["error_classification"] = to_dict(classify_error(error_msg))

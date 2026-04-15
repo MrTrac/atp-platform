@@ -54,6 +54,13 @@ def _build_llm_request(
     # Pass through per-request API key for cloud providers
     if payload.get("api_key"):
         request["api_key"] = payload["api_key"]
+    # v1.9.0 agentic capabilities
+    if payload.get("tools"):
+        request["tools"] = payload["tools"]
+    if payload.get("tool_choice"):
+        request["tool_choice"] = payload["tool_choice"]
+    if payload.get("json_mode"):
+        request["json_mode"] = bool(payload["json_mode"])
 
     return request
 
@@ -61,7 +68,7 @@ def _build_llm_request(
 def _normalize_adapter_result(result: dict[str, Any], adapter_path: str) -> dict[str, Any]:
     """Bridge an LLM adapter result to the shape output_normalizer expects."""
     succeeded = result.get("status") == "success"
-    return {
+    normalized: dict[str, Any] = {
         "exit_code": 0 if succeeded else 1,
         "stdout": result.get("output", ""),
         "stderr": result.get("error") or "",
@@ -78,6 +85,10 @@ def _normalize_adapter_result(result: dict[str, Any], adapter_path: str) -> dict
             "escalation_triggered": result.get("escalation_triggered", False),
         },
     }
+    # v1.9.0 — pass through tool_calls if present
+    if result.get("tool_calls"):
+        normalized["tool_calls"] = result["tool_calls"]
+    return normalized
 
 
 def _try_escalate(
