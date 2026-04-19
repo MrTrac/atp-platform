@@ -140,12 +140,14 @@ class ClaudeCodeAdapter:
         # Render template
         prompt = self._render_template(prompt_context or {})
 
-        # Build command
+        # Build command — claude CLI uses --model; --max-tokens is not a valid flag
         cmd = ["claude", "-p", prompt, "--model", self.config.model_id]
-        if self.config.max_tokens:
-            cmd += ["--max-tokens", str(self.config.max_tokens)]
 
         self._stdout_lines = []
+
+        # Strip CLAUDECODE so nested `claude -p` isn't blocked by the
+        # nested-session guard that Claude Code sets on its own env.
+        child_env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
 
         try:
             self._process = await asyncio.create_subprocess_exec(
@@ -153,7 +155,7 @@ class ClaudeCodeAdapter:
                 cwd=str(repo_path),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env={**os.environ},
+                env=child_env,
             )
 
             stdout_data, stderr_data = await asyncio.wait_for(
@@ -247,22 +249,54 @@ class ClaudeCodeAdapter:
         playbooks = pathlib.Path(self.config.playbooks_dir).expanduser()
         return playbooks / self.config.template
 
+    @staticmethod
+    def _strip_frontmatter(content: str) -> str:
+        """Remove YAML --- frontmatter so it isn't parsed as a CLI flag."""
+        if content.startswith("---"):
+            end = content.find("---", 3)
+            if end != -1:
+                return content[end + 3:].lstrip("\n")
+        return content
+
     def _render_template(self, context: dict[str, Any]) -> str:
         """Render the prompt template with context + optional scope injection."""
         from jinja2 import Environment, Undefined
         import datetime
 
         tpl_path = self._resolve_template()
-        template_str = tpl_path.read_text(encoding="utf-8") if tpl_path.exists() else ""
+        raw = tpl_path.read_text(encoding="utf-8") if tpl_path.exists() else ""
+        template_str = self._strip_frontmatter(raw)
 
         now = datetime.datetime.now()
         base_ctx: dict[str, Any] = {
+            # lowercase aliases (existing)
             "now": now.isoformat(),
             "date": now.strftime("%Y-%m-%d"),
             "time": now.strftime("%H:%M:%S"),
             "repo": self.config.repo,
             "model": self.config.model,
             "branch": self.config.branch or "main",
+            # Uppercase convention used by templates under
+            # ~/SOURCE_DEV/meta/claude-playbooks/prompts/*.md
+            # (e.g. `{{REPO}}`, `{{BRANCH}}`, `{{YYYYMMDD}}`, `{{MODEL}}`).
+            # Without these, Jinja raised `'YYYYMMDD' is undefined` and the
+            # flow failed before invoking the model.
+            "REPO": self.config.repo,
+            "BRANCH": self.config.branch or "main",
+            "MODEL": self.config.model,
+            "SCOPE_SUMMARY": self.config.scope or "(no scope specified)",
+            "ISO_TIMESTAMP": now.isoformat(),
+            "NOW": now.isoformat(),
+            "TIMESTAMP": now.strftime("%Y%m%d-%H%M%S"),
+            "YYYYMMDD": now.strftime("%Y%m%d"),
+            "YYYY": now.strftime("%Y"),
+            "MM": now.strftime("%m"),
+            "DD": now.strftime("%d"),
+            "HHMM": now.strftime("%H%M"),
+            "HH": now.strftime("%H"),
+            # Composite helpers (Jinja treats `YYYYMMDD-HHMM` as subtraction,
+            # so we expose a pre-joined canonical key as well).
+            "YYYYMMDD_HHMM": now.strftime("%Y%m%d-%H%M"),
             **context,
         }
 

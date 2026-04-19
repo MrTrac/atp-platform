@@ -314,6 +314,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
             )
             if persistence.get("persisted"):
                 result["persistence"] = {"run_id": persistence["run_id"], "files": len(persistence.get("files_written", []))}
+            else:
+                # Surface the reason so `persistence: null` doesn't silently
+                # hide real errors ("persistence error: ..." from the caught
+                # exception inside persist_bridge_run).
+                reason = persistence.get("reason")
+                if reason and reason != "disabled":
+                    result["persistence"] = {"persisted": False, "reason": reason}
+                    log_event("bridge.persist.error", request_id=result.get("request_id"), reason=reason)
 
             # Structured logging
             manifest = result.get("ollama_manifest") or result.get("manifest") or {}

@@ -2,6 +2,28 @@
 
 All notable changes to ATP are documented here.
 
+## [2.0.2] — 2026-04-19
+
+### Fixed — claude-code adapter template ctx + bridge persist silent-fail
+
+- **`adapters/claude_code.py` `_render_template`** — base Jinja context now
+  includes uppercase aliases (`REPO`, `BRANCH`, `MODEL`, `SCOPE_SUMMARY`,
+  `ISO_TIMESTAMP`, `NOW`, `TIMESTAMP`, `YYYYMMDD`, `YYYY`, `MM`, `DD`,
+  `HHMM`, `HH`, `YYYYMMDD_HHMM`) in addition to the existing lowercase
+  keys. Fixes `'YYYYMMDD' is undefined` Jinja errors when rendering
+  playbook templates under `~/SOURCE_DEV/meta/claude-playbooks/prompts/`.
+- **`bridge/bridge_server.py` persistence reporting** — when
+  `persist_bridge_run` returns `{persisted: False, reason: "…"}`, the
+  bridge response now surfaces the reason (as
+  `persistence: {persisted: false, reason}`) and emits a structured
+  `bridge.persist.error` log event, instead of the previous silent drop
+  that made `persistence: null` responses indistinguishable from
+  "persistence disabled". Unchanged for `reason == "disabled"` (benign).
+- Verified end-to-end with AIOS-OC v3.8.0 Flow Canvas — a full
+  `claude-code-agent` run (AOKP repo, prompts/01-uv-version-bump.md,
+  sonnet) now persists to `~/SOURCE_DEV/workspace/atp-runs/<req_id>/`
+  with request/routing/executor-outputs zones + run-summary.json.
+
 ## [2.0.1] — 2026-04-19
 
 ### Chore — ecosystem alignment bump
