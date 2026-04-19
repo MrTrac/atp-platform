@@ -59,6 +59,51 @@ MODEL_ALLOWLIST = config.MODEL_ALLOWLIST
 SERVER_VERSION = "1.7"
 
 
+def _run_claude_code_adapter(incoming: dict) -> dict:
+    """Dispatch adapter=claude-code requests to ClaudeCodeAdapter (L3)."""
+    import asyncio
+    import uuid
+    from adapters.claude_code import ClaudeCodeAdapter, ClaudeCodeAdapterConfig
+
+    cfg = incoming.get("config") or {}
+    repo = str(cfg.get("repo") or "")
+    template = str(cfg.get("template") or "")
+    model = str(cfg.get("model") or "sonnet")
+    branch = cfg.get("branch") or None
+    scope = cfg.get("scope") or None
+    timeout_seconds = int(cfg.get("timeout_seconds") or 7200)
+
+    if not repo or not template:
+        return {"status": "failed", "error": "claude-code adapter: repo and template are required", "success": False}
+
+    adapter_cfg = ClaudeCodeAdapterConfig(
+        repo=repo,
+        template=template,
+        model=model,
+        timeout_seconds=timeout_seconds,
+        branch=branch,
+        scope=scope,
+    )
+    adapter = ClaudeCodeAdapter(adapter_cfg)
+    context = incoming.get("context") or {}
+
+    result = asyncio.run(adapter.execute(prompt_context=context))
+    request_id = f"cc-{uuid.uuid4().hex[:12]}"
+    return {
+        "status": "ok" if result.success else "failed",
+        "success": result.success,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "exit_code": result.exit_code,
+        "error": result.error,
+        "request_id": request_id,
+        "adapter": "claude-code",
+        "repo": repo,
+        "model": adapter_cfg.model_id,
+        "bridge": {"source": "claude-code-adapter"},
+    }
+
+
 def _timestamp() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
@@ -235,11 +280,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
                 self._send_json(403, {"status": "failed", "error": f"Model not in allowlist: {model_name}", "allowed": MODEL_ALLOWLIST})
                 return
 
-        self._log(f"POST /run — text={incoming.get('text', '')[:80]!r}")
+        self._log(f"POST /run — adapter={incoming.get('adapter', '')!r} text={incoming.get('text', '')[:80]!r}")
         start = time.monotonic()
 
         try:
-            result = bridge_request(incoming)
+            if incoming.get("adapter") == "claude-code":
+                result = _run_claude_code_adapter(incoming)
+            else:
+                result = bridge_request(incoming)
             elapsed_ms = round((time.monotonic() - start) * 1000)
             result["response_time_ms"] = elapsed_ms
 
