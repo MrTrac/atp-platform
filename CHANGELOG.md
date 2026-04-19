@@ -2,6 +2,46 @@
 
 All notable changes to ATP are documented here.
 
+## [2.0.3] — 2026-04-19
+
+### Added — codex + cursor CLI-agent adapters (parity with claude-code)
+
+- `adapters/codex.py` — `CodexAdapter` spawns OpenAI `codex` CLI in the
+  target repo. Template rendering + same base_ctx helpers as
+  claude_code (uppercase REPO / BRANCH / YYYYMMDD / etc.). Validates
+  `codex --version` + `OPENAI_API_KEY` at execute().
+- `adapters/cursor.py` — `CursorAdapter` spawns Cursor `cursor-agent`
+  CLI. Same config shape; Cursor's own auth handles credentials (no
+  API key env needed). `FileNotFoundError` caught with install hint
+  pointing to cursor.com/docs/cli.
+- `bridge/bridge_server.py` — router refactored: new
+  `_run_cli_agent_adapter(incoming, adapter_kind)` handles all 3
+  (`claude-code` | `codex` | `cursor`) so adding a 4th adapter is a
+  one-branch change. Back-compat shim `_run_claude_code_adapter` still
+  exports the old name.
+- CodexAdapterConfig + CursorAdapterConfig accept `workspace_dir` +
+  `isolation` for interface parity with ClaudeCodeAdapterConfig, even
+  though the CLI flow doesn't use them yet.
+
+### Added — launchd wrapper reads Keychain for API keys
+
+- `~/AI_OS/30_RUNTIME/agents/launchd/atp-bridge-start.sh` — resolves
+  `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `CURSOR_API_KEY` from macOS
+  Keychain (service names match env-var names — same service names
+  AIOS-OC `/api/keys` writes to). Explicit PATH + full-path python3
+  ensures Homebrew Python 3.14 (with jinja2) instead of
+  CommandLineTools 3.9. plist now execs this wrapper.
+
+### Verified
+
+- Codex end-to-end: POST /run with `adapter=codex, model=gpt-5-pro`
+  spawned `codex exec` subprocess, rendered template correctly (no
+  more `'YYYYMMDD' is undefined`), persisted 4 zone files to
+  `~/SOURCE_DEV/workspace/atp-runs/cx-…/`.
+- Cursor dispatch: returns actionable error
+  "cursor-agent CLI not found in PATH — install from cursor.com/docs/cli"
+  (no traceback, no generic "Bridge execution failed").
+
 ## [2.0.2] — 2026-04-19
 
 ### Fixed — claude-code adapter template ctx + bridge persist silent-fail
