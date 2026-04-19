@@ -2,6 +2,13 @@
 
 All notable changes to ATP are documented here.
 
+## [2.0.1] — 2026-04-19
+
+### Chore — ecosystem alignment bump
+- Administrative patch bump as part of `uv all` (option B) across managed projects. ATP's `/run` and governance-hook behaviour unchanged; no new provider adapters added in this release.
+- aios-flow (§5.4.1) is now a formal Transformation subsystem that consumes ATP `/run` per step — reconfirms the boundary that **every LLM / adapter call still flows through ATP**; aios-flow never calls providers directly.
+- Pack hydrated via `aios sync reverse ATP --apply`.
+
 ## [2.0.0] — 2026-04-15
 
 ### Added — Streaming & Cancellation (BREAKING)
