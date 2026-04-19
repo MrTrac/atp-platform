@@ -29,3 +29,7 @@ htmlcov/
 
 # Runtime workspace (lives in SOURCE_DEV/workspace, not in repo)
 workspace/
+
+# Cursor/OS duplicate files (e.g. "file (1).py") — không commit
+* (1)
+* (1).*

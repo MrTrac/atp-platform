@@ -59,36 +59,66 @@ MODEL_ALLOWLIST = config.MODEL_ALLOWLIST
 SERVER_VERSION = "1.7"
 
 
-def _run_claude_code_adapter(incoming: dict) -> dict:
-    """Dispatch adapter=claude-code requests to ClaudeCodeAdapter (L3)."""
+def _run_cli_agent_adapter(incoming: dict, adapter_kind: str) -> dict:
+    """Dispatch `adapter=claude-code|codex|cursor` requests to the matching
+    Python adapter (all 3 share identical config shape; only the spawned
+    CLI differs). Returns the normalized bridge response.
+    """
     import asyncio
     import uuid
-    from adapters.claude_code import ClaudeCodeAdapter, ClaudeCodeAdapterConfig
 
     cfg = incoming.get("config") or {}
     repo = str(cfg.get("repo") or "")
     template = str(cfg.get("template") or "")
-    model = str(cfg.get("model") or "sonnet")
+    model_raw = str(cfg.get("model") or "")
     branch = cfg.get("branch") or None
     scope = cfg.get("scope") or None
     timeout_seconds = int(cfg.get("timeout_seconds") or 7200)
+    # Optional workspace — caller passes an absolute stage dir; adapter writes
+    # prompt.md / stdout.log / stderr.log / result.json there, keeping the
+    # source repo clean. `isolation` picks direct|read-only|worktree for cwd.
+    workspace_dir = cfg.get("workspace_dir") or None
+    isolation = str(cfg.get("isolation") or "direct")
 
     if not repo or not template:
-        return {"status": "failed", "error": "claude-code adapter: repo and template are required", "success": False}
+        return {"status": "failed", "error": f"{adapter_kind} adapter: repo and template are required", "success": False}
 
-    adapter_cfg = ClaudeCodeAdapterConfig(
-        repo=repo,
-        template=template,
-        model=model,
-        timeout_seconds=timeout_seconds,
-        branch=branch,
-        scope=scope,
-    )
-    adapter = ClaudeCodeAdapter(adapter_cfg)
+    if adapter_kind == "claude-code":
+        from adapters.claude_code import ClaudeCodeAdapter, ClaudeCodeAdapterConfig
+        adapter_cfg = ClaudeCodeAdapterConfig(
+            repo=repo, template=template,
+            model=model_raw or "sonnet",
+            timeout_seconds=timeout_seconds, branch=branch, scope=scope,
+            workspace_dir=workspace_dir, isolation=isolation,
+        )
+        adapter = ClaudeCodeAdapter(adapter_cfg)
+        rid_prefix = "cc"
+    elif adapter_kind == "codex":
+        from adapters.codex import CodexAdapter, CodexAdapterConfig
+        adapter_cfg = CodexAdapterConfig(
+            repo=repo, template=template,
+            model=model_raw or "gpt-5-pro",
+            timeout_seconds=timeout_seconds, branch=branch, scope=scope,
+            workspace_dir=workspace_dir, isolation=isolation,
+        )
+        adapter = CodexAdapter(adapter_cfg)
+        rid_prefix = "cx"
+    elif adapter_kind == "cursor":
+        from adapters.cursor import CursorAdapter, CursorAdapterConfig
+        adapter_cfg = CursorAdapterConfig(
+            repo=repo, template=template,
+            model=model_raw or "auto",
+            timeout_seconds=timeout_seconds, branch=branch, scope=scope,
+            workspace_dir=workspace_dir, isolation=isolation,
+        )
+        adapter = CursorAdapter(adapter_cfg)
+        rid_prefix = "cu"
+    else:
+        return {"status": "failed", "error": f"unknown CLI-agent adapter: {adapter_kind}", "success": False}
+
     context = incoming.get("context") or {}
-
     result = asyncio.run(adapter.execute(prompt_context=context))
-    request_id = f"cc-{uuid.uuid4().hex[:12]}"
+    request_id = f"{rid_prefix}-{uuid.uuid4().hex[:12]}"
     return {
         "status": "ok" if result.success else "failed",
         "success": result.success,
@@ -97,11 +127,18 @@ def _run_claude_code_adapter(incoming: dict) -> dict:
         "exit_code": result.exit_code,
         "error": result.error,
         "request_id": request_id,
-        "adapter": "claude-code",
+        "adapter": adapter_kind,
         "repo": repo,
         "model": adapter_cfg.model_id,
-        "bridge": {"source": "claude-code-adapter"},
+        "workspace_dir": workspace_dir,
+        "isolation": isolation,
+        "bridge": {"source": f"{adapter_kind}-adapter"},
     }
+
+
+def _run_claude_code_adapter(incoming: dict) -> dict:
+    """Back-compat shim — delegate to the unified CLI-agent dispatcher."""
+    return _run_cli_agent_adapter(incoming, "claude-code")
 
 
 def _timestamp() -> str:
@@ -284,8 +321,9 @@ class BridgeHandler(BaseHTTPRequestHandler):
         start = time.monotonic()
 
         try:
-            if incoming.get("adapter") == "claude-code":
-                result = _run_claude_code_adapter(incoming)
+            adapter_kind = incoming.get("adapter")
+            if adapter_kind in ("claude-code", "codex", "cursor"):
+                result = _run_cli_agent_adapter(incoming, adapter_kind)
             else:
                 result = bridge_request(incoming)
             elapsed_ms = round((time.monotonic() - start) * 1000)
