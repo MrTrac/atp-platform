@@ -47,13 +47,13 @@ def resolve_run_root(
     repo_root: Path | None = None,
     workspace_root: Path | None = None,
 ) -> Path:
-    """Resolve the per-run root under SOURCE_DEV/workspace/atp-runs."""
+    """Resolve the per-run root under SOURCE_DEV/workspace/ATP/runs."""
 
     if not str(run_id).strip():
         raise ValueError("run_id is required for runtime materialization.")
 
     runtime_root = workspace_root.resolve() if workspace_root is not None else resolve_workspace_root(repo_root)
-    return runtime_root / "atp-runs" / run_id
+    return runtime_root / "ATP" / "runs" / run_id
 
 
 def resolve_artifact_projection_root(
@@ -67,7 +67,7 @@ def resolve_artifact_projection_root(
         raise ValueError("artifact_id is required for authoritative projection.")
 
     runtime_root = workspace_root.resolve() if workspace_root is not None else resolve_workspace_root(repo_root)
-    return runtime_root / "atp-artifacts" / artifact_id
+    return runtime_root / "ATP" / "artifacts" / artifact_id
 
 
 def resolve_exchange_current_task_root(
@@ -81,7 +81,7 @@ def resolve_exchange_current_task_root(
         raise ValueError("run_id is required for exchange materialization.")
 
     runtime_root = workspace_root.resolve() if workspace_root is not None else resolve_workspace_root(repo_root)
-    return runtime_root / "exchange" / "current-task" / run_id
+    return runtime_root / "_shared" / "exchange" / "current-task" / run_id
 
 
 def workspace_path(run_id: str, area: str) -> str:
@@ -89,7 +89,7 @@ def workspace_path(run_id: str, area: str) -> str:
 
     if area not in RUN_TREE_ZONES:
         raise ValueError(f"Unsupported ATP runtime area: {area}")
-    return str(Path("SOURCE_DEV") / "workspace" / "atp-runs" / run_id / area)
+    return str(Path("SOURCE_DEV") / "workspace" / "ATP" / "runs" / run_id / area)
 
 
 def repo_local_serialization_path(run_id: str, area: str) -> Path:
@@ -341,7 +341,7 @@ def project_authoritative_artifacts(
     repo_root: Path | None = None,
     workspace_root: Path | None = None,
 ) -> dict[str, Any]:
-    """Project authoritative artifacts into SOURCE_DEV/workspace/atp-artifacts."""
+    """Project authoritative artifacts into SOURCE_DEV/workspace/ATP/artifacts."""
 
     projected: list[dict[str, Any]] = []
     for artifact in artifacts:
@@ -424,7 +424,7 @@ def build_retention_summary(
         "cleanup_actions": [],
         "policy_notes": [
             "Slice 4 does not perform automatic deletion of run-local or projected authoritative artifacts.",
-            "Projected authoritative artifacts remain retained under SOURCE_DEV/workspace/atp-artifacts.",
+            "Projected authoritative artifacts remain retained under SOURCE_DEV/workspace/ATP/artifacts.",
             "Deprecated artifacts are only marked cleanup-eligible after close or close_rejected decisions.",
         ],
     }

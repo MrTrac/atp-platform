@@ -33,3 +33,58 @@ workspace/
 # Cursor/OS duplicate files (e.g. "file (1).py") — không commit
 * (1)
 * (1).*
+
+# ── AI_OS ecosystem baseline (Sanitation Plan v3, 2026-04-21) ──
+# AI_OS ecosystem baseline .gitignore
+# Apply to any repo with: cat ~/SOURCE_DEV/utilities/templates/gitignore.baseline >> .gitignore
+# Then deduplicate and sort as needed.
+# Source: ~/SOURCE_DEV/utilities/templates/gitignore.baseline (Sanitation Plan v3)
+
+# ── Python ──────────────────────────────────────────────
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Node / pnpm ─────────────────────────────────────────
+node_modules/
+.next/
+.nuxt/
+.output/
+dist/
+build/
+
+# ── AI_OS runtime (NEVER commit these) ──────────────────
+# These live in ~/.aios/ — see Global_Repo_Root_Sanitation_Rule.md
+.venv/
+.claude/worktrees/
+
+# ── Secrets ─────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+
+# ── OS / Editor ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+
+# ── Logs ────────────────────────────────────────────────
+*.log
+logs/

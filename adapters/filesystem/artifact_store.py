@@ -172,7 +172,7 @@ def store_artifact(
     from pathlib import Path
 
     ws = Path(workspace_root) if workspace_root else resolve_workspace_root()
-    artifact_dir = ws / "atp-artifacts" / artifact_id
+    artifact_dir = ws / "ATP" / "artifacts" / artifact_id
     artifact_dir.mkdir(parents=True, exist_ok=True)
     artifact_path = _write_json(artifact_dir / "artifact.json", artifact)
 
