@@ -7,7 +7,7 @@ Phạm vi hiện hành:
 - shape exchange bundle summary
 - tạo artifact-like dict cho execution output
 - gán artifact state như `raw`, `filtered`, `selected`, `authoritative`, `deprecated`
-- materialize run tree tối thiểu của ATP v0.2 dưới `SOURCE_DEV/workspace/atp-runs/<run-id>/`
+- materialize run tree tối thiểu của ATP v0.2 dưới `SOURCE_DEV/workspace/ATP/runs/<run-id>/`
 - materialize handoff outputs tối thiểu trong `handoff/` của run tree
 - materialize explicit v0.5 Slice A `request-to-product` resolution contract riêng với legacy `resolution.json`
 - materialize explicit v0.5 Slice B `resolution-to-handoff-intent` contract riêng với Slice A contract
@@ -20,7 +20,7 @@ Phạm vi hiện hành:
 - materialize explicit v1.0 Slice A `review-approval-gate` contract riêng với v0.7 finalization chain
 - materialize explicit v1.0 Slice B `gate-outcome-operational-followup` contract riêng với v1.0 gate chain
 - materialize explicit v1.0 Slice C `operational-continuity-gate-followup-state` contract riêng với v1.0 follow-up chain
-- project authoritative artifacts tối thiểu sang `SOURCE_DEV/workspace/atp-artifacts/<artifact-id>/`
+- project authoritative artifacts tối thiểu sang `SOURCE_DEV/workspace/ATP/artifacts/<artifact-id>/`
 - ghi retention / cleanup semantics tối thiểu mà không auto-delete runtime artifacts
 - materialize `exchange/current-task/` tối thiểu chỉ khi exchange boundary decision yêu cầu
 - persist current-task state tối thiểu ở mức file-based khi exchange current-task được materialize

@@ -66,6 +66,14 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
     dict
         Full ATP execution result including manifest and routing metadata.
     """
+    # Short-circuit non-LLM providers BEFORE the text/model parser runs.
+    # Non-LLM providers (e.g. tdf-run dispatching to TDF Web Panel) do not
+    # require a `text` prompt — they carry structured task envelopes instead.
+    explicit_provider = (incoming.get("provider") or "").strip().lower()
+    if explicit_provider == "tdf-run":
+        from bridge import tdf_run
+        return tdf_run.dispatch(incoming)
+
     text = (incoming.get("text") or "").strip()
     if not text:
         raise BridgeError("'text' is required and must be non-empty.")
