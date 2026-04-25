@@ -2,6 +2,33 @@
 
 All notable changes to ATP are documented here.
 
+## [2.0.4] — 2026-04-25
+
+### Added — `tdf-run` bridge provider (P3 ATP↔TDF integration)
+
+- `bridge/tdf_run.py` — new non-LLM provider that dispatches structured
+  execution tasks to TDF Web Control Panel's `/api/exec/execute` endpoint
+  (port `:4180`). Pass-through pattern: ATP owns task envelope + governance
+  classification; TDF owns bounded execution + RBAC + audit trail.
+- Routing in `bridge/openclaw_bridge.py`: requests with explicit
+  `provider="tdf-run"` short-circuit BEFORE the `text`/`model` parser
+  (TDF tasks carry structured target/params/mode envelopes, not prompts).
+- Governance class mapping (per `~/SOURCE_DEV/products/TDF/tdf/docs/integrations/ATP_BRIDGE_INTEGRATION.md`):
+    - `dry_run: true` → class **C** (auto-approved, preview only)
+    - `validate` / non-destructive ops real → class **C**
+    - `deploy.*` / `install.*` real → class **B** (requires human gate)
+    - `rollback.*` / `uninstall.*` / `undeploy.*` real → class **A** (strict review)
+- Env var: `TDF_WEB_URL` (default `http://localhost:4180`)
+- 16 unit tests in `tests/unit/test_tdf_run.py`: validation, success path,
+  failure modes (HTTP error, unreachable TDF, non-JSON response),
+  governance class mapping for all op types.
+
+### Why
+Closes the P3 connection point in the AI_OS ecosystem roadmap. TDF v6.7.0
+shipped a contract + reference Python skeleton in October 2025; this
+release wires the ATP side. AOKP and AIOS-OC remain independent of this
+provider — it only affects ATP's bridge dispatch table.
+
 ## [2.0.3] — 2026-04-19
 
 ### Added — codex + cursor CLI-agent adapters (parity with claude-code)
