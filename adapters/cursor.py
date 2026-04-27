@@ -137,11 +137,14 @@ class CursorAdapter:
 
         prompt = self._render_template(prompt_context or {})
 
-        # `cursor-agent -p <prompt>` (or similar). The CLI flag set is
-        # evolving — if cursor-agent expects a different invocation
-        # (e.g. subcommand `run`), adjust here. We pass --model only if
-        # it's not the pass-through "auto" value.
-        cmd = [self.CLI_BIN, "-p", prompt]
+        # `cursor-agent -p <prompt>` runs the agent non-interactively.
+        # Flags:
+        #   -p / --print  → print responses to stdout (script-mode)
+        #   --trust       → accept "Workspace Trust" prompt non-interactively
+        #                    (the CLI refuses to run in an untrusted dir
+        #                     otherwise, blocking automation flows entirely).
+        #   --model       → pick explicit model (omitted for "auto").
+        cmd = [self.CLI_BIN, "-p", "--trust", prompt]
         if self.config.model_id and self.config.model_id != "auto":
             cmd.extend(["--model", self.config.model_id])
 
