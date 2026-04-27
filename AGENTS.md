@@ -106,7 +106,7 @@ Preserve boundaries strictly. Follow the source of truth in order. Make the smal
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=AGENTS -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260418T080816Z
+GeneratedAtUTC: 20260427T054736Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -195,12 +195,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 43d75c0be8662abd64d307fadf2873b67f1b6c8b2bae4ca9e77b81dac8b80e7a
+SHA256: e2bce1d184a84d346ea90c86046180ed11f2a82434f1fcf220560acfaa55a2a8
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.0.0
-- **Last synced:** 2026-04-18 (via aios sync reverse)
+- **Version:** v2.0.4
+- **Last synced:** 2026-04-25 (via aios sync reverse)
 
 ## Status
 
@@ -213,13 +213,13 @@ SHA256: 43d75c0be8662abd64d307fadf2873b67f1b6c8b2bae4ca9e77b81dac8b80e7a
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: d0320b4255798616ae67e3dea69602c2f67a3f3f3c7f9df6107ca216a6e9b2bf
+SHA256: 52a5c1f6218d075706b18c74484970a8e5fa6725f56e35a24fd8cb2722299228
 ----
 # AI Next Step — ATP
 
-- **Last updated:** 2026-04-15
-- **Phase:** v2.0.0 released — Streaming & Cancellation complete
-- **Current state:** v2.0.0 tagged + pushed. 3-version cloud AI push (v1.8 → v1.9 → v2.0) shipped.
+- **Last updated:** 2026-04-25
+- **Phase:** v2.0.4 — `tdf-run` bridge provider (P3 ATP↔TDF integration)
+- **Current state:** v2.0.4 implemented locally; commits + push + tag pending human approval.
 
 ---
 
@@ -256,15 +256,15 @@ Remaining stubs (not blockers):
 
 ## 3. Possible next steps (all require human approval)
 
-1. **AIOS-OC UI integration of streaming + cancellation**
+1. **Commit + push + tag v2.0.4** — tdf-run provider locally implemented and tested (16/16 unit tests pass); requires explicit approval per GSGR before push/tag
+2. **End-to-end test** with TDF Web Panel running tại `:4180` — `curl -X POST http://localhost:8765/run -d '{"provider":"tdf-run","target":{"tool":"ops/checkos"},"mode":{"dry_run":true}}'`
+3. **AIOS-OC UI integration of streaming + cancellation**
    - Wire `/run/stream` into AIOS-OC analyze node
    - Wire `DELETE /runs/<id>` for true abort UX
-   - Handoff ready at `~/AI_OS/20_PROJECTS/AIOS-OC/AI_HANDOFF_LATEST.md`
-
-2. **Streaming for Ollama adapter** — current v2.0.0 is cloud-only
-3. **Batch API support** — OpenAI batch endpoints for cost-effective bulk analysis
-4. **AOKP v2.4+ enrichments** — deeper knowledge integration
-5. **Agentic multi-tool loop** — server-side tool execution (currently client handles tool_calls)
+4. **Streaming for Ollama adapter** — current v2.0.x is cloud-only
+5. **Batch API support** — OpenAI batch endpoints
+6. **AOKP v2.4+ enrichments** — deeper knowledge integration
+7. **Agentic multi-tool loop** — server-side tool execution
 
 ---
 
@@ -289,6 +289,22 @@ Khi bump version / tag release cho ATP, PHẢI update đồng bộ tất cả 7 
 7. `~/AI_OS/20_PROJECTS/ATP/AI_NEXT_STEP.md` — phase, current state
 
 **Enforcement:** CLAUDE.md and AGENTS.md in ATP repo explicitly reference this rule and block `git tag` if any of the 7 files still shows old version.
+
+## Cross-Session Context (CTX-P0)
+Workspace ID: `f557573632b576e4` (SHA-256 first-16-hex of canonical repo path)
+Active WIPs in this workspace: 0
+
+Live cross-session context (active WIPs detail, recent decisions, last handoff snippet,
+parent session linkage) is available via MCP-CTX-P0 tools — not embedded here to keep
+CLAUDE.md stable for commits. Call from any Claude Code session:
+
+- `get_session_context(workspace=<this repo path>)` — full hydration block
+- `bind_session(claude_session_id, workspace)` — register this chat in session log
+- `get_last_handoff(project)` — fetch full AI_HANDOFF_LATEST.md (4 KB cap)
+- `mark_continuation(parent, child)` — link this chat to a prior one
+
+Audit log: `~/AI_OS/30_RUNTIME/state/ctx_audit.jsonl` (every CTX call recorded).
+Workspace registry: `~/AI_OS/30_RUNTIME/state/workspace_index.json` (workspace_id → metadata).
 
 
 ## AI_OS Multi-AI Ecosystem — READ FIRST (for any AI agent)

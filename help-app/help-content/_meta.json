@@ -1,0 +1,20 @@
+{
+  "groups": [
+    {
+      "id": "overview",
+      "label": "Bắt đầu",
+      "icon": "🏠",
+      "items": [
+        "overview/what-is-atp"
+      ]
+    },
+    {
+      "id": "runbook",
+      "label": "Vận hành",
+      "icon": "⚙",
+      "items": [
+        "runbook/14-step-flow"
+      ]
+    }
+  ]
+}

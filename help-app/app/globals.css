@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@source "../node_modules/@aios/help-portal/src/**/*.{ts,tsx}";
+@source "../app/**/*.{ts,tsx}";
+@import "@aios/help-portal/styles/help-bright.css";
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--shell-bg, #14192a);
+  color: var(--shell-text, #e8eef7);
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}

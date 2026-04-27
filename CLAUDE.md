@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260418T080816Z
+GeneratedAtUTC: 20260427T054736Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 43d75c0be8662abd64d307fadf2873b67f1b6c8b2bae4ca9e77b81dac8b80e7a
+SHA256: e2bce1d184a84d346ea90c86046180ed11f2a82434f1fcf220560acfaa55a2a8
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.0.0
-- **Last synced:** 2026-04-18 (via aios sync reverse)
+- **Version:** v2.0.4
+- **Last synced:** 2026-04-25 (via aios sync reverse)
 
 ## Status
 
@@ -108,13 +108,13 @@ SHA256: 43d75c0be8662abd64d307fadf2873b67f1b6c8b2bae4ca9e77b81dac8b80e7a
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: d0320b4255798616ae67e3dea69602c2f67a3f3f3c7f9df6107ca216a6e9b2bf
+SHA256: 52a5c1f6218d075706b18c74484970a8e5fa6725f56e35a24fd8cb2722299228
 ----
 # AI Next Step — ATP
 
-- **Last updated:** 2026-04-15
-- **Phase:** v2.0.0 released — Streaming & Cancellation complete
-- **Current state:** v2.0.0 tagged + pushed. 3-version cloud AI push (v1.8 → v1.9 → v2.0) shipped.
+- **Last updated:** 2026-04-25
+- **Phase:** v2.0.4 — `tdf-run` bridge provider (P3 ATP↔TDF integration)
+- **Current state:** v2.0.4 implemented locally; commits + push + tag pending human approval.
 
 ---
 
@@ -151,15 +151,15 @@ Remaining stubs (not blockers):
 
 ## 3. Possible next steps (all require human approval)
 
-1. **AIOS-OC UI integration of streaming + cancellation**
+1. **Commit + push + tag v2.0.4** — tdf-run provider locally implemented and tested (16/16 unit tests pass); requires explicit approval per GSGR before push/tag
+2. **End-to-end test** with TDF Web Panel running tại `:4180` — `curl -X POST http://localhost:8765/run -d '{"provider":"tdf-run","target":{"tool":"ops/checkos"},"mode":{"dry_run":true}}'`
+3. **AIOS-OC UI integration of streaming + cancellation**
    - Wire `/run/stream` into AIOS-OC analyze node
    - Wire `DELETE /runs/<id>` for true abort UX
-   - Handoff ready at `~/AI_OS/20_PROJECTS/AIOS-OC/AI_HANDOFF_LATEST.md`
-
-2. **Streaming for Ollama adapter** — current v2.0.0 is cloud-only
-3. **Batch API support** — OpenAI batch endpoints for cost-effective bulk analysis
-4. **AOKP v2.4+ enrichments** — deeper knowledge integration
-5. **Agentic multi-tool loop** — server-side tool execution (currently client handles tool_calls)
+4. **Streaming for Ollama adapter** — current v2.0.x is cloud-only
+5. **Batch API support** — OpenAI batch endpoints
+6. **AOKP v2.4+ enrichments** — deeper knowledge integration
+7. **Agentic multi-tool loop** — server-side tool execution
 
 ---
 
@@ -184,6 +184,22 @@ Khi bump version / tag release cho ATP, PHẢI update đồng bộ tất cả 7 
 7. `~/AI_OS/20_PROJECTS/ATP/AI_NEXT_STEP.md` — phase, current state
 
 **Enforcement:** CLAUDE.md and AGENTS.md in ATP repo explicitly reference this rule and block `git tag` if any of the 7 files still shows old version.
+
+## Cross-Session Context (CTX-P0)
+Workspace ID: `f557573632b576e4` (SHA-256 first-16-hex of canonical repo path)
+Active WIPs in this workspace: 0
+
+Live cross-session context (active WIPs detail, recent decisions, last handoff snippet,
+parent session linkage) is available via MCP-CTX-P0 tools — not embedded here to keep
+CLAUDE.md stable for commits. Call from any Claude Code session:
+
+- `get_session_context(workspace=<this repo path>)` — full hydration block
+- `bind_session(claude_session_id, workspace)` — register this chat in session log
+- `get_last_handoff(project)` — fetch full AI_HANDOFF_LATEST.md (4 KB cap)
+- `mark_continuation(parent, child)` — link this chat to a prior one
+
+Audit log: `~/AI_OS/30_RUNTIME/state/ctx_audit.jsonl` (every CTX call recorded).
+Workspace registry: `~/AI_OS/30_RUNTIME/state/workspace_index.json` (workspace_id → metadata).
 
 
 ## AI_OS Multi-AI Ecosystem — READ FIRST (for any AI agent)
@@ -226,9 +242,203 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: b3d4ec1305d508e462319fed867ab5a8b284c70ad0964e199747ca43b4259c3d
+SHA256: 3db7e1da7ae56377d373ac976f14ce7de44a053b7da2c048d920d59cbe9c4f1d
 ----
 # AI_HANDOFF_LATEST — ATP
+
+## Handoff: v2.0.4 — reverse sync from source repo
+**Date**: 2026-04-25
+
+### What changed in v2.0.4
+## [2.0.4] — 2026-04-25
+
+### Added — `tdf-run` bridge provider (P3 ATP↔TDF integration)
+
+- `bridge/tdf_run.py` — new non-LLM provider that dispatches structured
+  execution tasks to TDF Web Control Panel's `/api/exec/execute` endpoint
+  (port `:4180`). Pass-through pattern: ATP owns task envelope + governance
+  classification; TDF owns bounded execution + RBAC + audit trail.
+- Routing in `bridge/openclaw_bridge.py`: requests with explicit
+  `provider="tdf-run"` short-circuit BEFORE the `text`/`model` parser
+  (TDF tasks carry structured target/params/mode envelopes, not prompts).
+- Governance class mapping (per `~/SOURCE_DEV/products/TDF/tdf/docs/integrations/ATP_BRIDGE_INTEGRATION.md`):
+    - `dry_run: true` → class **C** (auto-approved, preview only)
+    - `validate` / non-destructive ops real → class **C**
+    - `deploy.*` / `install.*` real → class **B** (requires human gate)
+    - `rollback.*` / `uninstall.*` / `undeploy.*` real → class **A** (strict review)
+- Env var: `TDF_WEB_URL` (default `http://localhost:4180`)
+- 16 unit tests in `tests/unit/test_tdf_run.py`: validation, success path,
+  failure modes (HTTP error, unreachable TDF, non-JSON response),
+  governance class mapping for all op types.
+
+### Why
+Closes the P3 connection point in the AI_OS ecosystem roadmap. TDF v6.7.0
+shipped a contract + reference Python skeleton in October 2025; this
+release wires the ATP side. AOKP and AIOS-OC remain independent of this
+provider — it only affects ATP's bridge dispatch table.
+
+---
+
+
+## Handoff: v2.0.3 — reverse sync from source repo
+**Date**: 2026-04-19
+
+### What changed in v2.0.3
+## [2.0.3] — 2026-04-19
+
+### Added — codex + cursor CLI-agent adapters (parity with claude-code)
+
+- `adapters/codex.py` — `CodexAdapter` spawns OpenAI `codex` CLI in the
+  target repo. Template rendering + same base_ctx helpers as
+  claude_code (uppercase REPO / BRANCH / YYYYMMDD / etc.). Validates
+  `codex --version` + `OPENAI_API_KEY` at execute().
+- `adapters/cursor.py` — `CursorAdapter` spawns Cursor `cursor-agent`
+  CLI. Same config shape; Cursor's own auth handles credentials (no
+  API key env needed). `FileNotFoundError` caught with install hint
+  pointing to cursor.com/docs/cli.
+- `bridge/bridge_server.py` — router refactored: new
+  `_run_cli_agent_adapter(incoming, adapter_kind)` handles all 3
+  (`claude-code` | `codex` | `cursor`) so adding a 4th adapter is a
+  one-branch change. Back-compat shim `_run_claude_code_adapter` still
+  exports the old name.
+- CodexAdapterConfig + CursorAdapterConfig accept `workspace_dir` +
+  `isolation` for interface parity with ClaudeCodeAdapterConfig, even
+  though the CLI flow doesn't use them yet.
+
+### Added — launchd wrapper reads Keychain for API keys
+
+- `~/AI_OS/30_RUNTIME/agents/launchd/atp-bridge-start.sh` — resolves
+  `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `CURSOR_API_KEY` from macOS
+  Keychain (service names match env-var names — same service names
+  AIOS-OC `/api/keys` writes to). Explicit PATH + full-path python3
+  ensures Homebrew Python 3.14 (with jinja2) instead of
+  CommandLineTools 3.9. plist now execs this wrapper.
+
+---
+
+
+## Handoff: v2.0.3 — reverse sync from source repo
+**Date**: 2026-04-19
+
+### What changed in v2.0.3
+## [2.0.3] — 2026-04-19
+
+### Added — codex + cursor CLI-agent adapters (parity with claude-code)
+
+- `adapters/codex.py` — `CodexAdapter` spawns OpenAI `codex` CLI in the
+  target repo. Template rendering + same base_ctx helpers as
+  claude_code (uppercase REPO / BRANCH / YYYYMMDD / etc.). Validates
+  `codex --version` + `OPENAI_API_KEY` at execute().
+- `adapters/cursor.py` — `CursorAdapter` spawns Cursor `cursor-agent`
+  CLI. Same config shape; Cursor's own auth handles credentials (no
+  API key env needed). `FileNotFoundError` caught with install hint
+  pointing to cursor.com/docs/cli.
+- `bridge/bridge_server.py` — router refactored: new
+  `_run_cli_agent_adapter(incoming, adapter_kind)` handles all 3
+  (`claude-code` | `codex` | `cursor`) so adding a 4th adapter is a
+  one-branch change. Back-compat shim `_run_claude_code_adapter` still
+  exports the old name.
+- CodexAdapterConfig + CursorAdapterConfig accept `workspace_dir` +
+  `isolation` for interface parity with ClaudeCodeAdapterConfig, even
+  though the CLI flow doesn't use them yet.
+
+### Added — launchd wrapper reads Keychain for API keys
+
+- `~/AI_OS/30_RUNTIME/agents/launchd/atp-bridge-start.sh` — resolves
+  `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `CURSOR_API_KEY` from macOS
+  Keychain (service names match env-var names — same service names
+  AIOS-OC `/api/keys` writes to). Explicit PATH + full-path python3
+  ensures Homebrew Python 3.14 (with jinja2) instead of
+  CommandLineTools 3.9. plist now execs this wrapper.
+
+---
+
+
+## Handoff: v2.0.2 — reverse sync from source repo
+**Date**: 2026-04-19
+
+### What changed in v2.0.2
+## [2.0.2] — 2026-04-19
+
+### Fixed — claude-code adapter template ctx + bridge persist silent-fail
+
+- **`adapters/claude_code.py` `_render_template`** — base Jinja context now
+  includes uppercase aliases (`REPO`, `BRANCH`, `MODEL`, `SCOPE_SUMMARY`,
+  `ISO_TIMESTAMP`, `NOW`, `TIMESTAMP`, `YYYYMMDD`, `YYYY`, `MM`, `DD`,
+  `HHMM`, `HH`, `YYYYMMDD_HHMM`) in addition to the existing lowercase
+  keys. Fixes `'YYYYMMDD' is undefined` Jinja errors when rendering
+  playbook templates under `~/SOURCE_DEV/meta/claude-playbooks/prompts/`.
+- **`bridge/bridge_server.py` persistence reporting** — when
+  `persist_bridge_run` returns `{persisted: False, reason: "…"}`, the
+  bridge response now surfaces the reason (as
+  `persistence: {persisted: false, reason}`) and emits a structured
+  `bridge.persist.error` log event, instead of the previous silent drop
+  that made `persistence: null` responses indistinguishable from
+  "persistence disabled". Unchanged for `reason == "disabled"` (benign).
+- Verified end-to-end with AIOS-OC v3.8.0 Flow Canvas — a full
+  `claude-code-agent` run (AOKP repo, prompts/01-uv-version-bump.md,
+  sonnet) now persists to `~/SOURCE_DEV/workspace/atp-runs/<req_id>/`
+  with request/routing/executor-outputs zones + run-summary.json.
+
+---
+
+
+## Handoff: v2.0.2 — reverse sync from source repo
+**Date**: 2026-04-19
+
+### What changed in v2.0.2
+## [2.0.2] — 2026-04-19
+
+### Fixed — claude-code adapter template ctx + bridge persist silent-fail
+
+- **`adapters/claude_code.py` `_render_template`** — base Jinja context now
+  includes uppercase aliases (`REPO`, `BRANCH`, `MODEL`, `SCOPE_SUMMARY`,
+  `ISO_TIMESTAMP`, `NOW`, `TIMESTAMP`, `YYYYMMDD`, `YYYY`, `MM`, `DD`,
+  `HHMM`, `HH`, `YYYYMMDD_HHMM`) in addition to the existing lowercase
+  keys. Fixes `'YYYYMMDD' is undefined` Jinja errors when rendering
+  playbook templates under `~/SOURCE_DEV/meta/claude-playbooks/prompts/`.
+- **`bridge/bridge_server.py` persistence reporting** — when
+  `persist_bridge_run` returns `{persisted: False, reason: "…"}`, the
+  bridge response now surfaces the reason (as
+  `persistence: {persisted: false, reason}`) and emits a structured
+  `bridge.persist.error` log event, instead of the previous silent drop
+  that made `persistence: null` responses indistinguishable from
+  "persistence disabled". Unchanged for `reason == "disabled"` (benign).
+- Verified end-to-end with AIOS-OC v3.8.0 Flow Canvas — a full
+  `claude-code-agent` run (AOKP repo, prompts/01-uv-version-bump.md,
+  sonnet) now persists to `~/SOURCE_DEV/workspace/atp-runs/<req_id>/`
+  with request/routing/executor-outputs zones + run-summary.json.
+
+---
+
+
+## Handoff: v2.0.1 — reverse sync from source repo
+**Date**: 2026-04-19
+
+### What changed in v2.0.1
+## [2.0.1] — 2026-04-19
+
+### Chore — ecosystem alignment bump
+- Administrative patch bump as part of `uv all` (option B) across managed projects. ATP's `/run` and governance-hook behaviour unchanged; no new provider adapters added in this release.
+- aios-flow (§5.4.1) is now a formal Transformation subsystem that consumes ATP `/run` per step — reconfirms the boundary that **every LLM / adapter call still flows through ATP**; aios-flow never calls providers directly.
+- Pack hydrated via `aios sync reverse ATP --apply`.
+
+---
+
+
+## Handoff: v2.0.1 — reverse sync from source repo
+**Date**: 2026-04-19
+
+### What changed in v2.0.1
+## [2.0.1] — 2026-04-19
+
+### Chore — ecosystem alignment bump
+- Administrative patch bump as part of `uv all` (option B) across managed projects. ATP's `/run` and governance-hook behaviour unchanged; no new provider adapters added in this release.
+- aios-flow (§5.4.1) is now a formal Transformation subsystem that consumes ATP `/run` per step — reconfirms the boundary that **every LLM / adapter call still flows through ATP**; aios-flow never calls providers directly.
+- Pack hydrated via `aios sync reverse ATP --apply`.
+
+---
+
 
 ## Handoff: v2.0.0 — reverse sync from source repo
 **Date**: 2026-04-18

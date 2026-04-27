@@ -1,0 +1,31 @@
+{
+  "name": "atp-help-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone Next.js sub-app serving /help for ATP. Runs on :8766 separate from the FastAPI bridge on :8765.",
+  "scripts": {
+    "dev": "next dev --port 8766",
+    "build": "next build",
+    "start": "next start --port 8766",
+    "help:capture": "node ../../AIOS-Help/capture/capture.mjs --project ATP",
+    "help:sync": "pnpm help:capture && echo \"\\n✓ ATP Help đã sync\""
+  },
+  "dependencies": {
+    "@aios/help-portal": "file:../../AIOS-Help/portal",
+    "@tailwindcss/postcss": "^4.2.4",
+    "gray-matter": "^4.0.3",
+    "next": "^15.2.0",
+    "postcss": "^8.5.10",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "remark-directive": "^4.0.0",
+    "remark-gfm": "^4.0.1",
+    "tailwindcss": "^4.2.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}
