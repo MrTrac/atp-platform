@@ -1,0 +1,71 @@
+# Security audit workflow — AI_OS Doctrine §3.6.6 + DP#56 + DP#118
+# Created: 2026-04-28 (Phase 2 Round 1 follow-up — distribute pattern from AOKP)
+#
+# Adapted for ATP tech stack: Python 3.11+ FastAPI + stdlib + minimal deps
+# (zero-deps policy per ADR-0001 bounded execution model).
+#
+# Runs:
+#   - Weekly Monday 04:00 UTC (cron)
+#   - On every push to main
+#   - On every PR targeting main
+name: Security Audit
+
+on:
+  schedule:
+    # Weekly Monday 04:00 UTC (= 11:00 Asia/Ho_Chi_Minh)
+    - cron: "0 4 * * 1"
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # manual trigger
+
+permissions:
+  contents: read
+  security-events: write # for SARIF upload (GitHub Security tab)
+
+jobs:
+  pip-audit:
+    name: pip-audit (FastAPI + stdlib deps)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install pip-audit + project deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit
+          # Install project from pyproject.toml (zero-deps friendly)
+          pip install -e . || true
+
+      - name: Run pip-audit (osv vulnerability service)
+        run: pip-audit --vulnerability-service osv
+
+      - name: Output pip-audit JSON
+        if: always()
+        run: pip-audit --format json > pip-audit-report.json || true
+
+      - name: Upload pip-audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-report
+          path: pip-audit-report.json
+          retention-days: 30
+
+  dep-review:
+    name: Dependency Review (PR diff only)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # GitHub-native dependency review — flags new vulnerable deps in PR diff
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: always
