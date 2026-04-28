@@ -1,7 +1,7 @@
-"""Optional persistence of bridge run results to the ATP workspace.
+"""Optional persistence of bridge run results to the ATP runtime directory.
 
 When ``ATP_PERSIST_RUNS`` is enabled, each bridge execution writes its
-request, routing, and execution result to ``SOURCE_DEV/workspace/atp-runs/``.
+request, routing, and execution result to ``~/.aios/runtime/atp-runs/``.
 Disabled by default. Never blocks execution — persistence errors are caught.
 """
 
@@ -144,6 +144,7 @@ def _write(path: Path, data: Any) -> None:
 
 
 def _resolve_workspace() -> Path:
-    """Resolve workspace from ATP repo layout."""
-    from adapters.filesystem.workspace_writer import resolve_workspace_root
-    return resolve_workspace_root()
+    """Resolve runtime directory for ATP run artifacts (~/.aios/runtime/)."""
+    runtime = Path.home() / ".aios" / "runtime"
+    runtime.mkdir(parents=True, exist_ok=True)
+    return runtime

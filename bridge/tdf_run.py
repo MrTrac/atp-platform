@@ -18,7 +18,7 @@ from __future__ import annotations
 import json
 import os
 import urllib.error
-import urllib.request
+import urllib.request  # @allow-z3-non-canonical: no httpx dep in ATP; stdlib sufficient for single TDF endpoint
 import uuid
 from datetime import datetime, timezone
 from typing import Any
