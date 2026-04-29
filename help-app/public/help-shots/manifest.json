@@ -1,15 +1,15 @@
 {
   "project": "ATP",
-  "capturedAt": "2026-04-25T13:33:55.424Z",
+  "capturedAt": "2026-04-29T13:07:40.912Z",
   "shots": [
     {
       "slug": "help",
       "label": "ATP — Help",
       "url": "/help",
       "publicPath": "/help-shots/help.png",
-      "capturedAt": "2026-04-25T13:33:58.148Z",
+      "capturedAt": "2026-04-29T13:07:47.301Z",
       "changedSinceLast": false,
-      "driftPct": 0.36
+      "driftPct": 0
     }
   ]
 }
