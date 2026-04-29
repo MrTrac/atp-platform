@@ -2,6 +2,38 @@
 
 All notable changes to ATP are documented here.
 
+## [2.1.0] — 2026-04-29
+
+### Added — Doctrine v5 compliance (G9 observability + aios-flow + evaluator)
+
+- `core/trace.py` — G9 recordTrace() infrastructure: `generate_request_id()` (16-char hex),
+  `build_traceparent()` (W3C `00-{32hex}-{16hex}-01`), `trace_headers()` (x-request-id /
+  traceparent / x-source-module), `record_trace()` (JSONL append to
+  `~/.aios/state/cross_module_trace.jsonl`, silent-fail, chmod 0o600)
+- Instrumented `adapters/aokp/aokp_adapter.py` — W3C trace headers + record_trace on all 3
+  routes (health / search / graph) with contract_version="AOKP_ATP_v2.3"
+- Instrumented `bridge/tdf_run.py` — W3C trace headers + record_trace on TDF dispatch with
+  contract_version="TDF_ATP_v1"
+- `adapters/aios_flow/aios_flow_adapter.py` — new DAG runner provider dispatching to
+  aios-flow :7700 `POST /api/runs`; routing short-circuit in `bridge/openclaw_bridge.py`
+- `registry/providers/aios_flow.yaml` — aios-flow provider registration (incubating)
+- `core/evaluator.py` — post-run evaluator: http-probe native (status + JSON key/value check);
+  llm-judge / visual-diff stub to aios-flow delegation (Phase 2)
+- Evaluator hook in `bridge/openclaw_bridge.py`: optional `"evaluator"` field triggers
+  `run_evaluator()` and appends result to bridge response
+- 28 new unit tests: `tests/unit/test_trace.py` (10), `tests/unit/test_aios_flow_adapter.py`
+  (8), `tests/unit/test_evaluator.py` (10)
+
+### Fixed
+
+- Doctrine §4: corrected ATP framework description (`FastAPI` → `stdlib HTTP server (no framework)`)
+  in `~/AI_OS/00_AUTHORITY/AI_OS_DOCTRINE_v5.0.md`
+
+### Docs
+
+- `AI_CURRENT_BASELINE.md` expanded (13 → ~100 lines) — closes DP#22
+- `MODULE_BOUNDARY.md` trace_coverage updated to 80% achieved (G9 rollout complete)
+
 ## [2.0.4] — 2026-04-25
 
 ### Added — `tdf-run` bridge provider (P3 ATP↔TDF integration)

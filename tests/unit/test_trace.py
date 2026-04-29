@@ -66,7 +66,7 @@ def test_record_trace_writes_jsonl(tmp_path):
     trace_file = tmp_path / "cross_module_trace.jsonl"
     with patch("core.trace._TRACE_FILE", trace_file):
         record_trace(
-            request_id="test1234abcd5678",
+            request_id="1234abcd5678ef90",
             target_module="aokp",
             route="/api/search",
             method="POST",
@@ -76,7 +76,7 @@ def test_record_trace_writes_jsonl(tmp_path):
         )
     assert trace_file.exists()
     entry = json.loads(trace_file.read_text())
-    assert entry["request_id"] == "test1234abcd5678"
+    assert entry["request_id"] == "1234abcd5678ef90"
     assert entry["target_module"] == "aokp"
     assert entry["source_module"] == "atp"
     assert entry["route"] == "/api/search"

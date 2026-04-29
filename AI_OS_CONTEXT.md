@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=FUTURE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260427T054737Z
+GeneratedAtUTC: 20260429T144152Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: e2bce1d184a84d346ea90c86046180ed11f2a82434f1fcf220560acfaa55a2a8
+SHA256: e90116aece69b7883faddf564bba5818160470a64d9b42dc67ac548617311163
 ----
 # AI_CURRENT_BASELINE — ATP
 
 - **Version:** v2.0.4
-- **Last synced:** 2026-04-25 (via aios sync reverse)
+- **Last synced:** 2026-04-29 (via aios sync reverse)
 
 ## Status
 
@@ -108,58 +108,64 @@ SHA256: e2bce1d184a84d346ea90c86046180ed11f2a82434f1fcf220560acfaa55a2a8
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 52a5c1f6218d075706b18c74484970a8e5fa6725f56e35a24fd8cb2722299228
+SHA256: da72375dee6f71f3e17992f91aa160f9adeb20c64b8ac178751d930f186102df
 ----
 # AI Next Step — ATP
 
-- **Last updated:** 2026-04-25
-- **Phase:** v2.0.4 — `tdf-run` bridge provider (P3 ATP↔TDF integration)
-- **Current state:** v2.0.4 implemented locally; commits + push + tag pending human approval.
+- **Last updated:** 2026-04-29
+- **Phase:** v2.1.0 — Doctrine v5 compliance (G9 observability + aios-flow adapter + evaluator wiring)
+- **Current state:** v2.1.0 implemented in worktree; commits + merge gate + tag pending human approval.
 
 ---
 
 ## 1. Current state
 
-ATP v2.0.0 released. Full cloud AI production stack now present:
-- **v1.8.0:** OpenAI adapter + retry/backoff + per-model cost/timeout
-- **v1.9.0:** Tool use + JSON mode + vision + capabilities matrix
-- **v2.0.0:** SSE streaming + request cancellation + in-flight tracker
-
-AIOS-OC v2.9.1's abort feature now has end-to-end ATP integration via `DELETE /runs/<id>`.
+ATP v2.1.0 implements all 5 Doctrine v5 compliance items:
+- ✅ **D1:** Doctrine §4 fixed — `FastAPI` → `stdlib HTTP server (no framework)`
+- ✅ **D2:** `AI_CURRENT_BASELINE.md` expanded (13 → 100 lines, closes DP#22)
+- ✅ **D3:** G9 recordTrace() — `core/trace.py` + instrumented AOKP (×3), TDF (×1), aios-flow (×1)
+- ✅ **D4:** `adapters/aios_flow/` adapter + `registry/providers/aios_flow.yaml` + routing
+- ✅ **D5:** `core/evaluator.py` + evaluator hook in `bridge/openclaw_bridge.py`
+- 28 new unit tests pass; 419 total passing
 
 ---
 
-## 2. ATP architectural status: MATURE
+## 2. ATP architectural status: MATURE + DOCTRINE-COMPLIANT
 
-All critical cloud AI gaps closed:
-- ✅ OpenAI + Anthropic (end-to-end, not just auto-detection)
+All critical gaps closed (v2.0.0 + v2.0.1–v2.0.4 + v2.1.0):
+- ✅ OpenAI + Anthropic + Ollama (LLM providers)
 - ✅ Retry/backoff on 429/5xx/network
 - ✅ Per-model pricing (13 models) + per-model timeout
-- ✅ Tool use / function calling (both providers)
-- ✅ JSON mode / structured outputs (both providers)
+- ✅ Tool use / function calling (both cloud providers)
+- ✅ JSON mode / structured outputs (both cloud providers)
 - ✅ Vision (image inputs, cloud only)
 - ✅ SSE streaming with token/tool/manifest events
 - ✅ Request cancellation via DELETE /runs/<id>
 - ✅ In-flight tracking for monitoring
+- ✅ tdf-run bridge provider (P3 ATP↔TDF)
+- ✅ aios-flow adapter (P4 ATP→aios-flow DAG dispatch)
+- ✅ G9 cross-module observability (80% coverage achieved)
+- ✅ Evaluator pattern (http-probe native; llm-judge/visual-diff → stub)
 
 Remaining stubs (not blockers):
 - SSH remote execution (no use case)
 - 4 placeholder adapter dirs (architectural slots, no roadmap)
 - Streaming not yet supported for Ollama adapter
+- llm-judge + visual-diff evaluator native (aios-flow delegation stub sufficient)
 
 ---
 
 ## 3. Possible next steps (all require human approval)
 
-1. **Commit + push + tag v2.0.4** — tdf-run provider locally implemented and tested (16/16 unit tests pass); requires explicit approval per GSGR before push/tag
-2. **End-to-end test** with TDF Web Panel running tại `:4180` — `curl -X POST http://localhost:8765/run -d '{"provider":"tdf-run","target":{"tool":"ops/checkos"},"mode":{"dry_run":true}}'`
-3. **AIOS-OC UI integration of streaming + cancellation**
+1. **Merge + tag v2.1.0** — all items implemented and tested; requires explicit GSGR approval
+2. **AIOS-OC UI integration of streaming + cancellation**
    - Wire `/run/stream` into AIOS-OC analyze node
    - Wire `DELETE /runs/<id>` for true abort UX
-4. **Streaming for Ollama adapter** — current v2.0.x is cloud-only
-5. **Batch API support** — OpenAI batch endpoints
-6. **AOKP v2.4+ enrichments** — deeper knowledge integration
-7. **Agentic multi-tool loop** — server-side tool execution
+3. **aios-flow Phase 2** — polling/wait for flow run completion (DP#130 Phase 2)
+4. **llm-judge evaluator native** — wire to aios-flow delegation properly
+5. **Streaming for Ollama adapter** — current v2.0.x is cloud-only
+6. **Batch API support** — OpenAI batch endpoints
+7. **AOKP v2.4+ enrichments** — deeper knowledge integration
 
 ---
 
