@@ -6,15 +6,15 @@ This file is the mandatory governance file for AI agents operating in ATP. These
 
 ATP is a platform repository at `SOURCE_DEV/platforms/ATP`.
 
-ATP is a governance-first platform at v2.3.0 baseline. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
+ATP is a governance-first platform at v2.4.0 baseline. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
 
-Current runtime components (v2.3.0):
+Current runtime components (v2.4.0):
 - **Ollama adapter:** local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b) + **streaming** (v2.2.0)
 - **Anthropic adapter:** cloud + retry + pricing + tool use + JSON mode + vision + streaming
 - **OpenAI adapter:** gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision + streaming + **Batch API** (v2.3.0)
 - **AOKP adapter (v2.3.x):** 6 endpoints — health, search, graph, chat, graph-rag, temporal (opt-in)
 - **tdf-run bridge provider:** structured task dispatch to TDF Web Panel :4180 (governance-classified A–C)
-- **aios-flow adapter:** DAG workflow dispatch to aios-flow :7700 via POST /api/runs
+- **aios-flow adapter:** DAG workflow dispatch + **status + wait actions** (v2.4.0) for full lifecycle (:7700)
 - **Bridge server:** stdlib HTTP (no framework) at localhost:8765 (12 endpoints incl. /run/stream, /runs/active, DELETE /runs/<id>)
 - **SSE streaming:** `POST /run/stream` emits event-stream (start/token/tool_call/manifest/done/aborted)
 - **Request cancellation:** `DELETE /runs/<id>` aborts in-flight via threading.Event
@@ -110,7 +110,7 @@ Preserve boundaries strictly. Follow the source of truth in order. Make the smal
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=AGENTS -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260429T161806Z
+GeneratedAtUTC: 20260429T162751Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -199,11 +199,11 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: b1601578e3df6daea2241dc66a8dcbdc4f4a7712b79627790b5fb2614084e024
+SHA256: 83311c19a37da480e589c5f521609249a371faa015221ee068e83b305935df74
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.2.0
+- **Version:** v2.3.0
 - **Last synced:** 2026-04-29 (via aios sync reverse)
 
 ## Status
@@ -217,13 +217,13 @@ SHA256: b1601578e3df6daea2241dc66a8dcbdc4f4a7712b79627790b5fb2614084e024
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: c50552b181737bf76b697840427423c046891a280c6890f8a4cc2ff46e3619aa
+SHA256: 60a29283d7984f60ff9a05d99c9438bcf512d2e0168e48af7c043f911d32c2be
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-04-29
-- **Phase:** v2.2.0 — Ollama streaming parity (cloud-only → cloud + local)
-- **Current state:** v2.2.0 implemented in worktree; commit + merge gate + tag pending human approval.
+- **Phase:** v2.3.0 — OpenAI Batch API adapter (async jobs at 50% cost)
+- **Current state:** v2.3.0 implemented in worktree; commit + merge gate + tag pending human approval.
 
 ---
 

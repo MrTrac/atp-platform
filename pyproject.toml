@@ -1,6 +1,6 @@
 [project]
 name = "atp-platform"
-version = "2.3.0"
+version = "2.4.0"
 description = "Autonomous Task Platform — Transformation Plane for the multi-AI ecosystem"
 readme = "README.md"
 license = {text = "MIT"}

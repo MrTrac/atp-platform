@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=FUTURE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260429T161806Z
+GeneratedAtUTC: 20260429T162751Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,11 +90,11 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: b1601578e3df6daea2241dc66a8dcbdc4f4a7712b79627790b5fb2614084e024
+SHA256: 83311c19a37da480e589c5f521609249a371faa015221ee068e83b305935df74
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.2.0
+- **Version:** v2.3.0
 - **Last synced:** 2026-04-29 (via aios sync reverse)
 
 ## Status
@@ -108,13 +108,13 @@ SHA256: b1601578e3df6daea2241dc66a8dcbdc4f4a7712b79627790b5fb2614084e024
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: c50552b181737bf76b697840427423c046891a280c6890f8a4cc2ff46e3619aa
+SHA256: 60a29283d7984f60ff9a05d99c9438bcf512d2e0168e48af7c043f911d32c2be
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-04-29
-- **Phase:** v2.2.0 — Ollama streaming parity (cloud-only → cloud + local)
-- **Current state:** v2.2.0 implemented in worktree; commit + merge gate + tag pending human approval.
+- **Phase:** v2.3.0 — OpenAI Batch API adapter (async jobs at 50% cost)
+- **Current state:** v2.3.0 implemented in worktree; commit + merge gate + tag pending human approval.
 
 ---
 
