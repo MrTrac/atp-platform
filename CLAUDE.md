@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260429T144152Z
+GeneratedAtUTC: 20260429T161658Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,11 +90,11 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: e90116aece69b7883faddf564bba5818160470a64d9b42dc67ac548617311163
+SHA256: 821a4053a9df5a80270a06b51ba20ef90baa8ef1dadb84ef384d13abeefb32b2
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.0.4
+- **Version:** v2.1.0
 - **Last synced:** 2026-04-29 (via aios sync reverse)
 
 ## Status
@@ -108,64 +108,58 @@ SHA256: e90116aece69b7883faddf564bba5818160470a64d9b42dc67ac548617311163
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: da72375dee6f71f3e17992f91aa160f9adeb20c64b8ac178751d930f186102df
+SHA256: c50552b181737bf76b697840427423c046891a280c6890f8a4cc2ff46e3619aa
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-04-29
-- **Phase:** v2.1.0 — Doctrine v5 compliance (G9 observability + aios-flow adapter + evaluator wiring)
-- **Current state:** v2.1.0 implemented in worktree; commits + merge gate + tag pending human approval.
+- **Phase:** v2.2.0 — Ollama streaming parity (cloud-only → cloud + local)
+- **Current state:** v2.2.0 implemented in worktree; commit + merge gate + tag pending human approval.
 
 ---
 
 ## 1. Current state
 
-ATP v2.1.0 implements all 5 Doctrine v5 compliance items:
-- ✅ **D1:** Doctrine §4 fixed — `FastAPI` → `stdlib HTTP server (no framework)`
-- ✅ **D2:** `AI_CURRENT_BASELINE.md` expanded (13 → 100 lines, closes DP#22)
-- ✅ **D3:** G9 recordTrace() — `core/trace.py` + instrumented AOKP (×3), TDF (×1), aios-flow (×1)
-- ✅ **D4:** `adapters/aios_flow/` adapter + `registry/providers/aios_flow.yaml` + routing
-- ✅ **D5:** `core/evaluator.py` + evaluator hook in `bridge/openclaw_bridge.py`
-- 28 new unit tests pass; 419 total passing
+ATP v2.0.0 released. Full cloud AI production stack now present:
+- **v1.8.0:** OpenAI adapter + retry/backoff + per-model cost/timeout
+- **v1.9.0:** Tool use + JSON mode + vision + capabilities matrix
+- **v2.0.0:** SSE streaming + request cancellation + in-flight tracker
+
+AIOS-OC v2.9.1's abort feature now has end-to-end ATP integration via `DELETE /runs/<id>`.
 
 ---
 
-## 2. ATP architectural status: MATURE + DOCTRINE-COMPLIANT
+## 2. ATP architectural status: MATURE
 
-All critical gaps closed (v2.0.0 + v2.0.1–v2.0.4 + v2.1.0):
-- ✅ OpenAI + Anthropic + Ollama (LLM providers)
+All critical cloud AI gaps closed:
+- ✅ OpenAI + Anthropic (end-to-end, not just auto-detection)
 - ✅ Retry/backoff on 429/5xx/network
 - ✅ Per-model pricing (13 models) + per-model timeout
-- ✅ Tool use / function calling (both cloud providers)
-- ✅ JSON mode / structured outputs (both cloud providers)
+- ✅ Tool use / function calling (both providers)
+- ✅ JSON mode / structured outputs (both providers)
 - ✅ Vision (image inputs, cloud only)
 - ✅ SSE streaming with token/tool/manifest events
 - ✅ Request cancellation via DELETE /runs/<id>
 - ✅ In-flight tracking for monitoring
-- ✅ tdf-run bridge provider (P3 ATP↔TDF)
-- ✅ aios-flow adapter (P4 ATP→aios-flow DAG dispatch)
-- ✅ G9 cross-module observability (80% coverage achieved)
-- ✅ Evaluator pattern (http-probe native; llm-judge/visual-diff → stub)
 
 Remaining stubs (not blockers):
 - SSH remote execution (no use case)
 - 4 placeholder adapter dirs (architectural slots, no roadmap)
 - Streaming not yet supported for Ollama adapter
-- llm-judge + visual-diff evaluator native (aios-flow delegation stub sufficient)
 
 ---
 
 ## 3. Possible next steps (all require human approval)
 
-1. **Merge + tag v2.1.0** — all items implemented and tested; requires explicit GSGR approval
-2. **AIOS-OC UI integration of streaming + cancellation**
+1. **Commit + push + tag v2.0.4** — tdf-run provider locally implemented and tested (16/16 unit tests pass); requires explicit approval per GSGR before push/tag
+2. **End-to-end test** with TDF Web Panel running tại `:4180` — `curl -X POST http://localhost:8765/run -d '{"provider":"tdf-run","target":{"tool":"ops/checkos"},"mode":{"dry_run":true}}'`
+3. **AIOS-OC UI integration of streaming + cancellation**
    - Wire `/run/stream` into AIOS-OC analyze node
    - Wire `DELETE /runs/<id>` for true abort UX
-3. **aios-flow Phase 2** — polling/wait for flow run completion (DP#130 Phase 2)
-4. **llm-judge evaluator native** — wire to aios-flow delegation properly
-5. **Streaming for Ollama adapter** — current v2.0.x is cloud-only
-6. **Batch API support** — OpenAI batch endpoints
-7. **AOKP v2.4+ enrichments** — deeper knowledge integration
+4. **Streaming for Ollama adapter** — current v2.0.x is cloud-only
+5. **Batch API support** — OpenAI batch endpoints
+6. **AOKP v2.4+ enrichments** — deeper knowledge integration
+7. **Agentic multi-tool loop** — server-side tool execution
 
 ---
 
@@ -248,40 +242,114 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: fdc9e715a395aa148e15c0c51c9e8f40194b776d1427af310233d4d87e115ad7
+SHA256: 7534e0da46b70e3bb1989430a86d139095c5eb5fdf9d144b47c8641dc6433517
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.0.4 — reverse sync from source repo
+## Handoff: v2.1.0 — reverse sync from source repo
 **Date**: 2026-04-29
 
-### What changed in v2.0.4
-## [2.0.4] — 2026-04-25
+### What changed in v2.1.0
+## [2.1.0] — 2026-04-29
 
-### Added — `tdf-run` bridge provider (P3 ATP↔TDF integration)
+### Added — Doctrine v5 compliance (G9 observability + aios-flow + evaluator)
 
-- `bridge/tdf_run.py` — new non-LLM provider that dispatches structured
-  execution tasks to TDF Web Control Panel's `/api/exec/execute` endpoint
-  (port `:4180`). Pass-through pattern: ATP owns task envelope + governance
-  classification; TDF owns bounded execution + RBAC + audit trail.
-- Routing in `bridge/openclaw_bridge.py`: requests with explicit
-  `provider="tdf-run"` short-circuit BEFORE the `text`/`model` parser
-  (TDF tasks carry structured target/params/mode envelopes, not prompts).
-- Governance class mapping (per `~/SOURCE_DEV/products/TDF/tdf/docs/integrations/ATP_BRIDGE_INTEGRATION.md`):
-    - `dry_run: true` → class **C** (auto-approved, preview only)
-    - `validate` / non-destructive ops real → class **C**
-    - `deploy.*` / `install.*` real → class **B** (requires human gate)
-    - `rollback.*` / `uninstall.*` / `undeploy.*` real → class **A** (strict review)
-- Env var: `TDF_WEB_URL` (default `http://localhost:4180`)
-- 16 unit tests in `tests/unit/test_tdf_run.py`: validation, success path,
-  failure modes (HTTP error, unreachable TDF, non-JSON response),
-  governance class mapping for all op types.
+- `core/trace.py` — G9 recordTrace() infrastructure: `generate_request_id()` (16-char hex),
+  `build_traceparent()` (W3C `00-{32hex}-{16hex}-01`), `trace_headers()` (x-request-id /
+  traceparent / x-source-module), `record_trace()` (JSONL append to
+  `~/.aios/state/cross_module_trace.jsonl`, silent-fail, chmod 0o600)
+- Instrumented `adapters/aokp/aokp_adapter.py` — W3C trace headers + record_trace on all 3
+  routes (health / search / graph) with contract_version="AOKP_ATP_v2.3"
+- Instrumented `bridge/tdf_run.py` — W3C trace headers + record_trace on TDF dispatch with
+  contract_version="TDF_ATP_v1"
+- `adapters/aios_flow/aios_flow_adapter.py` — new DAG runner provider dispatching to
+  aios-flow :7700 `POST /api/runs`; routing short-circuit in `bridge/openclaw_bridge.py`
+- `registry/providers/aios_flow.yaml` — aios-flow provider registration (incubating)
+- `core/evaluator.py` — post-run evaluator: http-probe native (status + JSON key/value check);
+  llm-judge / visual-diff stub to aios-flow delegation (Phase 2)
+- Evaluator hook in `bridge/openclaw_bridge.py`: optional `"evaluator"` field triggers
+  `run_evaluator()` and appends result to bridge response
+- 28 new unit tests: `tests/unit/test_trace.py` (10), `tests/unit/test_aios_flow_adapter.py`
+  (8), `tests/unit/test_evaluator.py` (10)
 
-### Why
-Closes the P3 connection point in the AI_OS ecosystem roadmap. TDF v6.7.0
-shipped a contract + reference Python skeleton in October 2025; this
-release wires the ATP side. AOKP and AIOS-OC remain independent of this
-provider — it only affects ATP's bridge dispatch table.
+### Fixed
+
+- Doctrine §4: corrected ATP framework description (`FastAPI` → `stdlib HTTP server (no framework)`)
+  in `~/AI_OS/00_AUTHORITY/AI_OS_DOCTRINE_v5.0.md`
+
+### Docs
+
+---
+
+
+## Handoff: v2.1.0 — reverse sync from source repo
+**Date**: 2026-04-29
+
+### What changed in v2.1.0
+## [2.1.0] — 2026-04-29
+
+### Added — Doctrine v5 compliance (G9 observability + aios-flow + evaluator)
+
+- `core/trace.py` — G9 recordTrace() infrastructure: `generate_request_id()` (16-char hex),
+  `build_traceparent()` (W3C `00-{32hex}-{16hex}-01`), `trace_headers()` (x-request-id /
+  traceparent / x-source-module), `record_trace()` (JSONL append to
+  `~/.aios/state/cross_module_trace.jsonl`, silent-fail, chmod 0o600)
+- Instrumented `adapters/aokp/aokp_adapter.py` — W3C trace headers + record_trace on all 3
+  routes (health / search / graph) with contract_version="AOKP_ATP_v2.3"
+- Instrumented `bridge/tdf_run.py` — W3C trace headers + record_trace on TDF dispatch with
+  contract_version="TDF_ATP_v1"
+- `adapters/aios_flow/aios_flow_adapter.py` — new DAG runner provider dispatching to
+  aios-flow :7700 `POST /api/runs`; routing short-circuit in `bridge/openclaw_bridge.py`
+- `registry/providers/aios_flow.yaml` — aios-flow provider registration (incubating)
+- `core/evaluator.py` — post-run evaluator: http-probe native (status + JSON key/value check);
+  llm-judge / visual-diff stub to aios-flow delegation (Phase 2)
+- Evaluator hook in `bridge/openclaw_bridge.py`: optional `"evaluator"` field triggers
+  `run_evaluator()` and appends result to bridge response
+- 28 new unit tests: `tests/unit/test_trace.py` (10), `tests/unit/test_aios_flow_adapter.py`
+  (8), `tests/unit/test_evaluator.py` (10)
+
+### Fixed
+
+- Doctrine §4: corrected ATP framework description (`FastAPI` → `stdlib HTTP server (no framework)`)
+  in `~/AI_OS/00_AUTHORITY/AI_OS_DOCTRINE_v5.0.md`
+
+### Docs
+
+---
+
+
+## Handoff: v2.1.0 — reverse sync from source repo
+**Date**: 2026-04-29
+
+### What changed in v2.1.0
+## [2.1.0] — 2026-04-29
+
+### Added — Doctrine v5 compliance (G9 observability + aios-flow + evaluator)
+
+- `core/trace.py` — G9 recordTrace() infrastructure: `generate_request_id()` (16-char hex),
+  `build_traceparent()` (W3C `00-{32hex}-{16hex}-01`), `trace_headers()` (x-request-id /
+  traceparent / x-source-module), `record_trace()` (JSONL append to
+  `~/.aios/state/cross_module_trace.jsonl`, silent-fail, chmod 0o600)
+- Instrumented `adapters/aokp/aokp_adapter.py` — W3C trace headers + record_trace on all 3
+  routes (health / search / graph) with contract_version="AOKP_ATP_v2.3"
+- Instrumented `bridge/tdf_run.py` — W3C trace headers + record_trace on TDF dispatch with
+  contract_version="TDF_ATP_v1"
+- `adapters/aios_flow/aios_flow_adapter.py` — new DAG runner provider dispatching to
+  aios-flow :7700 `POST /api/runs`; routing short-circuit in `bridge/openclaw_bridge.py`
+- `registry/providers/aios_flow.yaml` — aios-flow provider registration (incubating)
+- `core/evaluator.py` — post-run evaluator: http-probe native (status + JSON key/value check);
+  llm-judge / visual-diff stub to aios-flow delegation (Phase 2)
+- Evaluator hook in `bridge/openclaw_bridge.py`: optional `"evaluator"` field triggers
+  `run_evaluator()` and appends result to bridge response
+- 28 new unit tests: `tests/unit/test_trace.py` (10), `tests/unit/test_aios_flow_adapter.py`
+  (8), `tests/unit/test_evaluator.py` (10)
+
+### Fixed
+
+- Doctrine §4: corrected ATP framework description (`FastAPI` → `stdlib HTTP server (no framework)`)
+  in `~/AI_OS/00_AUTHORITY/AI_OS_DOCTRINE_v5.0.md`
+
+### Docs
 
 ---
 
