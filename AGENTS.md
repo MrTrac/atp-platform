@@ -6,12 +6,12 @@ This file is the mandatory governance file for AI agents operating in ATP. These
 
 ATP is a platform repository at `SOURCE_DEV/platforms/ATP`.
 
-ATP is a governance-first platform at v2.1.0 baseline. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
+ATP is a governance-first platform at v2.3.0 baseline. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
 
-Current runtime components (v2.1.0):
-- **Ollama adapter:** local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b)
+Current runtime components (v2.3.0):
+- **Ollama adapter:** local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b) + **streaming** (v2.2.0)
 - **Anthropic adapter:** cloud + retry + pricing + tool use + JSON mode + vision + streaming
-- **OpenAI adapter:** gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision + streaming
+- **OpenAI adapter:** gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision + streaming + **Batch API** (v2.3.0)
 - **AOKP adapter (v2.3.x):** 6 endpoints — health, search, graph, chat, graph-rag, temporal (opt-in)
 - **tdf-run bridge provider:** structured task dispatch to TDF Web Panel :4180 (governance-classified A–C)
 - **aios-flow adapter:** DAG workflow dispatch to aios-flow :7700 via POST /api/runs

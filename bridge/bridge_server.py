@@ -324,6 +324,9 @@ class BridgeHandler(BaseHTTPRequestHandler):
             adapter_kind = incoming.get("adapter")
             if adapter_kind in ("claude-code", "codex", "cursor"):
                 result = _run_cli_agent_adapter(incoming, adapter_kind)
+            elif adapter_kind == "openai-batch":
+                from adapters.cloud.openai_batch import dispatch as _batch_dispatch
+                result = _batch_dispatch(incoming)
             else:
                 result = bridge_request(incoming)
             elapsed_ms = round((time.monotonic() - start) * 1000)
