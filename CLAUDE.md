@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260429T161658Z
+GeneratedAtUTC: 20260429T161806Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,11 +90,11 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 821a4053a9df5a80270a06b51ba20ef90baa8ef1dadb84ef384d13abeefb32b2
+SHA256: b1601578e3df6daea2241dc66a8dcbdc4f4a7712b79627790b5fb2614084e024
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.1.0
+- **Version:** v2.2.0
 - **Last synced:** 2026-04-29 (via aios sync reverse)
 
 ## Status
@@ -242,9 +242,42 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 7534e0da46b70e3bb1989430a86d139095c5eb5fdf9d144b47c8641dc6433517
+SHA256: a8583bd3c868c67ab8969475b104632308887ce24559418d36bd32ecf32e90a6
 ----
 # AI_HANDOFF_LATEST — ATP
+
+## Handoff: v2.2.0 — reverse sync from source repo
+**Date**: 2026-04-29
+
+### What changed in v2.2.0
+## [2.2.0] — 2026-04-29
+
+### Added — Ollama streaming (parity with cloud providers)
+
+- `adapters/ollama/ollama_adapter.py` — new `execute_ollama_stream()` generator
+  function. Sets `stream: true` on Ollama's `/api/chat` endpoint and yields
+  `(event_kind, data)` tuples matching the cloud-provider stream protocol:
+  `token`, `manifest`, `error`, `aborted`. Token deltas come from each NDJSON
+  line's `message.content`; the final `done: true` line populates the
+  manifest with `input_tokens` (`prompt_eval_count`), `output_tokens`
+  (`eval_count`), `stop_reason` (`done_reason`), and `cost_usd: 0.0`.
+- `bridge/bridge_server.py` — `/run/stream` provider allowlist now includes
+  `ollama` alongside `anthropic` and `openai`. Dispatch routes to
+  `execute_ollama_stream` for Ollama requests.
+- 8 new unit tests in `adapters/ollama/test_ollama_adapter.py` covering: token
+  flow + manifest fields, contract validation (missing model / prompt),
+  URLError handling, abort_event support, blank/invalid JSON line tolerance,
+  `stream: true` payload assertion, empty-output completion validation.
+- Tool-use deltas are NOT streamed — Ollama returns tool_calls only on the
+  final `done` line, not as incremental deltas. Same behaviour applies if
+  Ollama gains streaming tool support; the manifest event would carry it.
+
+### Why
+Closes the v2.0.x gap noted in `AI_NEXT_STEP.md`: streaming was cloud-only.
+Ollama is now a first-class streaming citizen for local LLM workflows.
+
+---
+
 
 ## Handoff: v2.1.0 — reverse sync from source repo
 **Date**: 2026-04-29
