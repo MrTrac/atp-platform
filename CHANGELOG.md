@@ -2,6 +2,40 @@
 
 All notable changes to ATP are documented here.
 
+## [2.3.0] — 2026-04-29
+
+### Added — OpenAI Batch API adapter (50% cost discount, async jobs)
+
+- `adapters/cloud/openai_batch.py` — five functions wrapping OpenAI's Batch
+  API:
+    - `create_batch(requests, ...)` — uploads JSONL via `POST /v1/files`
+      then creates batch via `POST /v1/batches`. Returns `batch_id`,
+      `input_file_id`, `request_count`.
+    - `get_batch_status(batch_id)` — `GET /v1/batches/{id}`. Returns
+      `batch_status` (validating | in_progress | finalizing | completed |
+      failed | expired | cancelled) + `request_counts`.
+    - `get_batch_results(batch_id)` — looks up batch, downloads output
+      file via `GET /v1/files/{id}/content`, parses JSONL into `results`
+      list.
+    - `cancel_batch(batch_id)` — `POST /v1/batches/{id}/cancel`.
+    - `list_batches(limit, after)` — paginated list of recent batches.
+- Stdlib only (urllib + multipart upload via hand-rolled boundary).
+  Uses Bearer auth via `OPENAI_API_KEY` env var or per-request `api_key`.
+- `bridge/openclaw_bridge.py` routing — `POST /run` with
+  `adapter="openai-batch"` + `action=create|status|results|cancel|list`
+  short-circuits to `openai_batch.dispatch()` (same pattern as `tdf-run`
+  and `aios-flow`).
+- 19 new unit tests in `tests/unit/test_openai_batch.py`: success +
+  error paths for each of the 5 functions, JSONL serialization assertion,
+  multipart upload assertion, dispatch routing for all 5 actions.
+
+### Why
+Batch API lets users submit 1000s of requests asynchronously at 50% cost
+of the standard chat/completions endpoint. Useful for evaluation runs,
+bulk dataset generation, and offline analysis — workloads that don't
+need sub-second response times. Closes the v2.0.x gap noted in
+`AI_NEXT_STEP.md` (option 5).
+
 ## [2.2.0] — 2026-04-29
 
 ### Added — Ollama streaming (parity with cloud providers)

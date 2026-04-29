@@ -6,12 +6,12 @@ This file is the mandatory governance file for AI agents operating in ATP. These
 
 ATP is a platform repository at `SOURCE_DEV/platforms/ATP`.
 
-ATP is a governance-first platform at v2.1.0 baseline. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
+ATP is a governance-first platform at v2.3.0 baseline. Preserve its frozen boundary discipline, control-plane shape, registry shape, adapter shape, artifact lifecycle, and human-gated flow.
 
-Current runtime components (v2.1.0):
-- **Ollama adapter:** local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b)
+Current runtime components (v2.3.0):
+- **Ollama adapter:** local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b) + **streaming** (v2.2.0)
 - **Anthropic adapter:** cloud + retry + pricing + tool use + JSON mode + vision + streaming
-- **OpenAI adapter:** gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision + streaming
+- **OpenAI adapter:** gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision + streaming + **Batch API** (v2.3.0)
 - **AOKP adapter (v2.3.x):** 6 endpoints — health, search, graph, chat, graph-rag, temporal (opt-in)
 - **tdf-run bridge provider:** structured task dispatch to TDF Web Panel :4180 (governance-classified A–C)
 - **aios-flow adapter:** DAG workflow dispatch to aios-flow :7700 via POST /api/runs
@@ -110,7 +110,7 @@ Preserve boundaries strictly. Follow the source of truth in order. Make the smal
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=AGENTS -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260429T161658Z
+GeneratedAtUTC: 20260429T161806Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -199,11 +199,11 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 821a4053a9df5a80270a06b51ba20ef90baa8ef1dadb84ef384d13abeefb32b2
+SHA256: b1601578e3df6daea2241dc66a8dcbdc4f4a7712b79627790b5fb2614084e024
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.1.0
+- **Version:** v2.2.0
 - **Last synced:** 2026-04-29 (via aios sync reverse)
 
 ## Status
