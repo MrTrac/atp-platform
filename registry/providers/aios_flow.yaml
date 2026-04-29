@@ -1,0 +1,11 @@
+id: aios-flow
+type: dag-runner
+description: "aios-flow DAG orchestration engine — multi-step workflow dispatch"
+endpoint: "${AIOS_FLOW_URL:-http://localhost:7700}"
+contract: ATP_aios-flow_v1
+lifecycle: incubating
+capabilities:
+  - dag_execution
+  - approval_gates
+  - parallel_stages
+  - evaluator_runners
