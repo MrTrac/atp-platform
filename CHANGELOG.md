@@ -2,6 +2,35 @@
 
 All notable changes to ATP are documented here.
 
+## [2.4.0] — 2026-04-29
+
+### Added — aios-flow Phase 2 (status + wait actions)
+
+- `adapters/aios_flow/aios_flow_adapter.py` extended with two new actions
+  routed via the existing top-level `dispatch()` function:
+    - `action="status"` — single-shot snapshot via `GET /api/runs/{id}`,
+      returns `flow_status` + full `flow_run` body. G9 trace records the
+      route as `/api/runs/{id}` with method `GET`.
+    - `action="wait"` — polls until terminal state (`success` |
+      `succeeded` | `failed` | `cancelled` | `canceled` | `error`) or
+      `timeout_s` elapses (default 300s, poll every `poll_interval_s`,
+      default 2s). Returns `waited_s`, `poll_count`, `timed_out`.
+- The original submit behavior is preserved as `action="dispatch"`
+  (default when `action` is missing) — full backward compatibility with
+  v2.1.0 callers.
+- Wait function accepts injectable `sleep_fn` and `now_fn` for
+  deterministic testing without real time delays.
+- 11 new unit tests in `tests/unit/test_aios_flow_adapter.py`: status
+  snapshot success/error, trace route correctness, wait reaches
+  terminal, wait times out, wait short-circuits on failed/error, wait
+  returns network error, wait via dispatch router, unknown action
+  rejected, default action backward compat.
+
+### Why
+Closes the v2.1.0 Phase 2 commitment: callers couldn't programmatically
+wait for a flow run to complete without polling externally. This makes
+ATP a complete client for aios-flow's bounded execution lifecycle.
+
 ## [2.3.0] — 2026-04-29
 
 ### Added — OpenAI Batch API adapter (50% cost discount, async jobs)
