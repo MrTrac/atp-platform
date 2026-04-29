@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from bridge.context_enrichment import enrich_context
+from core.evaluator import run_evaluator
 from core.execution.executor import invoke_executor
 from core.execution.output_normalizer import normalize_output
 
@@ -73,6 +74,9 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
     if explicit_provider == "tdf-run":
         from bridge import tdf_run
         return tdf_run.dispatch(incoming)
+    if explicit_provider == "aios-flow":
+        from adapters.aios_flow import aios_flow_adapter
+        return aios_flow_adapter.dispatch(incoming)
 
     text = (incoming.get("text") or "").strip()
     if not text:
@@ -158,6 +162,10 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
         normalized["tool_calls"] = raw_result["tool_calls"]
     if enriched.get("aokp_context"):
         normalized["aokp_enrichment"] = enriched["aokp_context"]["manifest"]
+
+    # Optional post-run evaluator (Doctrine v5 §6)
+    if incoming.get("evaluator"):
+        normalized["evaluator"] = run_evaluator(incoming["evaluator"])
 
     return normalized
 

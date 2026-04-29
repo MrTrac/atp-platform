@@ -17,11 +17,16 @@ from __future__ import annotations
 
 import json
 import os
+import time
 import urllib.error
 import urllib.request  # @allow-z3-non-canonical: no httpx dep in ATP; stdlib sufficient for single TDF endpoint
 import uuid
 from datetime import datetime, timezone
 from typing import Any
+
+from core.trace import record_trace, trace_headers
+
+_TDF_CONTRACT = "TDF_ATP_v1"
 
 
 TDF_WEB_URL_DEFAULT = "http://localhost:4180"
@@ -93,20 +98,37 @@ def dispatch(incoming: dict[str, Any]) -> dict[str, Any]:
     req = urllib.request.Request(
         url,
         data=json.dumps(exec_request).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": "application/json", **trace_headers(request_id)},
         method="POST",
     )
 
+    t0 = time.monotonic()
     try:
         with urllib.request.urlopen(req, timeout=DEFAULT_TIMEOUT_S) as resp:
             tdf_payload: dict[str, Any] = json.loads(resp.read())
+        record_trace(request_id=request_id, target_module="tdf",
+                     route="/api/exec/execute", method="POST", status="ok",
+                     duration_ms=int((time.monotonic() - t0) * 1000),
+                     contract_version=_TDF_CONTRACT)
     except urllib.error.HTTPError as exc:
+        record_trace(request_id=request_id, target_module="tdf",
+                     route="/api/exec/execute", method="POST", status="error",
+                     duration_ms=int((time.monotonic() - t0) * 1000),
+                     contract_version=_TDF_CONTRACT)
         raise TdfBridgeError(
             f"TDF returned HTTP {exc.code}: {exc.reason}"
         ) from exc
     except (urllib.error.URLError, OSError) as exc:
+        record_trace(request_id=request_id, target_module="tdf",
+                     route="/api/exec/execute", method="POST", status="error",
+                     duration_ms=int((time.monotonic() - t0) * 1000),
+                     contract_version=_TDF_CONTRACT)
         raise TdfBridgeError(f"Cannot reach TDF at {url}: {exc}") from exc
     except json.JSONDecodeError as exc:
+        record_trace(request_id=request_id, target_module="tdf",
+                     route="/api/exec/execute", method="POST", status="error",
+                     duration_ms=int((time.monotonic() - t0) * 1000),
+                     contract_version=_TDF_CONTRACT)
         raise TdfBridgeError(f"TDF returned non-JSON response: {exc}") from exc
 
     data = tdf_payload.get("data", {}) if isinstance(tdf_payload.get("data"), dict) else {}

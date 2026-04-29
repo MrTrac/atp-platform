@@ -20,6 +20,10 @@ from typing import Any
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
+from core.trace import generate_request_id, record_trace, trace_headers
+
+_AOKP_CONTRACT = "AOKP_ATP_v2.3"
+
 
 AOKP_BASE_URL = "http://localhost:3002"
 DEFAULT_TIMEOUT_SECONDS = 10
@@ -45,11 +49,17 @@ def check_health(
     """
     timestamp = datetime.now(timezone.utc).isoformat()
     url = f"{base_url}/api/health"
+    req_id = generate_request_id()
+    t0 = time.monotonic()
 
     try:
-        req = Request(url, method="GET")
+        req = Request(url, headers=trace_headers(req_id), method="GET")
         with urlopen(req, timeout=timeout) as resp:
             body = json.loads(resp.read().decode("utf-8"))
+        record_trace(request_id=req_id, target_module="aokp", route="/api/health",
+                     method="GET", status="ok",
+                     duration_ms=int((time.monotonic() - t0) * 1000),
+                     contract_version=_AOKP_CONTRACT)
         return {
             "status": "ok",
             "provider": "aokp",
@@ -59,6 +69,10 @@ def check_health(
             "timestamp": timestamp,
         }
     except (URLError, OSError, json.JSONDecodeError, ValueError):
+        record_trace(request_id=req_id, target_module="aokp", route="/api/health",
+                     method="GET", status="error",
+                     duration_ms=int((time.monotonic() - t0) * 1000),
+                     contract_version=_AOKP_CONTRACT)
         return {
             "status": "unavailable",
             "provider": "aokp",
@@ -100,17 +114,26 @@ def query_knowledge(
         payload["filters"] = request["filters"]
 
     url = f"{base_url}/api/search"
+    req_id = generate_request_id()
 
     try:
         http_req = Request(
             url,
             data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", **trace_headers(req_id)},
             method="POST",
         )
         with urlopen(http_req, timeout=timeout) as resp:
             body = json.loads(resp.read().decode("utf-8"))
+        record_trace(request_id=req_id, target_module="aokp", route="/api/search",
+                     method="POST", status="ok",
+                     duration_ms=int((time.monotonic() - start_time) * 1000),
+                     contract_version=_AOKP_CONTRACT)
     except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        record_trace(request_id=req_id, target_module="aokp", route="/api/search",
+                     method="POST", status="error",
+                     duration_ms=int((time.monotonic() - start_time) * 1000),
+                     contract_version=_AOKP_CONTRACT)
         return _error_result(f"AOKP search request failed: {exc}", timestamp, start_time)
 
     elapsed_ms = int((time.monotonic() - start_time) * 1000)
@@ -168,17 +191,26 @@ def query_graph(
         payload["entityId"] = entity_id
 
     url = f"{base_url}/api/graph"
+    req_id = generate_request_id()
 
     try:
         http_req = Request(
             url,
             data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", **trace_headers(req_id)},
             method="POST",
         )
         with urlopen(http_req, timeout=timeout) as resp:
             body = json.loads(resp.read().decode("utf-8"))
+        record_trace(request_id=req_id, target_module="aokp", route="/api/graph",
+                     method="POST", status="ok",
+                     duration_ms=int((time.monotonic() - start_time) * 1000),
+                     contract_version=_AOKP_CONTRACT)
     except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        record_trace(request_id=req_id, target_module="aokp", route="/api/graph",
+                     method="POST", status="error",
+                     duration_ms=int((time.monotonic() - start_time) * 1000),
+                     contract_version=_AOKP_CONTRACT)
         return _graph_error_result(f"AOKP graph request failed: {exc}", timestamp, start_time)
 
     elapsed_ms = int((time.monotonic() - start_time) * 1000)
