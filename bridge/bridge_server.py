@@ -417,13 +417,13 @@ class BridgeHandler(BaseHTTPRequestHandler):
         provider, model = _parse_model_spec(incoming.get("model", ""))
         request_id = incoming.get("request_id") or f"stream-{uuid.uuid4().hex[:12]}"
 
-        # Only cloud providers support streaming in v2.0.0
-        if provider not in ("anthropic", "openai"):
+        # Streaming providers (v2.2.0 added ollama)
+        if provider not in ("anthropic", "openai", "ollama"):
             self._send_json(
                 400,
                 {
                     "status": "failed",
-                    "error": f"Streaming not supported for provider '{provider}' (v2.0.0 supports anthropic + openai)",
+                    "error": f"Streaming not supported for provider '{provider}' (supported: anthropic, openai, ollama)",
                 },
             )
             return
@@ -476,8 +476,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
         # Select streaming function
         if provider == "anthropic":
             from adapters.cloud.anthropic_adapter import execute_anthropic_stream as stream_fn
-        else:
+        elif provider == "openai":
             from adapters.cloud.openai_adapter import execute_openai_stream as stream_fn
+        else:
+            from adapters.ollama.ollama_adapter import execute_ollama_stream as stream_fn
 
         final_manifest: dict = {}
         aborted = False

@@ -193,3 +193,95 @@ def _error_result(
         "error": message,
         "error_classification": to_dict(classify_error(message)),
     }
+
+
+def execute_ollama_stream(
+    request: dict[str, Any],
+    *,
+    base_url: str = OLLAMA_BASE_URL,
+    timeout: int = DEFAULT_TIMEOUT_SECONDS,
+    abort_event: "object | None" = None,
+):
+    """Stream LLM inference via Ollama /api/chat (NDJSON line stream).
+
+    Yields (event_kind, data) tuples — same protocol as the cloud streamers:
+      - ``token``    — incremental text chunk ``{"text": str}``
+      - ``manifest`` — final manifest at end ``{"manifest": dict}``
+      - ``error``    — error ``{"message": str, "error_code": str}``
+      - ``aborted``  — client cancelled ``{"reason": str}``
+
+    Tool-use deltas are NOT emitted: Ollama returns tool_calls only on the
+    final ``done`` line, not as incremental deltas.
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+    start_time = time.monotonic()
+
+    try:
+        _validate_input(request)
+    except OllamaAdapterError as exc:
+        yield ("error", {"message": str(exc), "error_code": "contract_violation"})
+        return
+
+    payload = _build_payload(request)
+    payload["stream"] = True
+    url = f"{base_url}/api/chat"
+
+    accumulated_text: list[str] = []
+    prompt_tokens = 0
+    eval_tokens = 0
+    final_done_payload: dict[str, Any] = {}
+
+    try:
+        http_request = Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(http_request, timeout=timeout) as resp:
+            for raw_line in resp:
+                if abort_event is not None and getattr(abort_event, "is_set", lambda: False)():
+                    yield ("aborted", {"reason": "client_cancelled"})
+                    return
+                line = raw_line.decode("utf-8", errors="replace").strip()
+                if not line:
+                    continue
+                try:
+                    chunk = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+
+                msg = chunk.get("message") or {}
+                token_text = msg.get("content", "")
+                if token_text:
+                    accumulated_text.append(token_text)
+                    yield ("token", {"text": token_text})
+
+                if chunk.get("done"):
+                    final_done_payload = chunk
+                    if "prompt_eval_count" in chunk:
+                        prompt_tokens = int(chunk["prompt_eval_count"])
+                    if "eval_count" in chunk:
+                        eval_tokens = int(chunk["eval_count"])
+                    break
+
+    except (URLError, OSError, ValueError) as exc:
+        from core.error_codes import classify_error
+        msg = f"Ollama stream failed: {exc}"
+        yield ("error", {"message": msg, "error_code": classify_error(msg).code})
+        return
+
+    elapsed_ms = int((time.monotonic() - start_time) * 1000)
+    output_text = "".join(accumulated_text)
+    is_valid = bool(output_text.strip())
+    manifest = {
+        "timestamp": timestamp,
+        "response_time_ms": elapsed_ms,
+        "token_count": (prompt_tokens + eval_tokens) or None,
+        "input_tokens": prompt_tokens,
+        "output_tokens": eval_tokens,
+        "completion_validated": is_valid,
+        "cost_usd": 0.0,
+        "stop_reason": final_done_payload.get("done_reason"),
+    }
+    yield ("manifest", {"manifest": manifest})
