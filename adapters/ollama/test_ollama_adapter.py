@@ -14,7 +14,11 @@ import unittest
 from unittest.mock import patch, MagicMock
 from urllib.error import URLError
 
-from adapters.ollama.ollama_adapter import execute_ollama, OllamaAdapterError
+from adapters.ollama.ollama_adapter import (
+    OllamaAdapterError,
+    execute_ollama,
+    execute_ollama_stream,
+)
 
 
 # --- Fixtures ---
@@ -174,6 +178,137 @@ class TestNetworkError(unittest.TestCase):
         self.assertIn("Connection refused", result["error"])
         self.assertEqual(result["route_type"], "local")
         self.assertEqual(result["provider"], "ollama")
+
+
+class _FakeStreamResponse:
+    """Mock urlopen response that iterates NDJSON lines like Ollama's stream."""
+
+    def __init__(self, lines):
+        self._lines = [
+            ln.encode("utf-8") if isinstance(ln, str) else ln
+            for ln in lines
+        ]
+
+    def __iter__(self):
+        return iter(self._lines)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+
+class _FlagAbortEvent:
+    """Minimal abort_event mimicking threading.Event.is_set()."""
+
+    def __init__(self, set_after: int = 0):
+        self._set_after = set_after
+        self._calls = 0
+
+    def is_set(self) -> bool:
+        self._calls += 1
+        return self._calls > self._set_after
+
+
+class TestExecuteOllamaStream(unittest.TestCase):
+    """v2.2.0 — Ollama streaming via /api/chat (NDJSON)."""
+
+    @patch("adapters.ollama.ollama_adapter.urlopen")
+    def test_stream_yields_token_then_manifest(self, mock_urlopen):
+        mock_urlopen.return_value = _FakeStreamResponse([
+            json.dumps({"message": {"content": "Hello"}, "done": False}) + "\n",
+            json.dumps({"message": {"content": " world"}, "done": False}) + "\n",
+            json.dumps({
+                "message": {"content": ""},
+                "done": True,
+                "done_reason": "stop",
+                "prompt_eval_count": 4,
+                "eval_count": 2,
+            }) + "\n",
+        ])
+        events = list(execute_ollama_stream({"model": "qwen3:14b", "prompt": "hi"}))
+        kinds = [k for k, _ in events]
+        self.assertEqual(kinds, ["token", "token", "manifest"])
+        self.assertEqual(events[0][1]["text"], "Hello")
+        self.assertEqual(events[1][1]["text"], " world")
+        manifest = events[2][1]["manifest"]
+        self.assertEqual(manifest["input_tokens"], 4)
+        self.assertEqual(manifest["output_tokens"], 2)
+        self.assertEqual(manifest["token_count"], 6)
+        self.assertEqual(manifest["stop_reason"], "stop")
+        self.assertTrue(manifest["completion_validated"])
+        self.assertEqual(manifest["cost_usd"], 0.0)
+
+    def test_stream_validates_required_model(self):
+        events = list(execute_ollama_stream({"prompt": "hi"}))
+        self.assertEqual(len(events), 1)
+        kind, data = events[0]
+        self.assertEqual(kind, "error")
+        self.assertEqual(data["error_code"], "contract_violation")
+
+    def test_stream_validates_required_prompt_or_messages(self):
+        events = list(execute_ollama_stream({"model": "qwen3:14b"}))
+        self.assertEqual(events[0][0], "error")
+        self.assertEqual(events[0][1]["error_code"], "contract_violation")
+
+    @patch("adapters.ollama.ollama_adapter.urlopen", side_effect=URLError("connection refused"))
+    def test_stream_url_error_yields_error_event(self, _mock):
+        events = list(execute_ollama_stream({"model": "qwen3:14b", "prompt": "hi"}))
+        self.assertEqual(events[0][0], "error")
+        self.assertIn("Ollama stream failed", events[0][1]["message"])
+
+    @patch("adapters.ollama.ollama_adapter.urlopen")
+    def test_stream_aborts_when_abort_event_set(self, mock_urlopen):
+        mock_urlopen.return_value = _FakeStreamResponse([
+            json.dumps({"message": {"content": "first"}, "done": False}) + "\n",
+            json.dumps({"message": {"content": "second"}, "done": False}) + "\n",
+            json.dumps({"message": {"content": ""}, "done": True}) + "\n",
+        ])
+        events = list(execute_ollama_stream(
+            {"model": "qwen3:14b", "prompt": "hi"},
+            abort_event=_FlagAbortEvent(set_after=0),
+        ))
+        kinds = [k for k, _ in events]
+        self.assertIn("aborted", kinds)
+        self.assertNotIn("manifest", kinds)
+
+    @patch("adapters.ollama.ollama_adapter.urlopen")
+    def test_stream_skips_blank_and_invalid_json_lines(self, mock_urlopen):
+        mock_urlopen.return_value = _FakeStreamResponse([
+            "\n",
+            "not-json\n",
+            json.dumps({"message": {"content": "ok"}, "done": False}) + "\n",
+            json.dumps({"message": {"content": ""}, "done": True}) + "\n",
+        ])
+        events = list(execute_ollama_stream({"model": "qwen3:14b", "prompt": "hi"}))
+        kinds = [k for k, _ in events]
+        self.assertEqual(kinds, ["token", "manifest"])
+        self.assertEqual(events[0][1]["text"], "ok")
+
+    @patch("adapters.ollama.ollama_adapter.urlopen")
+    def test_stream_payload_sets_stream_true(self, mock_urlopen):
+        captured = {}
+
+        def fake(req, timeout=120):
+            captured["body"] = json.loads(req.data.decode("utf-8"))
+            return _FakeStreamResponse([
+                json.dumps({"message": {"content": "x"}, "done": True}) + "\n",
+            ])
+
+        mock_urlopen.side_effect = fake
+        list(execute_ollama_stream({"model": "qwen3:14b", "prompt": "hi"}))
+        self.assertTrue(captured["body"]["stream"])
+        self.assertEqual(captured["body"]["model"], "qwen3:14b")
+
+    @patch("adapters.ollama.ollama_adapter.urlopen")
+    def test_stream_empty_output_marks_completion_invalid(self, mock_urlopen):
+        mock_urlopen.return_value = _FakeStreamResponse([
+            json.dumps({"message": {"content": ""}, "done": True}) + "\n",
+        ])
+        events = list(execute_ollama_stream({"model": "qwen3:14b", "prompt": "hi"}))
+        manifest = events[-1][1]["manifest"]
+        self.assertFalse(manifest["completion_validated"])
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 ATP là `platform repository` tại `SOURCE_DEV/platforms/ATP`.
 
-ATP là một governance-first platform tại baseline **v2.1.0**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
+ATP là một governance-first platform tại baseline **v2.2.0**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
 
 Trạng thái release:
 
@@ -19,11 +19,12 @@ Trạng thái release:
 - `v1.9.0` — Tool use, JSON mode, vision, capabilities matrix
 - `v2.0.0` — SSE streaming + request cancellation
 - `v2.0.1`–`v2.0.4` — ecosystem alignment, codex/cursor adapters, tdf-run bridge provider
-- **`v2.1.0`** — **current released baseline** (G9 observability, aios-flow adapter, evaluator wiring)
+- `v2.1.0` — G9 observability, aios-flow adapter, evaluator wiring (Doctrine v5 compliance)
+- **`v2.2.0`** — **current released baseline** (Ollama streaming parity)
 
-Runtime components (v2.1.0):
+Runtime components (v2.2.0):
 
-- **Ollama adapter** — local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b)
+- **Ollama adapter** — local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b) + **streaming** (v2.2.0)
 - **Anthropic adapter** — cloud + retry + pricing + tool use + JSON mode + vision + **streaming**
 - **OpenAI adapter** — gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision + **streaming**
 - **AOKP adapter (v2.3.x)** — 6 endpoints: health, search, graph, chat, graph-rag, temporal

@@ -2,6 +2,32 @@
 
 All notable changes to ATP are documented here.
 
+## [2.2.0] — 2026-04-29
+
+### Added — Ollama streaming (parity with cloud providers)
+
+- `adapters/ollama/ollama_adapter.py` — new `execute_ollama_stream()` generator
+  function. Sets `stream: true` on Ollama's `/api/chat` endpoint and yields
+  `(event_kind, data)` tuples matching the cloud-provider stream protocol:
+  `token`, `manifest`, `error`, `aborted`. Token deltas come from each NDJSON
+  line's `message.content`; the final `done: true` line populates the
+  manifest with `input_tokens` (`prompt_eval_count`), `output_tokens`
+  (`eval_count`), `stop_reason` (`done_reason`), and `cost_usd: 0.0`.
+- `bridge/bridge_server.py` — `/run/stream` provider allowlist now includes
+  `ollama` alongside `anthropic` and `openai`. Dispatch routes to
+  `execute_ollama_stream` for Ollama requests.
+- 8 new unit tests in `adapters/ollama/test_ollama_adapter.py` covering: token
+  flow + manifest fields, contract validation (missing model / prompt),
+  URLError handling, abort_event support, blank/invalid JSON line tolerance,
+  `stream: true` payload assertion, empty-output completion validation.
+- Tool-use deltas are NOT streamed — Ollama returns tool_calls only on the
+  final `done` line, not as incremental deltas. Same behaviour applies if
+  Ollama gains streaming tool support; the manifest event would carry it.
+
+### Why
+Closes the v2.0.x gap noted in `AI_NEXT_STEP.md`: streaming was cloud-only.
+Ollama is now a first-class streaming citizen for local LLM workflows.
+
 ## [2.1.0] — 2026-04-29
 
 ### Added — Doctrine v5 compliance (G9 observability + aios-flow + evaluator)
