@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260429T161806Z
+GeneratedAtUTC: 20260429T162750Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,11 +90,11 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: b1601578e3df6daea2241dc66a8dcbdc4f4a7712b79627790b5fb2614084e024
+SHA256: 83311c19a37da480e589c5f521609249a371faa015221ee068e83b305935df74
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.2.0
+- **Version:** v2.3.0
 - **Last synced:** 2026-04-29 (via aios sync reverse)
 
 ## Status
@@ -108,13 +108,13 @@ SHA256: b1601578e3df6daea2241dc66a8dcbdc4f4a7712b79627790b5fb2614084e024
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: c50552b181737bf76b697840427423c046891a280c6890f8a4cc2ff46e3619aa
+SHA256: 60a29283d7984f60ff9a05d99c9438bcf512d2e0168e48af7c043f911d32c2be
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-04-29
-- **Phase:** v2.2.0 — Ollama streaming parity (cloud-only → cloud + local)
-- **Current state:** v2.2.0 implemented in worktree; commit + merge gate + tag pending human approval.
+- **Phase:** v2.3.0 — OpenAI Batch API adapter (async jobs at 50% cost)
+- **Current state:** v2.3.0 implemented in worktree; commit + merge gate + tag pending human approval.
 
 ---
 
@@ -242,9 +242,46 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: a8583bd3c868c67ab8969475b104632308887ce24559418d36bd32ecf32e90a6
+SHA256: 8bf6c3343b8bea251fe04224f8b4c2c84715de76957f3d230da395c0fabaf6a4
 ----
 # AI_HANDOFF_LATEST — ATP
+
+## Handoff: v2.3.0 — reverse sync from source repo
+**Date**: 2026-04-29
+
+### What changed in v2.3.0
+## [2.3.0] — 2026-04-29
+
+### Added — OpenAI Batch API adapter (50% cost discount, async jobs)
+
+- `adapters/cloud/openai_batch.py` — five functions wrapping OpenAI's Batch
+  API:
+    - `create_batch(requests, ...)` — uploads JSONL via `POST /v1/files`
+      then creates batch via `POST /v1/batches`. Returns `batch_id`,
+      `input_file_id`, `request_count`.
+    - `get_batch_status(batch_id)` — `GET /v1/batches/{id}`. Returns
+      `batch_status` (validating | in_progress | finalizing | completed |
+      failed | expired | cancelled) + `request_counts`.
+    - `get_batch_results(batch_id)` — looks up batch, downloads output
+      file via `GET /v1/files/{id}/content`, parses JSONL into `results`
+      list.
+    - `cancel_batch(batch_id)` — `POST /v1/batches/{id}/cancel`.
+    - `list_batches(limit, after)` — paginated list of recent batches.
+- Stdlib only (urllib + multipart upload via hand-rolled boundary).
+  Uses Bearer auth via `OPENAI_API_KEY` env var or per-request `api_key`.
+- `bridge/openclaw_bridge.py` routing — `POST /run` with
+  `adapter="openai-batch"` + `action=create|status|results|cancel|list`
+  short-circuits to `openai_batch.dispatch()` (same pattern as `tdf-run`
+  and `aios-flow`).
+- 19 new unit tests in `tests/unit/test_openai_batch.py`: success +
+  error paths for each of the 5 functions, JSONL serialization assertion,
+  multipart upload assertion, dispatch routing for all 5 actions.
+
+### Why
+Batch API lets users submit 1000s of requests asynchronously at 50% cost
+
+---
+
 
 ## Handoff: v2.2.0 — reverse sync from source repo
 **Date**: 2026-04-29
