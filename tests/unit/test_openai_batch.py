@@ -15,6 +15,7 @@ from adapters.cloud.openai_batch import (
     get_batch_results,
     get_batch_status,
     list_batches,
+    wait_for_batch,
 )
 
 
@@ -264,6 +265,122 @@ class TestDispatch(unittest.TestCase):
         result = dispatch({"adapter": "openai-batch", "action": "bogus"})
         self.assertEqual(result["status"], "failed")
         self.assertIn("unknown action", result["error"])
+
+
+class TestWaitForBatch(unittest.TestCase):
+    """v2.5.0 — poll a batch until terminal state or timeout."""
+
+    def test_wait_missing_batch_id(self) -> None:
+        result = wait_for_batch("", api_key="sk-test")
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("batch_id", result["error"])
+
+    @patch("adapters.cloud.openai_batch.urlopen")
+    def test_wait_terminal_on_first_poll(self, mock_urlopen: MagicMock) -> None:
+        mock_urlopen.return_value = _json_response({
+            "id": "b1", "status": "completed",
+            "request_counts": {"total": 5, "completed": 5},
+        })
+        # Inject a deterministic clock so waited_s is stable.
+        clock = [0.0]
+        result = wait_for_batch(
+            "b1", api_key="sk-test",
+            sleep_fn=lambda _s: None,
+            now_fn=lambda: clock[0],
+        )
+        self.assertEqual(result["status"], "success")
+        self.assertEqual(result["batch_status"], "completed")
+        self.assertEqual(result["poll_count"], 1)
+        self.assertFalse(result["timed_out"])
+
+    @patch("adapters.cloud.openai_batch.urlopen")
+    def test_wait_polls_until_terminal(self, mock_urlopen: MagicMock) -> None:
+        mock_urlopen.side_effect = [
+            _json_response({"id": "b1", "status": "validating"}),
+            _json_response({"id": "b1", "status": "in_progress"}),
+            _json_response({"id": "b1", "status": "completed"}),
+        ]
+        result = wait_for_batch(
+            "b1", api_key="sk-test",
+            poll_interval_s=1, timeout_s=60,
+            sleep_fn=lambda _s: None,
+            now_fn=lambda: 0.0,
+        )
+        self.assertEqual(result["batch_status"], "completed")
+        self.assertEqual(result["poll_count"], 3)
+        self.assertFalse(result["timed_out"])
+
+    @patch("adapters.cloud.openai_batch.urlopen")
+    def test_wait_times_out(self, mock_urlopen: MagicMock) -> None:
+        # Always return non-terminal status; simulated clock moves past timeout.
+        mock_urlopen.return_value = _json_response({"id": "b1", "status": "in_progress"})
+        clock = [0.0]
+        # Each now() call advances the clock by 5s; timeout=10 means after 2 polls we exceed.
+        def fake_now():
+            t = clock[0]
+            clock[0] += 5
+            return t
+        result = wait_for_batch(
+            "b1", api_key="sk-test",
+            timeout_s=10, poll_interval_s=1,
+            sleep_fn=lambda _s: None,
+            now_fn=fake_now,
+        )
+        self.assertEqual(result["status"], "timeout")
+        self.assertTrue(result["timed_out"])
+        self.assertIn("did not reach terminal", result["error"])
+
+    @patch("adapters.cloud.openai_batch.urlopen")
+    def test_wait_short_circuits_on_status_error(self, mock_urlopen: MagicMock) -> None:
+        # First poll returns HTTP 500 — wait_for_batch must return immediately
+        # rather than spinning until timeout.
+        from io import BytesIO
+        mock_urlopen.side_effect = HTTPError(
+            url="http://x", code=500, msg="Server Error",
+            hdrs=None, fp=BytesIO(b'{"error":{"message":"down"}}'),
+        )
+        result = wait_for_batch(
+            "b1", api_key="sk-test",
+            sleep_fn=lambda _s: None,
+            now_fn=lambda: 0.0,
+        )
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(result["poll_count"], 1)
+        self.assertFalse(result["timed_out"])
+
+    @patch("adapters.cloud.openai_batch.urlopen")
+    def test_wait_recognizes_failed_terminal(self, mock_urlopen: MagicMock) -> None:
+        mock_urlopen.return_value = _json_response({"id": "b1", "status": "failed"})
+        result = wait_for_batch(
+            "b1", api_key="sk-test",
+            sleep_fn=lambda _s: None,
+            now_fn=lambda: 0.0,
+        )
+        # API call succeeded; "failed" is a terminal batch state.
+        self.assertEqual(result["batch_status"], "failed")
+        self.assertFalse(result["timed_out"])
+
+
+class TestDispatchWait(unittest.TestCase):
+    """v2.5.0 — dispatch routes action='wait' to wait_for_batch."""
+
+    @patch("adapters.cloud.openai_batch.wait_for_batch")
+    def test_dispatch_wait(self, mock_wait: MagicMock) -> None:
+        mock_wait.return_value = {"status": "success"}
+        dispatch({
+            "adapter": "openai-batch", "action": "wait",
+            "batch_id": "b1", "api_key": "sk",
+            "timeout_s": 120, "poll_interval_s": 5,
+        })
+        mock_wait.assert_called_once()
+        kwargs = mock_wait.call_args.kwargs
+        self.assertEqual(kwargs["api_key"], "sk")
+        self.assertEqual(kwargs["timeout_s"], 120)
+        self.assertEqual(kwargs["poll_interval_s"], 5)
+
+    def test_dispatch_unknown_action_mentions_wait(self) -> None:
+        result = dispatch({"adapter": "openai-batch", "action": "bogus"})
+        self.assertIn("wait", result["error"])
 
 
 if __name__ == "__main__":

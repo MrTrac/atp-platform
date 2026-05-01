@@ -2,6 +2,33 @@
 
 All notable changes to ATP are documented here.
 
+## [2.5.0] — 2026-04-29
+
+### Added — OpenAI Batch `wait` helper (full lifecycle parity with aios-flow)
+
+- `adapters/cloud/openai_batch.py:wait_for_batch()` — polls
+  `GET /v1/batches/{id}` until terminal state (`completed | failed |
+  expired | cancelled | canceling`) or `timeout_s` elapses.
+  Defaults: `timeout_s=600` (10min), `poll_interval_s=30`. Returns the
+  ATP envelope plus `waited_s`, `poll_count`, `timed_out`. Short-
+  circuits immediately on HTTP errors so callers don't spin until the
+  timeout when OpenAI is down.
+- `dispatch()` now routes `action="wait"` to `wait_for_batch` (joins
+  the existing create / status / results / cancel / list actions).
+- 8 new unit tests in `tests/unit/test_openai_batch.py`: missing
+  batch_id rejected, terminal-on-first-poll, polls until terminal,
+  timeout fires after configured wait, short-circuits on status error,
+  recognizes `failed` as terminal, dispatch routes `wait`, dispatch
+  error message mentions `wait`. Tests inject `sleep_fn` and `now_fn`
+  for deterministic timing.
+
+### Why
+Mirrors the v2.4.0 aios-flow Phase 2 pattern (status + wait) so callers
+can program against a uniform "submit → poll → terminate" lifecycle for
+both DAG runs and Batch jobs. Closes the polling-helper gap noted after
+v2.3.0 — batches with light queue often complete in minutes; an in-
+process wait is now ergonomic without external orchestration.
+
 ## [2.4.0] — 2026-04-29
 
 ### Added — aios-flow Phase 2 (status + wait actions)

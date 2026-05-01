@@ -2,7 +2,7 @@
 
 ATP là `platform repository` tại `SOURCE_DEV/platforms/ATP`.
 
-ATP là một governance-first platform tại baseline **v2.4.0**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
+ATP là một governance-first platform tại baseline **v2.5.0**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
 
 Trạng thái release:
 
@@ -22,13 +22,14 @@ Trạng thái release:
 - `v2.1.0` — G9 observability, aios-flow adapter, evaluator wiring (Doctrine v5 compliance)
 - `v2.2.0` — Ollama streaming parity
 - `v2.3.0` — OpenAI Batch API adapter
-- **`v2.4.0`** — **current released baseline** (aios-flow Phase 2: status + wait)
+- `v2.4.0` — aios-flow Phase 2 (status + wait)
+- **`v2.5.0`** — **current released baseline** (OpenAI Batch `wait` helper)
 
-Runtime components (v2.4.0):
+Runtime components (v2.5.0):
 
 - **Ollama adapter** — local LLM execution (qwen3:14b, qwen3:8b, deepseek-r1:8b) + **streaming** (v2.2.0)
 - **Anthropic adapter** — cloud + retry + pricing + tool use + JSON mode + vision + **streaming**
-- **OpenAI adapter** — gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision + **streaming** + **Batch API** (v2.3.0, async jobs at 50% cost)
+- **OpenAI adapter** — gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision + **streaming** + **Batch API** (v2.3.0, async jobs at 50% cost) + **batch wait helper** (v2.5.0)
 - **AOKP adapter (v2.3.x)** — 6 endpoints: health, search, graph, chat, graph-rag, temporal
 - **tdf-run bridge provider** — dispatches structured tasks to TDF Web Panel at `:4180` (governance-classified A–C)
 - **aios-flow adapter** — dispatches DAG workflows to aios-flow at `:7700` via `POST /api/runs`; **status + wait actions** (v2.4.0) for full lifecycle

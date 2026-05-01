@@ -31,6 +31,9 @@ from urllib.request import Request, urlopen
 OPENAI_API_BASE = "https://api.openai.com/v1"
 DEFAULT_TIMEOUT_SECONDS = 30
 DEFAULT_COMPLETION_WINDOW = "24h"
+_TERMINAL_BATCH_STATES = {"completed", "failed", "expired", "cancelled", "canceling"}
+_DEFAULT_WAIT_TIMEOUT_S = 600  # 10 min default; max 24h, but typical batches take minutes
+_DEFAULT_POLL_INTERVAL_S = 30
 
 
 class OpenAIBatchAdapterError(ValueError):
@@ -392,6 +395,70 @@ def list_batches(
     })
 
 
+def wait_for_batch(
+    batch_id: str,
+    *,
+    api_key: str | None = None,
+    timeout_s: int = _DEFAULT_WAIT_TIMEOUT_S,
+    poll_interval_s: int = _DEFAULT_POLL_INTERVAL_S,
+    api_base: str = OPENAI_API_BASE,
+    sleep_fn: "callable | None" = None,
+    now_fn: "callable | None" = None,
+) -> dict[str, Any]:
+    """Poll a batch until terminal state or ``timeout_s`` elapses (v2.5.0).
+
+    Terminal states: ``completed | failed | expired | cancelled | canceling``.
+
+    ``sleep_fn`` and ``now_fn`` are injectable for deterministic testing.
+
+    Returns the final ATP-shaped envelope plus:
+      - ``waited_s``   total wall-clock seconds waited
+      - ``poll_count`` number of GET /v1/batches/{id} calls issued
+      - ``timed_out``  True if the wait hit ``timeout_s`` first
+    """
+    timestamp = datetime.now(timezone.utc).isoformat()
+    start_time = time.monotonic()
+
+    if not batch_id:
+        return _error_result("'batch_id' is required", timestamp, start_time)
+
+    sleep = sleep_fn or time.sleep
+    now = now_fn or time.monotonic
+    wait_start = now()
+    poll_count = 0
+    last_result: dict[str, Any] = {}
+
+    while True:
+        poll_count += 1
+        last_result = get_batch_status(batch_id, api_key=api_key,
+                                       api_base=api_base, timeout=DEFAULT_TIMEOUT_SECONDS)
+        if last_result.get("status") == "failed":
+            last_result["waited_s"] = round(now() - wait_start, 3)
+            last_result["poll_count"] = poll_count
+            last_result["timed_out"] = False
+            return last_result
+
+        batch_status = (last_result.get("batch_status") or "").lower()
+        if batch_status in _TERMINAL_BATCH_STATES:
+            last_result["waited_s"] = round(now() - wait_start, 3)
+            last_result["poll_count"] = poll_count
+            last_result["timed_out"] = False
+            return last_result
+
+        elapsed = now() - wait_start
+        if elapsed >= timeout_s:
+            last_result["status"] = "timeout"
+            last_result["error"] = (
+                f"openai-batch wait: batch {batch_id} did not reach terminal "
+                f"state within {timeout_s}s (last status: {batch_status})"
+            )
+            last_result["waited_s"] = round(elapsed, 3)
+            last_result["poll_count"] = poll_count
+            last_result["timed_out"] = True
+            return last_result
+        sleep(poll_interval_s)
+
+
 # ---------------------------------------------------------------------------
 # Bridge dispatcher: routes incoming["action"] to the right function
 # ---------------------------------------------------------------------------
@@ -419,8 +486,15 @@ def dispatch(incoming: dict[str, Any]) -> dict[str, Any]:
     if action == "list":
         return list_batches(api_key=api_key, limit=incoming.get("limit", 20),
                             after=incoming.get("after"))
+    if action == "wait":
+        return wait_for_batch(
+            incoming.get("batch_id", ""),
+            api_key=api_key,
+            timeout_s=int(incoming.get("timeout_s", _DEFAULT_WAIT_TIMEOUT_S)),
+            poll_interval_s=int(incoming.get("poll_interval_s", _DEFAULT_POLL_INTERVAL_S)),
+        )
     return {
         "status": "failed",
         "provider": "openai-batch",
-        "error": f"unknown action '{action}' (expected: create | status | results | cancel | list)",
+        "error": f"unknown action '{action}' (expected: create | status | results | cancel | list | wait)",
     }
