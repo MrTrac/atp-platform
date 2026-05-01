@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=FUTURE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260429T162751Z
+GeneratedAtUTC: 20260501T025806Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 83311c19a37da480e589c5f521609249a371faa015221ee068e83b305935df74
+SHA256: 945595b7f92842f73c6846755d7dbb2c06f36cb78cded79558372235f6747a7e
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.3.0
-- **Last synced:** 2026-04-29 (via aios sync reverse)
+- **Version:** v2.5.0
+- **Last synced:** 2026-05-01 (via aios sync reverse)
 
 ## Status
 
@@ -108,13 +108,13 @@ SHA256: 83311c19a37da480e589c5f521609249a371faa015221ee068e83b305935df74
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 60a29283d7984f60ff9a05d99c9438bcf512d2e0168e48af7c043f911d32c2be
+SHA256: a421f0156e1093f391d3b9b7d0e01e1680654c0e9fc7f1f1b94f1298d10efa98
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-04-29
-- **Phase:** v2.3.0 — OpenAI Batch API adapter (async jobs at 50% cost)
-- **Current state:** v2.3.0 implemented in worktree; commit + merge gate + tag pending human approval.
+- **Phase:** v2.5.0 — OpenAI Batch `wait` helper (full lifecycle parity with aios-flow)
+- **Current state:** v2.5.0 implemented in worktree; commit + merge gate + tag pending human approval.
 
 ---
 

@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260429T162750Z
+GeneratedAtUTC: 20260501T025806Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 83311c19a37da480e589c5f521609249a371faa015221ee068e83b305935df74
+SHA256: 945595b7f92842f73c6846755d7dbb2c06f36cb78cded79558372235f6747a7e
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.3.0
-- **Last synced:** 2026-04-29 (via aios sync reverse)
+- **Version:** v2.5.0
+- **Last synced:** 2026-05-01 (via aios sync reverse)
 
 ## Status
 
@@ -108,13 +108,13 @@ SHA256: 83311c19a37da480e589c5f521609249a371faa015221ee068e83b305935df74
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 60a29283d7984f60ff9a05d99c9438bcf512d2e0168e48af7c043f911d32c2be
+SHA256: a421f0156e1093f391d3b9b7d0e01e1680654c0e9fc7f1f1b94f1298d10efa98
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-04-29
-- **Phase:** v2.3.0 — OpenAI Batch API adapter (async jobs at 50% cost)
-- **Current state:** v2.3.0 implemented in worktree; commit + merge gate + tag pending human approval.
+- **Phase:** v2.5.0 — OpenAI Batch `wait` helper (full lifecycle parity with aios-flow)
+- **Current state:** v2.5.0 implemented in worktree; commit + merge gate + tag pending human approval.
 
 ---
 
@@ -242,9 +242,79 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 8bf6c3343b8bea251fe04224f8b4c2c84715de76957f3d230da395c0fabaf6a4
+SHA256: b9b844b79b834bbb566f0f222c98ffc1e3d5c136e4002996e223bdf6f334b572
 ----
 # AI_HANDOFF_LATEST — ATP
+
+## Handoff: v2.5.0 — reverse sync from source repo
+**Date**: 2026-05-01
+
+### What changed in v2.5.0
+## [2.5.0] — 2026-04-29
+
+### Added — OpenAI Batch `wait` helper (full lifecycle parity with aios-flow)
+
+- `adapters/cloud/openai_batch.py:wait_for_batch()` — polls
+  `GET /v1/batches/{id}` until terminal state (`completed | failed |
+  expired | cancelled | canceling`) or `timeout_s` elapses.
+  Defaults: `timeout_s=600` (10min), `poll_interval_s=30`. Returns the
+  ATP envelope plus `waited_s`, `poll_count`, `timed_out`. Short-
+  circuits immediately on HTTP errors so callers don't spin until the
+  timeout when OpenAI is down.
+- `dispatch()` now routes `action="wait"` to `wait_for_batch` (joins
+  the existing create / status / results / cancel / list actions).
+- 8 new unit tests in `tests/unit/test_openai_batch.py`: missing
+  batch_id rejected, terminal-on-first-poll, polls until terminal,
+  timeout fires after configured wait, short-circuits on status error,
+  recognizes `failed` as terminal, dispatch routes `wait`, dispatch
+  error message mentions `wait`. Tests inject `sleep_fn` and `now_fn`
+  for deterministic timing.
+
+### Why
+Mirrors the v2.4.0 aios-flow Phase 2 pattern (status + wait) so callers
+can program against a uniform "submit → poll → terminate" lifecycle for
+both DAG runs and Batch jobs. Closes the polling-helper gap noted after
+v2.3.0 — batches with light queue often complete in minutes; an in-
+process wait is now ergonomic without external orchestration.
+
+---
+
+
+## Handoff: v2.4.0 — reverse sync from source repo
+**Date**: 2026-04-29
+
+### What changed in v2.4.0
+## [2.4.0] — 2026-04-29
+
+### Added — aios-flow Phase 2 (status + wait actions)
+
+- `adapters/aios_flow/aios_flow_adapter.py` extended with two new actions
+  routed via the existing top-level `dispatch()` function:
+    - `action="status"` — single-shot snapshot via `GET /api/runs/{id}`,
+      returns `flow_status` + full `flow_run` body. G9 trace records the
+      route as `/api/runs/{id}` with method `GET`.
+    - `action="wait"` — polls until terminal state (`success` |
+      `succeeded` | `failed` | `cancelled` | `canceled` | `error`) or
+      `timeout_s` elapses (default 300s, poll every `poll_interval_s`,
+      default 2s). Returns `waited_s`, `poll_count`, `timed_out`.
+- The original submit behavior is preserved as `action="dispatch"`
+  (default when `action` is missing) — full backward compatibility with
+  v2.1.0 callers.
+- Wait function accepts injectable `sleep_fn` and `now_fn` for
+  deterministic testing without real time delays.
+- 11 new unit tests in `tests/unit/test_aios_flow_adapter.py`: status
+  snapshot success/error, trace route correctness, wait reaches
+  terminal, wait times out, wait short-circuits on failed/error, wait
+  returns network error, wait via dispatch router, unknown action
+  rejected, default action backward compat.
+
+### Why
+Closes the v2.1.0 Phase 2 commitment: callers couldn't programmatically
+wait for a flow run to complete without polling externally. This makes
+ATP a complete client for aios-flow's bounded execution lifecycle.
+
+---
+
 
 ## Handoff: v2.3.0 — reverse sync from source repo
 **Date**: 2026-04-29
