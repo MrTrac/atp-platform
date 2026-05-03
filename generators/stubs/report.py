@@ -4,23 +4,27 @@ Ports the report-shape branch of AOKP `src/runtime/synthesis/synthesizer.ts`
 (`synthesizeAnswer`) into ATP. This is the FIRST must-ship port of three
 (D5.2 = report, D5.3 = analyze, D5.4 = transform).
 
-Scope of this commit (honest):
+Phase 1 + 2 status:
   ✅ no-context fallback branch (synthesizer.ts:43-60) — full parity
   ✅ context-concat skeleton when chunks supplied — placeholder synthesis
      so the dispatch path + citation surface works end-to-end without
      requiring Ollama/cloud-LLM availability in CI
-  ⏸ real LLM-driven synthesis (synthesizer.ts:62+) — deferred to follow-up
-     once R8 mitigation (smoke tests) lands and the bridge HTTP layer
-     wires /api/synthesis/* routes (D5.x phase 2)
-  ⏸ quality-check loop + grounding verifier — deferred to v6.1
+  ✅ real LLM-driven synthesis (synthesizer.ts:62+) — wired via
+     generators.llm.call_llm(), which by default delegates to ATP
+     `bridge_request`. Caller opts in via `params.llm_mode = "real"`;
+     default stays `"skeleton"` so test environments don't accidentally
+     hit a live model.
+  ⏸ quality-check loop + grounding verifier (AOKP retry-on-fail logic)
+     — deferred to v6.1
 
-The descriptor stays `lifecycle="incubating"` until the LLM branch ships.
+The descriptor stays `lifecycle="incubating"` until the quality loop ships.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from generators.llm import LlmError, call_llm
 from generators.registry import (
     Citation,
     GeneratorRequest,
@@ -50,9 +54,9 @@ def _no_context_answer(locale: str) -> str:
 
 def _placeholder_synthesis(query: str, chunks: list[dict[str, Any]]) -> str:
     """Skeletal synthesis without LLM — concatenates chunk titles + snippets
-    under section headings. Replaced by the LLM branch in the W17-W18 phase 2
-    follow-up; kept here so the round-trip (request → result → citations)
-    can be exercised without external services."""
+    under section headings. Used when `params.llm_mode != "real"` (default).
+    The LLM branch is opt-in to keep CI deterministic without an external
+    service running."""
     lines = [f"# Report — {query}", ""]
     for i, chunk in enumerate(chunks, 1):
         title = str(chunk.get("title", f"Source {i}"))
@@ -61,13 +65,49 @@ def _placeholder_synthesis(query: str, chunks: list[dict[str, Any]]) -> str:
             lines.append(f"## [{i}] {title}")
             lines.append(snippet)
             lines.append("")
-    lines.append("_Synthesis stub — LLM-driven answer generation pending W17-W18 phase 2._")
+    lines.append("_Skeleton mode — pass `params.llm_mode='real'` for LLM synthesis._")
     return "\n".join(lines)
+
+
+def _format_context(chunks: list[dict[str, Any]]) -> str:
+    """Build the context block exactly the way AOKP synthesizer expects:
+    each chunk numbered [n] with title + snippet. Mirrors
+    `formatContextWithCitations` in AOKP `synthesis/citation-linker.ts`."""
+    parts = []
+    for i, chunk in enumerate(chunks, 1):
+        title = str(chunk.get("title", f"Source {i}"))
+        snippet = str(chunk.get("snippet", "")).strip()
+        parts.append(f"[{i}] {title}\n{snippet}")
+    return "\n\n".join(parts)
+
+
+def _build_prompt(query: str, chunks: list[dict[str, Any]], locale: str) -> str:
+    """Mirrors AOKP SYNTHESIS_SYSTEM_PROMPT shape (synthesizer.ts:74). The
+    real prompt template lives in AOKP `synthesis/types.ts`; we paraphrase
+    here. Phase 2 work to fully match the AOKP template (incl. retry hint
+    + structured-section instructions) tracks under v6.1."""
+    lang = "Vietnamese" if locale == "vi" else "English"
+    return (
+        f"You are a synthesis engine. Answer the user's question in {lang} "
+        f"based ONLY on the numbered context items below. Cite sources "
+        f"inline as [1], [2], etc. matching the item numbers.\n\n"
+        f"CONTEXT:\n{_format_context(chunks)}\n\n"
+        f"QUESTION: {query}\n\n"
+        f"ANSWER:"
+    )
+
+
+def _llm_synthesis(query: str, chunks: list[dict[str, Any]], locale: str, model: str | None) -> str:
+    """Real LLM call via the configured provider. Raises LlmError on
+    upstream failure — caller decides whether to fall back to skeleton
+    or surface the error."""
+    prompt = _build_prompt(query, chunks, locale)
+    return call_llm(prompt, model)
 
 
 @register_generator(
     name="report",
-    version="0.2.0",
+    version="0.3.0",
     lifecycle="incubating",
     description="Report-shape answer synthesis (must-ship D5.2). Ports AOKP src/runtime/synthesis/synthesizer.ts.",
     source_aokp_module="src/runtime/synthesis/",
@@ -76,6 +116,16 @@ def _placeholder_synthesis(query: str, chunks: list[dict[str, Any]]) -> str:
         "properties": {
             "query": {"type": "string"},
             "locale": {"type": "string", "enum": ["vi", "en"], "default": "vi"},
+            "llm_mode": {
+                "type": "string",
+                "enum": ["skeleton", "real"],
+                "default": "skeleton",
+                "description": "skeleton = no LLM (deterministic); real = call LLM via bridge_request",
+            },
+            "model": {
+                "type": "string",
+                "description": "Provider-prefixed model id (e.g. 'ollama/qwen3:8b'). Used when llm_mode='real'.",
+            },
             "context_chunks": {
                 "type": "array",
                 "items": {
@@ -127,8 +177,24 @@ def run(req: GeneratorRequest) -> SynthesisResult:
             diagnostics=["no context chunks supplied — returned no-info fallback"],
         )
 
-    # Branch 2: context-concat skeleton (placeholder for LLM synthesis).
-    answer = _placeholder_synthesis(query, chunks)
+    # Branch 2: synthesis with chunks — skeleton (default) or real LLM.
+    llm_mode = str(payload.get("llm_mode", "skeleton"))
+    model = payload.get("model")  # may be None
+
+    diagnostics: list[str] = [f"chunk_count={len(chunks)}"]
+    status = "partial"
+    if llm_mode == "real":
+        try:
+            answer = _llm_synthesis(query, chunks, locale, model if isinstance(model, str) else None)
+            status = "success"  # real LLM produced an answer; not "partial" anymore
+            diagnostics.append(f"llm_mode=real model={model or 'default'}")
+        except LlmError as e:
+            answer = _placeholder_synthesis(query, chunks)
+            diagnostics.append(f"llm_error={e}; fell back to skeleton")
+    else:
+        answer = _placeholder_synthesis(query, chunks)
+        diagnostics.append("llm_mode=skeleton (default — deterministic)")
+
     citations = [
         Citation(
             artifact_id=str(c.get("artifact_id", "")),
@@ -144,7 +210,7 @@ def run(req: GeneratorRequest) -> SynthesisResult:
     return SynthesisResult(
         run_id=run_id,
         generator="report",
-        status="partial",
+        status=status,
         answer=answer,
         citations=citations,
         usage={
@@ -153,8 +219,5 @@ def run(req: GeneratorRequest) -> SynthesisResult:
             "knowledge_queries": 0,
             "duration_ms": 0,
         },
-        diagnostics=[
-            "skeletal synthesis — LLM branch pending W17-W18 phase 2",
-            f"chunk_count={len(chunks)}",
-        ],
+        diagnostics=diagnostics,
     )

@@ -1,16 +1,19 @@
 """Unit tests for ATP generator: report (D5.2).
 
-Covers the registry dispatch + the two branches of report.run() that
-shipped in D5.2 phase 1 (no-context fallback + context-concat skeleton).
-The LLM-driven branch lands in W17-W18 phase 2 and gets its own tests
-then.
+Covers the registry dispatch + all three branches of report.run():
+  - phase 1 no-context fallback (success)
+  - phase 1 skeleton synthesis with chunks (partial, default)
+  - phase 2 real LLM synthesis with chunks (success, opt-in via
+    `llm_mode=real`); LLM call mocked via generators.llm.set_llm_provider
 """
 
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 import generators
+from generators import llm as gen_llm
 
 
 class TestReportRegistration(unittest.TestCase):
@@ -101,7 +104,7 @@ class TestReportContextSynthesis(unittest.TestCase):
         self.assertIn("What is HCMOPS?", r.answer)
         self.assertIn("ManagAIR overview", r.answer)
         self.assertIn("AFTN routing", r.answer)
-        self.assertIn("Synthesis stub", r.answer)
+        self.assertIn("Skeleton mode", r.answer)  # phase 2 wording
 
     def test_citations_preserve_chunk_metadata(self) -> None:
         r = self._run_with_chunks()
@@ -119,8 +122,86 @@ class TestReportContextSynthesis(unittest.TestCase):
 
     def test_diagnostics_flag_skeletal_mode(self) -> None:
         r = self._run_with_chunks()
-        self.assertTrue(any("skeletal synthesis" in d for d in r.diagnostics))
+        self.assertTrue(any("llm_mode=skeleton" in d for d in r.diagnostics))
         self.assertTrue(any("chunk_count=2" in d for d in r.diagnostics))
+
+
+class TestReportLlmMode(unittest.TestCase):
+    """Phase 2: real LLM call via dependency-injected provider."""
+
+    def setUp(self) -> None:
+        self.calls: list[tuple[str, str | None]] = []
+
+        def fake_provider(prompt: str, model: str | None = None) -> str:
+            self.calls.append((prompt, model))
+            return "## Synthesised answer\n\nHCMOPS is the operational namespace [1]."
+
+        gen_llm.set_llm_provider(fake_provider)
+
+    def tearDown(self) -> None:
+        gen_llm.reset_llm_provider()
+
+    def _run_real(self, **extra):
+        entry = generators.get_generator("report")
+        return entry.handler(
+            generators.GeneratorRequest(
+                request_id="test-llm",
+                payload={
+                    "query": "What is HCMOPS?",
+                    "locale": "en",
+                    "llm_mode": "real",
+                    "context_chunks": [
+                        {
+                            "artifact_id": "art-1",
+                            "source_id": "src-managair",
+                            "title": "ManagAIR",
+                            "snippet": "HCMOPS is the operational namespace.",
+                        },
+                    ],
+                    **extra,
+                },
+                consumer="AIOS-OC",
+            ),
+        )
+
+    def test_real_mode_invokes_provider_and_returns_success(self) -> None:
+        r = self._run_real()
+        self.assertEqual(r.status, "success")  # real synthesis = success, not partial
+        self.assertIn("Synthesised answer", r.answer)
+        self.assertEqual(len(self.calls), 1)
+        prompt, model = self.calls[0]
+        self.assertIn("What is HCMOPS?", prompt)
+        self.assertIn("HCMOPS is the operational namespace", prompt)  # context embedded
+
+    def test_real_mode_passes_explicit_model(self) -> None:
+        self._run_real(model="anthropic/claude-haiku-4-5")
+        _, model = self.calls[-1]
+        self.assertEqual(model, "anthropic/claude-haiku-4-5")
+
+    def test_provider_failure_falls_back_to_skeleton(self) -> None:
+        def failing_provider(prompt: str, model: str | None = None) -> str:
+            raise gen_llm.LlmError("upstream timeout")
+
+        gen_llm.set_llm_provider(failing_provider)
+        r = self._run_real()
+        # Partial because we fell back to skeleton, not LLM-success
+        self.assertEqual(r.status, "partial")
+        self.assertIn("Skeleton mode", r.answer)
+        self.assertTrue(any("llm_error=upstream timeout" in d for d in r.diagnostics))
+
+    def test_skeleton_mode_default_does_not_invoke_provider(self) -> None:
+        entry = generators.get_generator("report")
+        entry.handler(
+            generators.GeneratorRequest(
+                request_id="test-skel",
+                payload={
+                    "query": "Q",
+                    "context_chunks": [{"artifact_id": "a", "source_id": "s", "snippet": "x"}],
+                },
+                consumer="internal",
+            ),
+        )
+        self.assertEqual(self.calls, [])  # provider never invoked
 
 
 if __name__ == "__main__":
