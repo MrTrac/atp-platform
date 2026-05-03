@@ -51,15 +51,27 @@ def _default_provider(prompt: str, model: str | None = None) -> str:
     except BridgeError as e:
         raise LlmError(f"bridge_request failed: {e}") from e
 
-    # bridge_request returns the full ATP execution result. Extract the
-    # synthesized text from the canonical location; tolerate a couple of
-    # shape variants seen across providers.
+    # bridge_request returns ATP's CLI-execution-shaped result. The LLM
+    # text lives in `stdout` (verified live 2026-05-03 against
+    # ollama/qwen3:8b — keys: execution_id, request_id, product,
+    # selected_provider, selected_node, command, exit_code, stdout,
+    # stderr, status, source_stage, notes, bridge, ollama_manifest,
+    # ollama_routing). Status field is "succeeded" on success.
     if isinstance(result, dict):
-        for key in ("text", "answer", "output", "response"):
+        # Refuse non-success even if stdout has content (avoid silent
+        # delivery of partial / error stdout).
+        status = str(result.get("status", "")).lower()
+        if status and status not in {"succeeded", "ok", "success"}:
+            stderr = str(result.get("stderr") or "")[:200]
+            raise LlmError(
+                f"bridge_request status={status!r} exit_code={result.get('exit_code')} "
+                f"stderr={stderr}"
+            )
+        for key in ("stdout", "text", "answer", "output", "response"):
             v = result.get(key)
-            if isinstance(v, str) and v:
+            if isinstance(v, str) and v.strip():
                 return v
-        manifest = result.get("manifest") or {}
+        manifest = result.get("manifest") or result.get("ollama_manifest") or {}
         if isinstance(manifest, dict) and isinstance(manifest.get("text"), str):
             return manifest["text"]
     raise LlmError(f"bridge_request returned unexpected shape: {type(result).__name__}")
