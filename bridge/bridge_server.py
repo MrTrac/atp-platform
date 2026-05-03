@@ -3,18 +3,20 @@
 Exposes the ATP bridge as an HTTP service for AIOS-OC integration.
 
 Endpoints:
-    POST /run            — execute task via bridge (blocking, single response)
-    POST /run/stream     — execute task with SSE streaming (v2.0.0)
-    GET  /health         — basic health check
-    GET  /status         — full ATP status (providers, nodes, AOKP, config)
-    GET  /providers      — active provider list from registry
-    GET  /capabilities   — active capability list from registry
-    GET  /runs           — list persisted run history
-    GET  /runs/active    — list in-flight requests (v2.0.0)
-    GET  /runs/<id>      — detail for a specific run
-    DELETE /runs/<id>    — cancel an in-flight request (v2.0.0)
-    GET  /               — service info
-    OPTIONS *            — CORS preflight
+    POST /run                         — execute task via bridge (blocking)
+    POST /run/stream                  — execute task with SSE streaming (v2.0.0)
+    POST /api/synthesis/generate      — run a registered generator (D5.x phase 1)
+    GET  /api/synthesis/generators    — list registered generators (D4.3)
+    GET  /health                      — basic health check
+    GET  /status                      — full ATP status (providers, nodes, AOKP, config)
+    GET  /providers                   — active provider list from registry
+    GET  /capabilities                — active capability list from registry
+    GET  /runs                        — list persisted run history
+    GET  /runs/active                 — list in-flight requests (v2.0.0)
+    GET  /runs/<id>                   — detail for a specific run
+    DELETE /runs/<id>                 — cancel an in-flight request (v2.0.0)
+    GET  /                            — service info
+    OPTIONS *                         — CORS preflight
 
 Usage:
     python3 bridge/bridge_server.py
@@ -48,6 +50,9 @@ from bridge.context_enrichment import enrich_context  # noqa: E402
 from core.routing.route_prepare import _discover_active_providers, _discover_active_nodes  # noqa: E402
 from core import config  # noqa: E402
 from core import in_flight_tracker  # noqa: E402
+
+# D4.3 + D5.x — synthesis generator surface (Z2 contract: ATP_AIOS-OC_v3).
+import generators as _generators  # noqa: E402  (eager-imports the registry stubs)
 from core import streaming as sse  # noqa: E402
 from core.structured_log import log_event  # noqa: E402
 
@@ -57,6 +62,97 @@ DEFAULT_PORT = config.BRIDGE_PORT
 MAX_BODY_BYTES = config.BRIDGE_MAX_BODY_BYTES
 MODEL_ALLOWLIST = config.MODEL_ALLOWLIST
 SERVER_VERSION = "1.7"
+
+
+# ─── D4.3 + D5.x synthesis surface helpers ─────────────────────────────────
+
+def _descriptor_to_dict(d: "_generators.GeneratorDescriptor") -> dict:
+    return {
+        "name": d.name,
+        "version": d.version,
+        "lifecycle": d.lifecycle,
+        "description": d.description,
+        "source_aokp_module": d.source_aokp_module,
+        "params_schema": d.params_schema,
+    }
+
+
+def _citation_to_dict(c: "_generators.Citation") -> dict:
+    return {
+        "artifact_id": c.artifact_id,
+        "source_id": c.source_id,
+        "snippet": c.snippet,
+        "classification_path": list(c.classification_path),
+        "relevance_score": c.relevance_score,
+        "rank": c.rank,
+    }
+
+
+def _synthesis_result_to_dict(r: "_generators.SynthesisResult") -> dict:
+    return {
+        "run_id": r.run_id,
+        "generator": r.generator,
+        "status": r.status,
+        "answer": r.answer,
+        "citations": [_citation_to_dict(c) for c in r.citations],
+        "usage": r.usage,
+        "diagnostics": r.diagnostics,
+    }
+
+
+def _build_synthesis_generators_response() -> dict:
+    return {
+        "registry_version": _generators.registry_version(),
+        "generators": [_descriptor_to_dict(d) for d in _generators.list_generators()],
+    }
+
+
+def _handle_synthesis_generate(body: dict) -> tuple[int, dict]:
+    """Pure-function dispatch for /api/synthesis/generate.
+
+    Returns (http_status, json_body). Kept side-effect-free so it's easy
+    to unit-test without spinning up the HTTP server.
+    """
+    name = str(body.get("generator", "")).strip()
+    if not name:
+        return 400, {"ok": False, "error": "missing_generator", "field": "generator"}
+
+    entry = _generators.get_generator(name)
+    if entry is None:
+        available = sorted(d.name for d in _generators.list_generators())
+        return 404, {
+            "ok": False,
+            "error": "generator_not_found",
+            "requested": name,
+            "available": available,
+        }
+
+    request_id = str(body.get("request_id", "") or "")
+    consumer = str(body.get("consumer", "internal") or "internal")
+    params = body.get("params") or {}
+    if not isinstance(params, dict):
+        return 400, {"ok": False, "error": "params_not_object"}
+
+    req = _generators.GeneratorRequest(
+        request_id=request_id,
+        payload=params,
+        consumer=consumer,
+    )
+    try:
+        result = entry.handler(req)
+    except NotImplementedError as e:
+        return 501, {
+            "ok": False,
+            "error": "not_implemented",
+            "generator": name,
+            "message": str(e),
+        }
+    except Exception as e:  # pragma: no cover  (defensive)
+        return 500, {"ok": False, "error": "generator_exception", "message": str(e)}
+
+    payload = _synthesis_result_to_dict(result)
+    payload["ok"] = True
+    return 200, payload
 
 
 def _run_cli_agent_adapter(incoming: dict, adapter_kind: str) -> dict:
@@ -256,6 +352,8 @@ class BridgeHandler(BaseHTTPRequestHandler):
         elif self.path == "/runs/active":
             active = in_flight_tracker.list_active()
             self._send_json(200, {"active": active, "count": len(active)})
+        elif self.path == "/api/synthesis/generators":
+            self._send_json(200, _build_synthesis_generators_response())
         elif self.path.startswith("/runs/"):
             run_id = self.path[len("/runs/"):]
             run_data = get_run(run_id) if run_id else None
@@ -286,6 +384,9 @@ class BridgeHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         if self.path == "/run/stream":
             self._handle_stream()
+            return
+        if self.path == "/api/synthesis/generate":
+            self._handle_synthesis_generate()
             return
         if self.path != "/run":
             self._send_json(404, {"error": f"Not found: {self.path}"})
@@ -385,6 +486,52 @@ class BridgeHandler(BaseHTTPRequestHandler):
         except Exception as exc:
             log_event("bridge.error", error=str(exc), error_code="unknown_error")
             self._send_json(500, {"status": "failed", "error": f"Bridge execution failed: {exc}"})
+
+    def _handle_synthesis_generate(self) -> None:
+        """POST /api/synthesis/generate — D5.x phase 1 (registry dispatch).
+
+        Body shape (per ATP_AIOS-OC_v3.yaml SynthesisRequest):
+            {
+              "generator": "report" | "analyze" | "transform" | ...,
+              "params":    { ... generator-specific ... },
+              "consumer":  "AIOS-OC" | "ATCC_HCM" | "internal",
+              "request_id": "<optional idempotency key>"
+            }
+
+        Phase 1 dispatches to the in-process generators registry.
+        Generators that haven't ported yet (federation/temporal/react/
+        tot/graphrag_synth) raise NotImplementedError → 501. Generators
+        that have ported but only in skeletal form return status=partial
+        with diagnostics flagging the LLM branch as pending.
+        """
+        content_length = int(self.headers.get("Content-Length", 0))
+        if content_length == 0:
+            self._send_json(400, {"ok": False, "error": "empty_body"})
+            return
+        if content_length > MAX_BODY_BYTES:
+            self._send_json(
+                413,
+                {"ok": False, "error": f"body_too_large", "max_bytes": MAX_BODY_BYTES},
+            )
+            return
+        try:
+            body = json.loads(self.rfile.read(content_length))
+        except json.JSONDecodeError:
+            self._send_json(400, {"ok": False, "error": "invalid_json"})
+            return
+        if not isinstance(body, dict):
+            self._send_json(400, {"ok": False, "error": "body_not_object"})
+            return
+
+        status, payload = _handle_synthesis_generate(body)
+        log_event(
+            "bridge.synthesis.generate",
+            generator=str(body.get("generator", "")),
+            consumer=str(body.get("consumer", "internal")),
+            status=str(payload.get("status") or payload.get("error") or "ok"),
+            http=status,
+        )
+        self._send_json(status, payload)
 
     def _handle_stream(self) -> None:
         """SSE streaming endpoint (v2.0.0) — POST /run/stream."""
