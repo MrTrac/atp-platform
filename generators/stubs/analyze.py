@@ -4,25 +4,24 @@ Ports the RAGAS evaluation pipeline (`runRagasEvaluation` in AOKP
 `src/runtime/eval/ragas/pipeline.ts:177`) into ATP. Second must-ship
 port of three (D5.2 = report, D5.3 = analyze, D5.4 = transform).
 
-Phase 1 scope (this commit):
-  ✅ Empty-pairs fallback — returns a structured "no data" result
-     mirroring AOKP's behaviour when no eval pairs supplied
-  ✅ Per-pair metric skeleton — for each (question, contexts,
-     answer, ground_truth) pair, emits placeholder per-metric scores
-     so the dispatch + aggregation surface (mean per metric) works
-     end-to-end without requiring Ollama / cloud-LLM in CI
-  ⏸ Real LLM-driven scoring (faithfulness / answer-relevancy /
-     context-precision / context-recall) — deferred to phase 2
-
-The 4 metric names match RAGAS standard. Phase 2 replaces the
-placeholder per-pair score with real LLM calls; descriptor stays
-incubating until then.
+Phase 1 + 2 status:
+  ✅ Empty-pairs fallback (structured no-data result)
+  ✅ Skeleton scoring (lexical-overlap heuristic) — `llm_mode=skeleton`
+     (default) keeps CI deterministic without external service.
+  ✅ Real LLM-judge scoring (`llm_mode=real`) — wired via
+     generators.llm.call_llm; one metric-specific judge prompt per
+     RAGAS metric. Score parsed from "Score: 0.NN" pattern; parse
+     failure or LLM error falls back to heuristic so soak metrics
+     never go to NaN.
+  ⏸ Long-context chunking (>8K tokens get summarised first) — v6.1
 """
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
+from generators.llm import LlmError, call_llm
 from generators.registry import (
     Citation,
     GeneratorRequest,
@@ -32,31 +31,93 @@ from generators.registry import (
 
 RAGAS_METRICS = ("faithfulness", "answer_relevancy", "context_precision", "context_recall")
 
+# Metric-specific judge prompts. Each MUST end with the word "Score:" so
+# the parser can find the float that follows. Mirrors AOKP's RAGAS prompt
+# convention in src/runtime/eval/ragas/{faithfulness,...}.ts.
+_JUDGE_PROMPTS: dict[str, str] = {
+    "faithfulness": (
+        "You are a RAGAS faithfulness judge. Score 0.0-1.0 where 1.0 means "
+        "every claim in the answer is supported by the contexts.\n\n"
+        "QUESTION: {question}\nCONTEXTS:\n{contexts}\nANSWER: {answer}\n\nScore:"
+    ),
+    "answer_relevancy": (
+        "You are a RAGAS answer-relevancy judge. Score 0.0-1.0 where 1.0 means "
+        "the answer directly addresses the question.\n\n"
+        "QUESTION: {question}\nANSWER: {answer}\n\nScore:"
+    ),
+    "context_precision": (
+        "You are a RAGAS context-precision judge. Score 0.0-1.0 where 1.0 means "
+        "every context item is relevant to the question.\n\n"
+        "QUESTION: {question}\nCONTEXTS:\n{contexts}\n\nScore:"
+    ),
+    "context_recall": (
+        "You are a RAGAS context-recall judge. Score 0.0-1.0 where 1.0 means "
+        "the contexts contain all the information needed to answer the question.\n\n"
+        "QUESTION: {question}\nGROUND_TRUTH: {ground_truth}\nCONTEXTS:\n{contexts}\n\nScore:"
+    ),
+}
+
+_SCORE_RE = re.compile(r"(?:^|\b)(0(?:\.\d+)?|1(?:\.0+)?)\b")
+
 
 def _new_run_id(req: GeneratorRequest) -> str:
     suffix = (req.request_id or "")[:16] or f"{abs(hash(repr(req.payload))):016x}"
     return f"syn_analyze_{suffix}"
 
 
-def _placeholder_score(pair: dict[str, Any], metric: str) -> float:
-    """Heuristic placeholder until LLM-driven scoring lands.
-
-    Awards 1.0 only if the predicted answer appears literally in the contexts
-    (a tiny lexical-overlap stand-in); 0.0 otherwise. This is intentionally
-    weaker than the AOKP RAGAS implementation — it just exercises the
-    dispatch + aggregation path. Phase 2 replaces this with real LLM judges.
-    """
+def _heuristic_score(pair: dict[str, Any], metric: str) -> float:
+    """Lexical-overlap heuristic — used in skeleton mode and as fallback
+    when an LLM judge raises LlmError or returns unparseable output.
+    Awards 1.0 if predicted answer appears in contexts; 0.5 otherwise."""
     answer = str(pair.get("answer", "")).strip().lower()
     contexts = " ".join(str(c) for c in (pair.get("contexts") or [])).lower()
     if not answer or not contexts:
         return 0.0
-    overlap = answer in contexts
-    return 1.0 if overlap else 0.5
+    return 1.0 if answer in contexts else 0.5
+
+
+def _parse_score(raw: str) -> float | None:
+    """Extract a float in [0, 1] from an LLM judge response. Returns None
+    when the response can't be parsed — caller falls back to heuristic."""
+    if not raw:
+        return None
+    m = _SCORE_RE.search(raw.strip())
+    if not m:
+        return None
+    try:
+        v = float(m.group(1))
+    except ValueError:
+        return None
+    return v if 0.0 <= v <= 1.0 else None
+
+
+def _llm_score(pair: dict[str, Any], metric: str, model: str | None) -> tuple[float, str]:
+    """Real LLM judge — returns (score, source_label). Source is "llm" on
+    successful judge call + parse, "heuristic_fallback_*" otherwise so the
+    diagnostics layer can see WHY each score got the value it did."""
+    template = _JUDGE_PROMPTS.get(metric)
+    if template is None:
+        return _heuristic_score(pair, metric), f"heuristic_fallback_unknown_metric"
+    contexts = "\n".join(f"- {c}" for c in (pair.get("contexts") or []))
+    prompt = template.format(
+        question=str(pair.get("question", "")),
+        answer=str(pair.get("answer", "")),
+        ground_truth=str(pair.get("ground_truth", "")),
+        contexts=contexts,
+    )
+    try:
+        raw = call_llm(prompt, model)
+    except LlmError:
+        return _heuristic_score(pair, metric), "heuristic_fallback_llm_error"
+    parsed = _parse_score(raw)
+    if parsed is None:
+        return _heuristic_score(pair, metric), "heuristic_fallback_unparseable"
+    return parsed, "llm"
 
 
 @register_generator(
     name="analyze",
-    version="0.2.0",
+    version="0.3.0",
     lifecycle="incubating",
     description="RAGAS-shape evaluation synthesis (must-ship D5.3). Ports AOKP src/runtime/eval/ragas/pipeline.ts.",
     source_aokp_module="src/runtime/eval/ragas/",
@@ -82,6 +143,12 @@ def _placeholder_score(pair: dict[str, Any], metric: str) -> float:
                 "items": {"type": "string", "enum": list(RAGAS_METRICS)},
                 "description": f"Subset of {list(RAGAS_METRICS)}; defaults to all 4",
             },
+            "llm_mode": {
+                "type": "string",
+                "enum": ["skeleton", "real"],
+                "default": "skeleton",
+            },
+            "model": {"type": "string"},
         },
         "required": ["query"],
     },
@@ -125,12 +192,22 @@ def run(req: GeneratorRequest) -> SynthesisResult:
             diagnostics=["empty pairs — no metrics computed"],
         )
 
+    llm_mode = str(payload.get("llm_mode", "skeleton"))
+    model = payload.get("model") if isinstance(payload.get("model"), str) else None
+
     per_pair = []
     metric_totals: dict[str, float] = {m: 0.0 for m in metrics}
+    source_counts: dict[str, int] = {}  # tracks where each score came from
     for pair in pairs:
-        scores = {m: _placeholder_score(pair, m) for m in metrics}
-        for m, s in scores.items():
-            metric_totals[m] += s
+        scores: dict[str, float] = {}
+        for m in metrics:
+            if llm_mode == "real":
+                score, source = _llm_score(pair, m, model)
+            else:
+                score, source = _heuristic_score(pair, m), "heuristic"
+            scores[m] = score
+            metric_totals[m] += score
+            source_counts[source] = source_counts.get(source, 0) + 1
         per_pair.append(
             {
                 "question": str(pair.get("question", "")),
@@ -140,17 +217,24 @@ def run(req: GeneratorRequest) -> SynthesisResult:
         )
     means = {m: metric_totals[m] / len(pairs) for m in metrics}
 
-    answer_lines = [f"# RAGAS Eval — {query}", "", f"Pairs evaluated: **{len(pairs)}**", "", "## Mean scores"]
+    mode_label = "LLM judges" if llm_mode == "real" else "lexical-overlap heuristic"
+    answer_lines = [f"# RAGAS Eval — {query}", "", f"Pairs evaluated: **{len(pairs)}**", "",
+                    f"Scoring mode: **{mode_label}**", "", "## Mean scores"]
     for m in metrics:
         answer_lines.append(f"- `{m}`: **{means[m]:.3f}**")
     answer_lines.append("")
-    answer_lines.append("_Skeletal scoring (lexical-overlap heuristic) — LLM judges land in W17-W18 phase 2._")
+    if llm_mode == "skeleton":
+        answer_lines.append("_Skeleton mode — pass `params.llm_mode='real'` for LLM judges._")
     answer = "\n".join(answer_lines)
+
+    diagnostics = [f"pair_count={len(pairs)}", f"metrics={metrics}", f"llm_mode={llm_mode}"]
+    if source_counts:
+        diagnostics.append(f"score_sources={source_counts}")
 
     return SynthesisResult(
         run_id=run_id,
         generator="analyze",
-        status="partial",
+        status="success" if llm_mode == "real" else "partial",
         answer=answer,
         citations=[],
         usage={
@@ -161,9 +245,5 @@ def run(req: GeneratorRequest) -> SynthesisResult:
             "pairs_evaluated": len(pairs),
             "metric_means": means,
         },
-        diagnostics=[
-            "skeletal scoring — LLM judges pending W17-W18 phase 2",
-            f"pair_count={len(pairs)}",
-            f"metrics={metrics}",
-        ],
+        diagnostics=diagnostics,
     )
