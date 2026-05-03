@@ -25,6 +25,43 @@ AOKP unaffected — sources stay in `~/SOURCE_DEV/platforms/AOKP/src/runtime/*`
 per the per-module migration spec ("AOKP keeps generators in Step 2").
 """
 
+from .registry import (
+    Citation,
+    GeneratorDescriptor,
+    SynthesisResult,
+    get_generator,
+    iter_entries,
+    list_generators,
+    register_generator,
+    registry_version,
+    reset_registry,
+)
 from .types import GeneratorRequest, GeneratorResult
 
-__all__ = ["GeneratorRequest", "GeneratorResult"]
+# Eagerly import stubs so their @register_generator decorators populate
+# the registry. When real ports land in W17-W20 (D5.x), this import list
+# stays the same — bodies get replaced, descriptors stay stable.
+from .stubs import (  # noqa: F401  (import-side-effect for registration)
+    analyze,
+    federation,
+    graphrag_synth,
+    react,
+    report,
+    temporal,
+    tot,
+    transform,
+)
+
+__all__ = [
+    "Citation",
+    "GeneratorDescriptor",
+    "GeneratorRequest",
+    "GeneratorResult",
+    "SynthesisResult",
+    "get_generator",
+    "iter_entries",
+    "list_generators",
+    "register_generator",
+    "registry_version",
+    "reset_registry",
+]

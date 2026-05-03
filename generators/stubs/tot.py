@@ -1,20 +1,40 @@
-"""ATP generator stub: tot (Step 2 W9-10 staging).
+"""ATP generator stub: tot (D1.9 staging + D4.3 registry wired).
 
-Migration source (AOKP, TypeScript): src/runtime/reasoning/tot/ — Tree-of-Thought thought generator + evaluator
+Migration source (AOKP, TypeScript): src/runtime/reasoning/tot/
 
 Status: STUB — actual port scheduled per tasks.json D5.x (Step 4 W17-W20).
+The registry decorator is live so /api/synthesis/generators can advertise
+the descriptor immediately; /api/synthesis/generate dispatch raises
+NotImplementedError until the body is filled in.
 """
 
 from __future__ import annotations
 
-from generators.types import GeneratorRequest, GeneratorResult
+from generators.registry import (
+    GeneratorRequest,
+    GeneratorResult,
+    SynthesisResult,
+    register_generator,
+)
 
 
-GENERATOR_NAME = "tot"
-
-
-def run(req: GeneratorRequest) -> GeneratorResult:
+@register_generator(
+    name="tot",
+    version="0.1.0",
+    lifecycle="incubating",
+    description="Tree-of-Thought reasoning",
+    source_aokp_module="src/runtime/reasoning/tot/",
+    params_schema={
+        "type": "object",
+        "properties": {
+            "query": {"type": "string"},
+            "context": {"type": "object", "additionalProperties": True},
+        },
+        "required": ["query"],
+    },
+)
+def run(req: GeneratorRequest) -> SynthesisResult:
     raise NotImplementedError(
-        f"ATP generator '{GENERATOR_NAME}' is a Step 2 W9-10 staging stub. "
+        f"ATP generator 'tot' is a Step 2 W9-10 staging stub. "
         f"Port from AOKP scheduled for D5.x (Doctrine v6.0 Step 4 W17-W20)."
     )
