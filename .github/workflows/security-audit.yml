@@ -29,7 +29,7 @@ jobs:
     name: pip-audit (FastAPI + stdlib deps)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: actions/setup-python@v5
         with:
@@ -62,7 +62,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # GitHub-native dependency review — flags new vulnerable deps in PR diff
       - uses: actions/dependency-review-action@v4
