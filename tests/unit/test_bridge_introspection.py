@@ -33,9 +33,10 @@ class TestBridgeIntrospection(unittest.TestCase):
     def test_status_providers_match_registry(self) -> None:
         resp = _build_status_response()
         self.assertIn("non_llm_execution", resp["providers"])
-        self.assertIn("ollama", resp["providers"])
         self.assertIn("anthropic", resp["providers"])
+        self.assertIn("openai", resp["providers"])
         self.assertIn("aokp", resp["providers"])
+        self.assertNotIn("ollama", resp["providers"])
         self.assertEqual(resp["provider_count"], len(resp["providers"]))
 
     def test_providers_response_has_details(self) -> None:

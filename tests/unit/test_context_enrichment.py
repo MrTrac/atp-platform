@@ -11,7 +11,7 @@ class TestContextEnrichment(unittest.TestCase):
     @patch("bridge.context_enrichment.AOKP_ENABLED", False)
     def test_disabled_returns_unchanged(self) -> None:
         from bridge.context_enrichment import enrich_context
-        incoming = {"text": "test query", "model": "ollama/qwen3:14b"}
+        incoming = {"text": "test query", "model": "anthropic/claude-haiku-4-5-20251001"}
         result = enrich_context(incoming)
         self.assertIs(result, incoming)
         self.assertNotIn("aokp_context", result)
@@ -34,7 +34,7 @@ class TestContextEnrichment(unittest.TestCase):
     })
     def test_enrichment_adds_aokp_context(self, mock_query: object, mock_health: object) -> None:
         from bridge.context_enrichment import enrich_context
-        incoming = {"text": "test query", "model": "ollama/qwen3:14b"}
+        incoming = {"text": "test query", "model": "anthropic/claude-haiku-4-5-20251001"}
         result = enrich_context(incoming)
         self.assertIn("aokp_context", result)
         self.assertIn("context_text", result["aokp_context"])
@@ -50,10 +50,10 @@ class TestContextEnrichment(unittest.TestCase):
     })
     def test_enrichment_preserves_original_fields(self, mock_query: object, mock_health: object) -> None:
         from bridge.context_enrichment import enrich_context
-        incoming = {"text": "my query", "model": "ollama/qwen3:14b", "context": "system prompt"}
+        incoming = {"text": "my query", "model": "anthropic/claude-haiku-4-5-20251001", "context": "system prompt"}
         result = enrich_context(incoming)
         self.assertEqual(result["text"], "my query")
-        self.assertEqual(result["model"], "ollama/qwen3:14b")
+        self.assertEqual(result["model"], "anthropic/claude-haiku-4-5-20251001")
         self.assertEqual(result["context"], "system prompt")
 
     @patch("bridge.context_enrichment.AOKP_ENABLED", True)

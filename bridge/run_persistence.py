@@ -59,13 +59,13 @@ def persist_bridge_run(
         _write(exec_dir / "execution-result.json", normalized_output)
         written.append("executor-outputs/execution-result.json")
 
-        if raw_result.get("ollama_manifest"):
-            _write(exec_dir / "ollama-manifest.json", raw_result["ollama_manifest"])
-            written.append("executor-outputs/ollama-manifest.json")
+        if raw_result.get("manifest"):
+            _write(exec_dir / "manifest.json", raw_result["manifest"])
+            written.append("executor-outputs/manifest.json")
 
-        if raw_result.get("ollama_routing"):
-            _write(exec_dir / "ollama-routing.json", raw_result["ollama_routing"])
-            written.append("executor-outputs/ollama-routing.json")
+        if raw_result.get("routing"):
+            _write(exec_dir / "routing.json", raw_result["routing"])
+            written.append("executor-outputs/routing.json")
 
         # Run summary
         summary = {

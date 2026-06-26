@@ -76,10 +76,6 @@ class TestPricingTable(unittest.TestCase):
         cost = calculate_cost("totally-unknown", 1000, 1000)
         self.assertEqual(cost, 0.0)
 
-    def test_ollama_default_zero(self) -> None:
-        cost = calculate_cost("any-ollama-model", 1000, 1000, provider="ollama")
-        self.assertEqual(cost, 0.0)
-
     def test_get_model_price_known(self) -> None:
         price = get_model_price("claude-sonnet-4-20250514")
         self.assertIsNotNone(price)
@@ -295,9 +291,11 @@ class TestExecutorDispatch(unittest.TestCase):
         self.assertIn("openai", EXECUTOR_MAP)
         self.assertTrue(callable(EXECUTOR_MAP["openai"]))
 
-    def test_all_4_providers_present(self) -> None:
-        for p in ("non_llm_execution", "ollama", "anthropic", "openai"):
+    def test_core_providers_present(self) -> None:
+        for p in ("non_llm_execution", "anthropic", "openai"):
             self.assertIn(p, EXECUTOR_MAP, f"{p} should be in EXECUTOR_MAP")
+        # Ollama hard-deleted per Global_Mac_No_Ollama_Rule.
+        self.assertNotIn("ollama", EXECUTOR_MAP)
 
 
 class TestPerModelTimeout(unittest.TestCase):

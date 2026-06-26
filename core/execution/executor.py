@@ -11,7 +11,6 @@ from typing import Any, Callable
 
 from adapters.subprocess.local_exec_adapter import LocalExecutionError, execute_local
 from adapters.ssh_remote.ssh_exec_adapter import execute_remote
-from adapters.ollama.ollama_adapter import execute_ollama
 from adapters.cloud.anthropic_adapter import execute_anthropic
 from adapters.cloud.openai_adapter import execute_openai
 from core.routing.escalation_policy import should_escalate
@@ -80,8 +79,8 @@ def _normalize_adapter_result(result: dict[str, Any], adapter_path: str) -> dict
             f"Executed through {adapter_path}",
             f"provider={result.get('provider')}, model={result.get('model')}",
         ],
-        "ollama_manifest": result.get("manifest"),
-        "ollama_routing": {
+        "manifest": result.get("manifest"),
+        "routing": {
             "route_type": result.get("route_type"),
             "provider": result.get("provider"),
             "escalation_triggered": result.get("escalation_triggered", False),
@@ -106,8 +105,8 @@ def _try_escalate(
         return None
 
     cloud_request = dict(llm_request)
-    # Escalation always switches to the cloud model: the local model id (e.g. an
-    # Ollama model like "qwen3:14b") is not valid on the cloud provider's API.
+    # Escalation upgrades to the heavier cloud model (Sonnet) for harder work —
+    # e.g. when the request carries force_cloud or a named escalation_trigger.
     cloud_request["model"] = DEFAULT_CLOUD_MODEL
 
     cloud_raw = execute_anthropic(cloud_request)
@@ -137,29 +136,23 @@ def _handle_non_llm(
         raise ExecutionError(str(exc)) from exc
 
 
-def _handle_ollama(
-    normalized_request: dict[str, Any],
-    routing_result: dict[str, Any],
-) -> dict[str, Any]:
-    """Handle Ollama local LLM execution with escalation policy."""
-    llm_request = _build_llm_request(normalized_request, routing_result)
-    raw_result = execute_ollama(llm_request)
-
-    escalated = _try_escalate(llm_request, raw_result)
-    if escalated is not None:
-        return escalated
-
-    return _normalize_adapter_result(
-        raw_result, "adapters/ollama/ollama_adapter.py"
-    )
-
-
 def _handle_anthropic(
     normalized_request: dict[str, Any],
     routing_result: dict[str, Any],
 ) -> dict[str, Any]:
-    """Handle Anthropic cloud LLM execution."""
+    """Handle Anthropic cloud LLM execution — the default/primary LLM path.
+
+    Anthropic is the sole local-host LLM provider on macOS (no Ollama per
+    ~/AI_OS/00_AUTHORITY/Global_Mac_No_Ollama_Rule.md). An explicit
+    ``force_cloud`` flag or named ``escalation_trigger`` still upgrades the
+    request to the heavier cloud model (Sonnet) via the escalation policy.
+    """
     llm_request = _build_llm_request(normalized_request, routing_result)
+
+    escalated = _try_escalate(llm_request, None)
+    if escalated is not None:
+        return escalated
+
     raw_result = execute_anthropic(llm_request)
     return _normalize_adapter_result(
         raw_result, "adapters/cloud/anthropic_adapter.py"
@@ -186,7 +179,6 @@ ExecutorHandler = Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]]
 
 EXECUTOR_MAP: dict[str, ExecutorHandler] = {
     "non_llm_execution": _handle_non_llm,
-    "ollama": _handle_ollama,
     "anthropic": _handle_anthropic,
     "openai": _handle_openai,
 }

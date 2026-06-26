@@ -26,8 +26,9 @@ class TestExecutorDispatchMap(unittest.TestCase):
 
     def test_executor_map_contains_known_providers(self) -> None:
         self.assertIn("non_llm_execution", EXECUTOR_MAP)
-        self.assertIn("ollama", EXECUTOR_MAP)
         self.assertIn("anthropic", EXECUTOR_MAP)
+        self.assertIn("openai", EXECUTOR_MAP)
+        self.assertNotIn("ollama", EXECUTOR_MAP)
 
     def test_executor_map_handlers_are_callable(self) -> None:
         for provider, handler in EXECUTOR_MAP.items():
@@ -74,12 +75,12 @@ class TestExecutorDispatchMap(unittest.TestCase):
 class TestRegistryDiscovery(unittest.TestCase):
     """Verify route_prepare discovers providers and nodes from registry."""
 
-    def test_discover_active_providers_finds_all_three(self) -> None:
+    def test_discover_active_providers_finds_core_providers(self) -> None:
         providers = _discover_active_providers()
         provider_names = [p.get("provider") for p in providers]
         self.assertIn("non_llm_execution", provider_names)
-        self.assertIn("ollama", provider_names)
         self.assertIn("anthropic", provider_names)
+        self.assertNotIn("ollama", provider_names)
 
     def test_discover_active_providers_only_returns_active(self) -> None:
         providers = _discover_active_providers()
@@ -104,13 +105,16 @@ class TestRegistryDiscovery(unittest.TestCase):
     def test_new_registry_yaml_files_are_loadable(self) -> None:
         from core.intake.loader import load_request
 
-        ollama = load_request(REGISTRY_ROOT / "providers" / "ollama_local.yaml")
-        self.assertEqual(ollama["provider"], "ollama")
-        self.assertEqual(ollama["provider_type"], "llm")
-
         anthropic = load_request(REGISTRY_ROOT / "providers" / "anthropic_cloud.yaml")
         self.assertEqual(anthropic["provider"], "anthropic")
         self.assertEqual(anthropic["provider_type"], "llm")
+
+    def test_ollama_provider_yaml_removed(self) -> None:
+        # Hard-deleted per Global_Mac_No_Ollama_Rule — the registry entry
+        # must no longer exist.
+        self.assertFalse(
+            (REGISTRY_ROOT / "providers" / "ollama_local.yaml").exists()
+        )
 
     def test_llm_capabilities_are_loadable(self) -> None:
         from core.intake.loader import load_request

@@ -64,7 +64,7 @@ class TestRunPersistence(unittest.TestCase):
         return persist_bridge_run(
             request_id=run_id,
             normalized_request={"request_id": run_id, "payload": {"input_text": "test"}},
-            routing_result={"selected_provider": "ollama", "selected_node": "local_mac", "selected_provider_model": "qwen3:14b"},
+            routing_result={"selected_provider": "anthropic", "selected_node": "local_mac", "selected_provider_model": "claude-haiku-4-5-20251001"},
             raw_result={"status": "completed", "stdout": "hello", "exit_code": 0},
             normalized_output={"request_id": run_id, "status": "completed", "exit_code": 0},
             workspace_root=ws,
@@ -102,7 +102,7 @@ class TestRunPersistence(unittest.TestCase):
             summary_path = ws / "atp-runs" / "bridge-test-001" / "run-summary.json"
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
             self.assertEqual(summary["run_id"], "bridge-test-001")
-            self.assertEqual(summary["provider"], "ollama")
+            self.assertEqual(summary["provider"], "anthropic")
             self.assertIn("timestamp", summary)
 
 

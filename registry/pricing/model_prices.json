@@ -35,7 +35,6 @@
   },
   "defaults": {
     "anthropic": {"input_per_mtok": 3.00, "output_per_mtok": 15.00},
-    "openai":    {"input_per_mtok": 5.00, "output_per_mtok": 15.00},
-    "ollama":    {"input_per_mtok": 0.00, "output_per_mtok": 0.00}
+    "openai":    {"input_per_mtok": 5.00, "output_per_mtok": 15.00}
   }
 }

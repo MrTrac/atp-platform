@@ -1,14 +1,15 @@
 """OpenClaw → ATP bridge: translate external requests into the ATP execution layer.
 
 Accepts a JSON payload from the OpenClaw gateway (or CLI) and routes it
-through the ATP executor to a local LLM via the Ollama adapter.
+through the ATP executor to the Anthropic cloud LLM (the sole/default
+provider on macOS per ~/AI_OS/00_AUTHORITY/Global_Mac_No_Ollama_Rule.md).
 
 Usage (CLI):
     python3 bridge/openclaw_bridge.py '<json>'
 
     JSON fields:
         text    (required) — the prompt / task description
-        model   (optional) — provider/model, e.g. "ollama/qwen3:14b"
+        model   (optional) — provider/model, e.g. "anthropic/claude-haiku-4-5-20251001"
         context (optional) — system prompt injected before the user message
 
 Returns a JSON object on stdout with the full ATP execution result.
@@ -28,8 +29,8 @@ from core.execution.executor import invoke_executor
 from core.execution.output_normalizer import normalize_output
 
 
-DEFAULT_MODEL = "qwen3:14b"
-DEFAULT_PROVIDER = "ollama"
+DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+DEFAULT_PROVIDER = "anthropic"
 
 
 class BridgeError(ValueError):
@@ -37,7 +38,7 @@ class BridgeError(ValueError):
 
 
 def _parse_model_spec(model_spec: str) -> tuple[str, str]:
-    """Parse 'provider/model' into (provider, model). Default provider: ollama."""
+    """Parse 'provider/model' into (provider, model). Default provider: anthropic."""
     if not model_spec:
         return DEFAULT_PROVIDER, DEFAULT_MODEL
     if "/" in model_spec:
@@ -130,7 +131,7 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
         "selected_provider": provider,
         "selected_node": "local_mac",
         "selected_provider_model": model,
-        "execution_path": "local_ollama",
+        "execution_path": "cloud_anthropic",
         "status": "selected",
         "reason_codes": ["bridge_direct_route"],
     }
@@ -146,7 +147,7 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
         routing_result=routing_result,
     )
 
-    # Enrich with bridge metadata and ollama manifest
+    # Enrich with bridge metadata and the adapter execution manifest
     normalized["bridge"] = {
         "source": "openclaw",
         "bridge_timestamp": timestamp,
@@ -154,10 +155,10 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
         "resolved_provider": provider,
         "resolved_model": model,
     }
-    if raw_result.get("ollama_manifest"):
-        normalized["ollama_manifest"] = raw_result["ollama_manifest"]
-    if raw_result.get("ollama_routing"):
-        normalized["ollama_routing"] = raw_result["ollama_routing"]
+    if raw_result.get("manifest"):
+        normalized["manifest"] = raw_result["manifest"]
+    if raw_result.get("routing"):
+        normalized["routing"] = raw_result["routing"]
     if raw_result.get("tool_calls"):
         normalized["tool_calls"] = raw_result["tool_calls"]
     if enriched.get("aokp_context"):
