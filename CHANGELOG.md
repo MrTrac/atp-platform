@@ -2,6 +2,28 @@
 
 All notable changes to ATP are documented here.
 
+## [2.6.0] — 2026-06-26
+
+### Removed — Ollama provider (Anthropic is now the sole/default LLM provider)
+
+Per `~/AI_OS/00_AUTHORITY/Global_Mac_No_Ollama_Rule.md` (no local LLM on macOS).
+
+- Deleted `adapters/ollama/`, `registry/providers/ollama_local.yaml`,
+  `tests/integration/test_ollama_integration.py`.
+- `executor.py`: removed the ollama adapter/dispatch; Anthropic is the primary path.
+  Generalised result keys `ollama_manifest`/`ollama_routing` → `manifest`/`routing`.
+- Bridge: `DEFAULT_MODEL` → `claude-haiku-4-5-20251001`, `DEFAULT_PROVIDER` →
+  `anthropic`; unprefixed/unknown models default to anthropic. Dropped
+  `OLLAMA_BASE_URL`/`OLLAMA_TIMEOUT` from config and the ollama pricing default.
+
+### Fixed — cloud escalation used a deprecated model id → 404
+
+`DEFAULT_CLOUD_MODEL` was `claude-sonnet-4-20250514` (deprecated 2026-06-15 → 404),
+which broke every escalated run. Updated to `claude-sonnet-4-5-20250929`.
+
+Verify: bridge healthy; named/bare/no-model runs default to anthropic (succeeded);
+edited test files 103 passed / 0 failed.
+
 ## [2.5.0] — 2026-04-29
 
 ### Added — OpenAI Batch `wait` helper (full lifecycle parity with aios-flow)

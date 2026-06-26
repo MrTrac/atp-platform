@@ -365,7 +365,7 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     log_event("bridge.persist.error", request_id=result.get("request_id"), reason=reason)
 
             # Structured logging
-            manifest = result.get("ollama_manifest") or result.get("manifest") or {}
+            manifest = result.get("manifest") or {}
             log_event(
                 "bridge.request",
                 request_id=result.get("request_id"),
@@ -420,13 +420,13 @@ class BridgeHandler(BaseHTTPRequestHandler):
         provider, model = _parse_model_spec(incoming.get("model", ""))
         request_id = incoming.get("request_id") or f"stream-{uuid.uuid4().hex[:12]}"
 
-        # Streaming providers (v2.2.0 added ollama)
-        if provider not in ("anthropic", "openai", "ollama"):
+        # Streaming providers
+        if provider not in ("anthropic", "openai"):
             self._send_json(
                 400,
                 {
                     "status": "failed",
-                    "error": f"Streaming not supported for provider '{provider}' (supported: anthropic, openai, ollama)",
+                    "error": f"Streaming not supported for provider '{provider}' (supported: anthropic, openai)",
                 },
             )
             return
@@ -479,10 +479,8 @@ class BridgeHandler(BaseHTTPRequestHandler):
         # Select streaming function
         if provider == "anthropic":
             from adapters.cloud.anthropic_adapter import execute_anthropic_stream as stream_fn
-        elif provider == "openai":
-            from adapters.cloud.openai_adapter import execute_openai_stream as stream_fn
         else:
-            from adapters.ollama.ollama_adapter import execute_ollama_stream as stream_fn
+            from adapters.cloud.openai_adapter import execute_openai_stream as stream_fn
 
         final_manifest: dict = {}
         aborted = False

@@ -130,7 +130,7 @@ class TestNoEscalateOnContractViolation(unittest.TestCase):
             request={},
             local_result={
                 "status": "failed",
-                "error": "Ollama request failed: Connection refused",
+                "error": "Adapter request failed: Connection refused",
             },
         )
         self.assertTrue(result)

@@ -8,4 +8,4 @@ supported_provider_types:
   - knowledge
 notes:
   - Preferred local node for ATP routing on macOS
-  - Supports execution, LLM (Ollama, Anthropic), and knowledge (AOKP) providers
+  - Supports execution, LLM (Anthropic), and knowledge (AOKP) providers

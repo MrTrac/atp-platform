@@ -32,10 +32,10 @@ def _mock_response(body: dict) -> MagicMock:
 class TestModelAutoDetection(unittest.TestCase):
     """Verify _parse_model_spec() auto-detects provider from model name."""
 
-    def test_empty_defaults_to_ollama(self) -> None:
+    def test_empty_defaults_to_anthropic(self) -> None:
         provider, model = _parse_model_spec("")
-        self.assertEqual(provider, "ollama")
-        self.assertEqual(model, "qwen3:14b")
+        self.assertEqual(provider, "anthropic")
+        self.assertEqual(model, "claude-haiku-4-5-20251001")
 
     def test_explicit_provider_slash_model(self) -> None:
         provider, model = _parse_model_spec("anthropic/claude-sonnet-4")
@@ -72,15 +72,17 @@ class TestModelAutoDetection(unittest.TestCase):
         self.assertEqual(provider, "openai")
         self.assertEqual(model, "o3-mini")
 
-    def test_unknown_prefix_defaults_to_ollama(self) -> None:
-        provider, model = _parse_model_spec("qwen3:14b")
-        self.assertEqual(provider, "ollama")
-        self.assertEqual(model, "qwen3:14b")
+    def test_bare_model_defaults_to_anthropic(self) -> None:
+        # An unprefixed model id keeps the name but routes to the default
+        # provider (anthropic) — the sole LLM provider on macOS.
+        provider, model = _parse_model_spec("claude-haiku-4-5-20251001")
+        self.assertEqual(provider, "anthropic")
+        self.assertEqual(model, "claude-haiku-4-5-20251001")
 
-    def test_llama_defaults_to_ollama(self) -> None:
-        provider, model = _parse_model_spec("llama3:70b")
-        self.assertEqual(provider, "ollama")
-        self.assertEqual(model, "llama3:70b")
+    def test_unknown_prefix_defaults_to_anthropic_provider(self) -> None:
+        provider, model = _parse_model_spec("some-unknown-model")
+        self.assertEqual(provider, "anthropic")
+        self.assertEqual(model, "some-unknown-model")
 
 
 class TestApiKeyPassthrough(unittest.TestCase):

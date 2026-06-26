@@ -6,4 +6,4 @@ supported_provider_types:
 notes:
   - Input shape: model + prompt/messages + optional context/options
   - Output shape: generated text + token count + completion status
-  - Added in v1.1.0 for Ollama and Anthropic adapters
+  - Added in v1.1.0; served by the Anthropic adapter (sole LLM provider on macOS)

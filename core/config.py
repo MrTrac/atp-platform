@@ -39,8 +39,6 @@ PERSIST_RUNS: bool = _bool_env("ATP_PERSIST_RUNS")
 # ---------------------------------------------------------------------------
 ANTHROPIC_API_KEY: str | None = os.environ.get("ANTHROPIC_API_KEY")
 OPENAI_API_KEY: str | None = os.environ.get("OPENAI_API_KEY")
-OLLAMA_BASE_URL: str = os.environ.get("ATP_OLLAMA_URL", "http://127.0.0.1:11434")
-OLLAMA_TIMEOUT: int = int(os.environ.get("ATP_OLLAMA_TIMEOUT", "120"))
 ANTHROPIC_TIMEOUT: int = int(os.environ.get("ATP_ANTHROPIC_TIMEOUT", "120"))
 OPENAI_TIMEOUT: int = int(os.environ.get("ATP_OPENAI_TIMEOUT", "300"))  # higher for o1 reasoning models
 
@@ -111,8 +109,6 @@ def summary() -> dict[str, object]:
         "persist_runs": PERSIST_RUNS,
         "anthropic_api_key_set": ANTHROPIC_API_KEY is not None,
         "openai_api_key_set": OPENAI_API_KEY is not None,
-        "ollama_base_url": OLLAMA_BASE_URL,
-        "ollama_timeout": OLLAMA_TIMEOUT,
         "anthropic_timeout": ANTHROPIC_TIMEOUT,
         "openai_timeout": OPENAI_TIMEOUT,
         "model_timeouts": MODEL_TIMEOUTS,
