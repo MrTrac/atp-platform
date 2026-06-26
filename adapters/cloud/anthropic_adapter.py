@@ -26,7 +26,7 @@ from core.retry import with_retry
 
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 ANTHROPIC_API_VERSION = "2023-06-01"
-DEFAULT_MODEL = "claude-sonnet-4-20250514"
+DEFAULT_MODEL = "claude-sonnet-4-5-20250929"  # was claude-sonnet-4-20250514 (deprecated 2026-06-15 → 404)
 DEFAULT_MAX_TOKENS = 4096
 DEFAULT_TIMEOUT_SECONDS = 120
 

@@ -21,7 +21,9 @@ class ExecutionError(ValueError):
     """Raised when ATP cannot execute the selected route."""
 
 
-DEFAULT_CLOUD_MODEL = "claude-sonnet-4-20250514"
+# Cloud escalation fallback. Must be a CURRENT, non-deprecated Anthropic model
+# id — `claude-sonnet-4-20250514` was deprecated 2026-06-15 and now 404s.
+DEFAULT_CLOUD_MODEL = "claude-sonnet-4-5-20250929"
 
 
 def _build_llm_request(
@@ -104,8 +106,8 @@ def _try_escalate(
         return None
 
     cloud_request = dict(llm_request)
-    cloud_request["model"] = cloud_request.get("model") or DEFAULT_CLOUD_MODEL
-    # Always use the cloud default model for escalation
+    # Escalation always switches to the cloud model: the local model id (e.g. an
+    # Ollama model like "qwen3:14b") is not valid on the cloud provider's API.
     cloud_request["model"] = DEFAULT_CLOUD_MODEL
 
     cloud_raw = execute_anthropic(cloud_request)
