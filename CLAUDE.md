@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260720T024339Z
+GeneratedAtUTC: 20260727T034142Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: a60c7a14f58953c9eac5b8554a26a8f07528029d0a7fbc6dc3e86a77011320c1
+SHA256: d5ff66d7b1784895460851f5e40ee69ec76d304425706ccffe2a985570a6a390
 ----
 # AI_CURRENT_BASELINE — ATP
 
 - **Version:** v2.6.0
-- **Last synced:** 2026-05-10 (via aios sync reverse)
+- **Last synced:** 2026-07-27 (via aios sync reverse)
 
 ## Status
 
@@ -248,50 +248,35 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 9d64f42c92ef0084963fff17185d1eee22f0d5310db695dace6c7f8d29cd261d
+SHA256: a70f414dce0ece390031529a25ffb8a0b5b0e7417eabe8a75884461462c2bfe8
 ----
 # AI_HANDOFF_LATEST — ATP
 
 ## Handoff: v2.6.0 — reverse sync from source repo
-**Date**: 2026-05-10
+**Date**: 2026-07-27
 
 ### What changed in v2.6.0
-## [2.6.0] — 2026-05-04
+## [2.6.0] — 2026-06-26
 
-### Added — Synthesis surface complete: react / tot / graphrag_synth ports (D6.2 Phase 1)
+### Removed — Ollama provider (Anthropic is now the sole/default LLM provider)
 
-Closes the last 3 stub generators in ATP's synthesis plane. After this release ATP `/api/synthesis/generate` exposes 8/8 generators with real bodies; `NotImplementedError` no longer reachable on any registered generator. This is Phase 1 of the Doctrine v6.0 D6.2 cutover (Step 4 W21) — ATP synthesis surface is now feature-complete; consumer cutover (AOKP `synthesizer.ts` → ATP client) is Phase 2.
+Per `~/AI_OS/00_AUTHORITY/Global_Mac_No_Ollama_Rule.md` (no local LLM on macOS).
 
-#### `generators/stubs/react.py` (228 lines, was 40-line stub)
-- Ports the Thought→Action→Observation reasoning shape from AOKP `src/runtime/agents/react/coordinator.ts`. Accepts pre-retrieved `context_chunks` (the "observations" already collected upstream) and synthesizes a ReAct-format trace + final answer.
-- **Skeleton mode** (default): renders one Iteration block per chunk with Thought/Action/Observation lines + final synthesis paragraph that concatenates snippets with `[n]` citations. Deterministic — no LLM, CI-safe.
-- **Real LLM mode** (`llm_mode='real'`): prompt-engineered ReAct trace via `generators.llm.call_llm`. `LlmError` falls back to skeleton.
-- **Out-of-scope** (intentional): live multi-agent fan-out + tool execution stay on AOKP side; ATP is synthesis plane only.
+- Deleted `adapters/ollama/`, `registry/providers/ollama_local.yaml`,
+  `tests/integration/test_ollama_integration.py`.
+- `executor.py`: removed the ollama adapter/dispatch; Anthropic is the primary path.
+  Generalised result keys `ollama_manifest`/`ollama_routing` → `manifest`/`routing`.
+- Bridge: `DEFAULT_MODEL` → `claude-haiku-4-5-20251001`, `DEFAULT_PROVIDER` →
+  `anthropic`; unprefixed/unknown models default to anthropic. Dropped
+  `OLLAMA_BASE_URL`/`OLLAMA_TIMEOUT` from config and the ollama pricing default.
 
-#### `generators/stubs/tot.py` (267 lines, was 40-line stub)
-- Ports Tree-of-Thought multi-branch reasoning from AOKP `src/runtime/reasoning/tot/`. Builds K candidate reasoning branches over `context_chunks`, scores each via mean `relevance_score`, picks the best.
-- **`max_branches`** param (default 3, cap 5) controls breadth.
-- **Skeleton mode**: deterministic K-way chunk partition + per-branch score table + winner highlight + final answer block.
-- **Real LLM mode**: single-pass ToT prompt asking the LLM to generate K branches with confidence scores and pick the best. `LlmError` → skeleton.
-- **Out-of-scope**: iterative branch-pruning loop + multi-step expansion (cost-prohibitive on synthesis plane; AOKP keeps it for deep reasoning queries).
+### Fixed — cloud escalation used a deprecated model id → 404
 
-#### `generators/stubs/graphrag_synth.py` (320 lines, was 40-line stub)
-- Ports the Microsoft GraphRAG local-search synthesis pattern from AOKP `src/runtime/graph/graphrag/`. Accepts pre-extracted graph context: each `context_chunk` may carry `entities[]` + `relations[]` metadata; the generator aggregates and renders entity table → relation table → evidence block → answer.
-- **Graceful degradation**: if chunks lack graph metadata, falls back to text-only synthesis (same surface as `report` but with graph framing in the prompt).
-- **Real LLM mode**: GraphRAG prompt that emphasizes graph structure when present.
-- **Out-of-scope**: live Leiden clustering + community-summary regen + global-search map-reduce — these need a built knowledge graph, which is AOKP's plane. GraphRAG global-search deferred to v6.1.
+`DEFAULT_CLOUD_MODEL` was `claude-sonnet-4-20250514` (deprecated 2026-06-15 → 404),
+which broke every escalated run. Updated to `claude-sonnet-4-5-20250929`.
 
-#### Tests
-- `tests/unit/test_generators_react_tot_graphrag.py` — 23 new tests covering: descriptor/registry sanity, empty-query failure, no-context fallback (vi + en), skeleton happy path, real LLM happy path with mocked provider, real LLM error → skeleton fallback, branch-score-uses-relevance (tot), graph metadata absence handling (graphrag_synth).
-- `TestRegistryFullCoverage.test_no_generator_raises_notimplementederror_on_smoke_dispatch` — invariant test ensuring no future stub regression: every registered generator must successfully dispatch a minimal smoke request.
-
-### Why
-Without these 3 ports, `react` / `tot` / `graphrag_synth` raised `NotImplementedError` on any `/api/synthesis/generate` call, blocking AOKP from using ATP as its synthesis backend. After v2.6.0, AOKP's `runtime/synthesis/synthesizer.ts` can be migrated to call ATP `/api/synthesis/generate?generator=<name>` for any of the 8 surfaces, removing duplicate synthesis logic from AOKP runtime (the "giảm tải AOKP" goal of D6.2). Phase 2 of D6.2 (consumer wiring) is gated on this release.
-
-### Verification
-- `python3 -c "import generators; [print(d.name, d.version) for d in generators.list_generators()]"` shows 8/8 generators, all v0.3.0+ with `react/tot/graphrag_synth` at v1.0.0.
-- `python3 -m unittest discover -s tests/unit -p 'test_generators*'` — **81/81 pass** (58 existing + 23 new).
-- Pre-existing failures elsewhere in the suite unchanged (114 failures + 15 errors, baseline carried from D1.9).
+Verify: bridge healthy; named/bare/no-model runs default to anthropic (succeeded);
+edited test files 103 passed / 0 failed.
 
 ## [2.5.0] — 2026-04-29
 
@@ -455,6 +440,20 @@ Ollama is now a first-class streaming citizen for local LLM workflows.
 - Governance class mapping (per `~/SOURCE_DEV/products/TDF/tdf/docs/integrations/ATP_BRIDGE_INTEGRATION.md`):
     - `dry_run: true` → class **C** (auto-approved, preview only)
     - `validate` / non-destructive ops real → class **C**
+    - `deploy.*` / `install.*` real → class **B** (requires human gate)
+    - `rollback.*` / `uninstall.*` / `undeploy.*` real → class **A** (strict review)
+- Env var: `TDF_WEB_URL` (default `http://localhost:4180`)
+- 16 unit tests in `tests/unit/test_tdf_run.py`: validation, success path,
+  failure modes (HTTP error, unreachable TDF, non-JSON response),
+  governance class mapping for all op types.
+
+### Why
+Closes the P3 connection point in the AI_OS ecosystem roadmap. TDF v6.7.0
+shipped a contract + reference Python skeleton in October 2025; this
+release wires the ATP side. AOKP and AIOS-OC remain independent of this
+provider — it only affects ATP's bridge dispatch table.
+
+## [2.0.3] — 2026-04-19
 
 ---
 
