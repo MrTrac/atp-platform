@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260429T162750Z
+GeneratedAtUTC: 20260727T034142Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 83311c19a37da480e589c5f521609249a371faa015221ee068e83b305935df74
+SHA256: d5ff66d7b1784895460851f5e40ee69ec76d304425706ccffe2a985570a6a390
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.3.0
-- **Last synced:** 2026-04-29 (via aios sync reverse)
+- **Version:** v2.6.0
+- **Last synced:** 2026-07-27 (via aios sync reverse)
 
 ## Status
 
@@ -108,13 +108,40 @@ SHA256: 83311c19a37da480e589c5f521609249a371faa015221ee068e83b305935df74
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 60a29283d7984f60ff9a05d99c9438bcf512d2e0168e48af7c043f911d32c2be
+SHA256: 92903a17da1cdd270814283cd8fce4c67bf96d5eb5cdadbe1dc28288d71434c8
 ----
 # AI Next Step — ATP
 
-- **Last updated:** 2026-04-29
-- **Phase:** v2.3.0 — OpenAI Batch API adapter (async jobs at 50% cost)
-- **Current state:** v2.3.0 implemented in worktree; commit + merge gate + tag pending human approval.
+- **Last updated:** 2026-05-04
+- **Phase:** v2.6.0 — Doctrine v6.0 D6.2 closed via M4 scope-cut (ATP synthesis surface complete)
+- **Current state:** v2.6.0 implemented + D6.2 closed. 8/8 generators functional, NotImplementedError removed from all dispatch paths. 81/81 generator tests pass, 0 regression. AOKP-side cutover deferred to v6.1 per M4 fallback (ATP runbook §3 mid-step gate).
+
+---
+
+## D6.2 closure rationale (M4 scope-cut, 2026-05-04)
+
+ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above estimate. Original D6.2 estimate: 1.0h. Realistic full-cutover effort: 1+ week. >>50% over → M4 invoked.
+
+**Phase 1 SHIPPED (D6.2 acceptance §9 partial):**
+- ✅ ATP exposes generator surface (≥3 generators) — actually 8/8 ported
+- ✅ Citation tracking functional
+- ⏸ AIOS-OC + ATCC_HCM consume `ATP_*_v3` — deferred v6.1
+- ⏸ AOKP no longer hosts generators — deferred v6.1
+- ⏸ Lifecycle: stable — incubating until consumer cutover (v6.1)
+
+**Why NOT continue Phase 2 today:** AOKP `synthesizer.ts` has deep value-add ATP doesn't replicate (structured JSON sections + suggestion-engine domain-aware + quality-guard LLM retry + citation-grounding Jaccard verifier + Vietnamese prompt-bank). Naive cutover would degrade AOKP output quality. True cutover = port ~600 LOC TS→Python (6-10h dedicated session, not this scope).
+
+## v6.1 backlog (Phase 2-4 detailed scope)
+
+| Phase | Description | Effort |
+|---|---|---|
+| **2a** | Port AOKP `quality-guard.ts` + `suggestion-engine.ts` + `citation-grounding.ts` + structured-JSON parser into ATP `generators/stubs/report_v2.py` | 4-6h |
+| **2b** | Vietnamese-aware prompt-bank port (synthesis prompts + retry hints) into ATP `generators/prompts/` | 1-2h |
+| **2c** | AOKP-side: thin TS client `src/runtime/synthesis/atp-client.ts`; `synthesizer.ts` checks `AOKP_USE_ATP_SYNTHESIS=1` flag → calls ATP `report_v2` | 2-3h |
+| **2d** | AOKP unit tests + integration tests against ATP `/api/synthesis/generate` mock | 1-2h |
+| **3** | 24h compressed soak (per D8.2 precedent), divergence diff log, flip flag default | 1 day passive |
+| **4** | Promote `ATP_AIOS-OC_v3` contract `incubating → stable`, ATP synthesis lifecycle `incubating → stable`, remove (or keep as fallback) AOKP internal `synthesizer.ts` | 1-2h |
+| **TOTAL v6.1** | | **9-15h + 1 day soak** |
 
 ---
 
@@ -163,27 +190,6 @@ Remaining stubs (not blockers):
 
 ---
 
-## 4. Out-of-scope
-
-- Không mở bounded line mới khi chưa có human approval
-- Không reopen frozen feature chains
-- Không merge/push/tag khi chưa có explicit approval
-
----
-
-## 5. Version consistency rule (`uv` — Global_Post_Dev_Version_Bump_Rule.md)
-
-Khi bump version / tag release cho ATP, PHẢI update đồng bộ tất cả 7 files:
-
-1. `VERSION` — bump to new version
-2. `pyproject.toml` — version field
-3. `CHANGELOG.md` — new entry with date and changes
-4. `README.md` — baseline version reference
-5. `AGENTS.md` — version in identity section
-6. `~/AI_OS/20_PROJECTS/ATP/AI_CURRENT_BASELINE.md` — version, commit, lineage
-7. `~/AI_OS/20_PROJECTS/ATP/AI_NEXT_STEP.md` — phase, current state
-
-**Enforcement:** CLAUDE.md and AGENTS.md in ATP repo explicitly reference this rule and block `git tag` if any of the 7 files still shows old version.
 
 ## Cross-Session Context (CTX-P0)
 Workspace ID: `f557573632b576e4` (SHA-256 first-16-hex of canonical repo path)
@@ -242,14 +248,92 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 8bf6c3343b8bea251fe04224f8b4c2c84715de76957f3d230da395c0fabaf6a4
+SHA256: a70f414dce0ece390031529a25ffb8a0b5b0e7417eabe8a75884461462c2bfe8
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.3.0 — reverse sync from source repo
-**Date**: 2026-04-29
+## Handoff: v2.6.0 — reverse sync from source repo
+**Date**: 2026-07-27
 
-### What changed in v2.3.0
+### What changed in v2.6.0
+## [2.6.0] — 2026-06-26
+
+### Removed — Ollama provider (Anthropic is now the sole/default LLM provider)
+
+Per `~/AI_OS/00_AUTHORITY/Global_Mac_No_Ollama_Rule.md` (no local LLM on macOS).
+
+- Deleted `adapters/ollama/`, `registry/providers/ollama_local.yaml`,
+  `tests/integration/test_ollama_integration.py`.
+- `executor.py`: removed the ollama adapter/dispatch; Anthropic is the primary path.
+  Generalised result keys `ollama_manifest`/`ollama_routing` → `manifest`/`routing`.
+- Bridge: `DEFAULT_MODEL` → `claude-haiku-4-5-20251001`, `DEFAULT_PROVIDER` →
+  `anthropic`; unprefixed/unknown models default to anthropic. Dropped
+  `OLLAMA_BASE_URL`/`OLLAMA_TIMEOUT` from config and the ollama pricing default.
+
+### Fixed — cloud escalation used a deprecated model id → 404
+
+`DEFAULT_CLOUD_MODEL` was `claude-sonnet-4-20250514` (deprecated 2026-06-15 → 404),
+which broke every escalated run. Updated to `claude-sonnet-4-5-20250929`.
+
+Verify: bridge healthy; named/bare/no-model runs default to anthropic (succeeded);
+edited test files 103 passed / 0 failed.
+
+## [2.5.0] — 2026-04-29
+
+### Added — OpenAI Batch `wait` helper (full lifecycle parity with aios-flow)
+
+- `adapters/cloud/openai_batch.py:wait_for_batch()` — polls
+  `GET /v1/batches/{id}` until terminal state (`completed | failed |
+  expired | cancelled | canceling`) or `timeout_s` elapses.
+  Defaults: `timeout_s=600` (10min), `poll_interval_s=30`. Returns the
+  ATP envelope plus `waited_s`, `poll_count`, `timed_out`. Short-
+  circuits immediately on HTTP errors so callers don't spin until the
+  timeout when OpenAI is down.
+- `dispatch()` now routes `action="wait"` to `wait_for_batch` (joins
+  the existing create / status / results / cancel / list actions).
+- 8 new unit tests in `tests/unit/test_openai_batch.py`: missing
+  batch_id rejected, terminal-on-first-poll, polls until terminal,
+  timeout fires after configured wait, short-circuits on status error,
+  recognizes `failed` as terminal, dispatch routes `wait`, dispatch
+  error message mentions `wait`. Tests inject `sleep_fn` and `now_fn`
+  for deterministic timing.
+
+### Why
+Mirrors the v2.4.0 aios-flow Phase 2 pattern (status + wait) so callers
+can program against a uniform "submit → poll → terminate" lifecycle for
+both DAG runs and Batch jobs. Closes the polling-helper gap noted after
+v2.3.0 — batches with light queue often complete in minutes; an in-
+process wait is now ergonomic without external orchestration.
+
+## [2.4.0] — 2026-04-29
+
+### Added — aios-flow Phase 2 (status + wait actions)
+
+- `adapters/aios_flow/aios_flow_adapter.py` extended with two new actions
+  routed via the existing top-level `dispatch()` function:
+    - `action="status"` — single-shot snapshot via `GET /api/runs/{id}`,
+      returns `flow_status` + full `flow_run` body. G9 trace records the
+      route as `/api/runs/{id}` with method `GET`.
+    - `action="wait"` — polls until terminal state (`success` |
+      `succeeded` | `failed` | `cancelled` | `canceled` | `error`) or
+      `timeout_s` elapses (default 300s, poll every `poll_interval_s`,
+      default 2s). Returns `waited_s`, `poll_count`, `timed_out`.
+- The original submit behavior is preserved as `action="dispatch"`
+  (default when `action` is missing) — full backward compatibility with
+  v2.1.0 callers.
+- Wait function accepts injectable `sleep_fn` and `now_fn` for
+  deterministic testing without real time delays.
+- 11 new unit tests in `tests/unit/test_aios_flow_adapter.py`: status
+  snapshot success/error, trace route correctness, wait reaches
+  terminal, wait times out, wait short-circuits on failed/error, wait
+  returns network error, wait via dispatch router, unknown action
+  rejected, default action backward compat.
+
+### Why
+Closes the v2.1.0 Phase 2 commitment: callers couldn't programmatically
+wait for a flow run to complete without polling externally. This makes
+ATP a complete client for aios-flow's bounded execution lifecycle.
+
 ## [2.3.0] — 2026-04-29
 
 ### Added — OpenAI Batch API adapter (50% cost discount, async jobs)
@@ -279,14 +363,11 @@ SHA256: 8bf6c3343b8bea251fe04224f8b4c2c84715de76957f3d230da395c0fabaf6a4
 
 ### Why
 Batch API lets users submit 1000s of requests asynchronously at 50% cost
+of the standard chat/completions endpoint. Useful for evaluation runs,
+bulk dataset generation, and offline analysis — workloads that don't
+need sub-second response times. Closes the v2.0.x gap noted in
+`AI_NEXT_STEP.md` (option 5).
 
----
-
-
-## Handoff: v2.2.0 — reverse sync from source repo
-**Date**: 2026-04-29
-
-### What changed in v2.2.0
 ## [2.2.0] — 2026-04-29
 
 ### Added — Ollama streaming (parity with cloud providers)
@@ -313,13 +394,6 @@ Batch API lets users submit 1000s of requests asynchronously at 50% cost
 Closes the v2.0.x gap noted in `AI_NEXT_STEP.md`: streaming was cloud-only.
 Ollama is now a first-class streaming citizen for local LLM workflows.
 
----
-
-
-## Handoff: v2.1.0 — reverse sync from source repo
-**Date**: 2026-04-29
-
-### What changed in v2.1.0
 ## [2.1.0] — 2026-04-29
 
 ### Added — Doctrine v5 compliance (G9 observability + aios-flow + evaluator)
@@ -349,85 +423,9 @@ Ollama is now a first-class streaming citizen for local LLM workflows.
 
 ### Docs
 
----
+- `AI_CURRENT_BASELINE.md` expanded (13 → ~100 lines) — closes DP#22
+- `MODULE_BOUNDARY.md` trace_coverage updated to 80% achieved (G9 rollout complete)
 
-
-## Handoff: v2.1.0 — reverse sync from source repo
-**Date**: 2026-04-29
-
-### What changed in v2.1.0
-## [2.1.0] — 2026-04-29
-
-### Added — Doctrine v5 compliance (G9 observability + aios-flow + evaluator)
-
-- `core/trace.py` — G9 recordTrace() infrastructure: `generate_request_id()` (16-char hex),
-  `build_traceparent()` (W3C `00-{32hex}-{16hex}-01`), `trace_headers()` (x-request-id /
-  traceparent / x-source-module), `record_trace()` (JSONL append to
-  `~/.aios/state/cross_module_trace.jsonl`, silent-fail, chmod 0o600)
-- Instrumented `adapters/aokp/aokp_adapter.py` — W3C trace headers + record_trace on all 3
-  routes (health / search / graph) with contract_version="AOKP_ATP_v2.3"
-- Instrumented `bridge/tdf_run.py` — W3C trace headers + record_trace on TDF dispatch with
-  contract_version="TDF_ATP_v1"
-- `adapters/aios_flow/aios_flow_adapter.py` — new DAG runner provider dispatching to
-  aios-flow :7700 `POST /api/runs`; routing short-circuit in `bridge/openclaw_bridge.py`
-- `registry/providers/aios_flow.yaml` — aios-flow provider registration (incubating)
-- `core/evaluator.py` — post-run evaluator: http-probe native (status + JSON key/value check);
-  llm-judge / visual-diff stub to aios-flow delegation (Phase 2)
-- Evaluator hook in `bridge/openclaw_bridge.py`: optional `"evaluator"` field triggers
-  `run_evaluator()` and appends result to bridge response
-- 28 new unit tests: `tests/unit/test_trace.py` (10), `tests/unit/test_aios_flow_adapter.py`
-  (8), `tests/unit/test_evaluator.py` (10)
-
-### Fixed
-
-- Doctrine §4: corrected ATP framework description (`FastAPI` → `stdlib HTTP server (no framework)`)
-  in `~/AI_OS/00_AUTHORITY/AI_OS_DOCTRINE_v5.0.md`
-
-### Docs
-
----
-
-
-## Handoff: v2.1.0 — reverse sync from source repo
-**Date**: 2026-04-29
-
-### What changed in v2.1.0
-## [2.1.0] — 2026-04-29
-
-### Added — Doctrine v5 compliance (G9 observability + aios-flow + evaluator)
-
-- `core/trace.py` — G9 recordTrace() infrastructure: `generate_request_id()` (16-char hex),
-  `build_traceparent()` (W3C `00-{32hex}-{16hex}-01`), `trace_headers()` (x-request-id /
-  traceparent / x-source-module), `record_trace()` (JSONL append to
-  `~/.aios/state/cross_module_trace.jsonl`, silent-fail, chmod 0o600)
-- Instrumented `adapters/aokp/aokp_adapter.py` — W3C trace headers + record_trace on all 3
-  routes (health / search / graph) with contract_version="AOKP_ATP_v2.3"
-- Instrumented `bridge/tdf_run.py` — W3C trace headers + record_trace on TDF dispatch with
-  contract_version="TDF_ATP_v1"
-- `adapters/aios_flow/aios_flow_adapter.py` — new DAG runner provider dispatching to
-  aios-flow :7700 `POST /api/runs`; routing short-circuit in `bridge/openclaw_bridge.py`
-- `registry/providers/aios_flow.yaml` — aios-flow provider registration (incubating)
-- `core/evaluator.py` — post-run evaluator: http-probe native (status + JSON key/value check);
-  llm-judge / visual-diff stub to aios-flow delegation (Phase 2)
-- Evaluator hook in `bridge/openclaw_bridge.py`: optional `"evaluator"` field triggers
-  `run_evaluator()` and appends result to bridge response
-- 28 new unit tests: `tests/unit/test_trace.py` (10), `tests/unit/test_aios_flow_adapter.py`
-  (8), `tests/unit/test_evaluator.py` (10)
-
-### Fixed
-
-- Doctrine §4: corrected ATP framework description (`FastAPI` → `stdlib HTTP server (no framework)`)
-  in `~/AI_OS/00_AUTHORITY/AI_OS_DOCTRINE_v5.0.md`
-
-### Docs
-
----
-
-
-## Handoff: v2.0.4 — reverse sync from source repo
-**Date**: 2026-04-25
-
-### What changed in v2.0.4
 ## [2.0.4] — 2026-04-25
 
 ### Added — `tdf-run` bridge provider (P3 ATP↔TDF integration)
@@ -455,304 +453,28 @@ shipped a contract + reference Python skeleton in October 2025; this
 release wires the ATP side. AOKP and AIOS-OC remain independent of this
 provider — it only affects ATP's bridge dispatch table.
 
----
-
-
-## Handoff: v2.0.3 — reverse sync from source repo
-**Date**: 2026-04-19
-
-### What changed in v2.0.3
 ## [2.0.3] — 2026-04-19
 
-### Added — codex + cursor CLI-agent adapters (parity with claude-code)
-
-- `adapters/codex.py` — `CodexAdapter` spawns OpenAI `codex` CLI in the
-  target repo. Template rendering + same base_ctx helpers as
-  claude_code (uppercase REPO / BRANCH / YYYYMMDD / etc.). Validates
-  `codex --version` + `OPENAI_API_KEY` at execute().
-- `adapters/cursor.py` — `CursorAdapter` spawns Cursor `cursor-agent`
-  CLI. Same config shape; Cursor's own auth handles credentials (no
-  API key env needed). `FileNotFoundError` caught with install hint
-  pointing to cursor.com/docs/cli.
-- `bridge/bridge_server.py` — router refactored: new
-  `_run_cli_agent_adapter(incoming, adapter_kind)` handles all 3
-  (`claude-code` | `codex` | `cursor`) so adding a 4th adapter is a
-  one-branch change. Back-compat shim `_run_claude_code_adapter` still
-  exports the old name.
-- CodexAdapterConfig + CursorAdapterConfig accept `workspace_dir` +
-  `isolation` for interface parity with ClaudeCodeAdapterConfig, even
-  though the CLI flow doesn't use them yet.
-
-### Added — launchd wrapper reads Keychain for API keys
-
-- `~/AI_OS/30_RUNTIME/agents/launchd/atp-bridge-start.sh` — resolves
-  `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `CURSOR_API_KEY` from macOS
-  Keychain (service names match env-var names — same service names
-  AIOS-OC `/api/keys` writes to). Explicit PATH + full-path python3
-  ensures Homebrew Python 3.14 (with jinja2) instead of
-  CommandLineTools 3.9. plist now execs this wrapper.
-
 ---
 
 
-## Handoff: v2.0.3 — reverse sync from source repo
-**Date**: 2026-04-19
 
-### What changed in v2.0.3
-## [2.0.3] — 2026-04-19
+> ⏷ Lịch sử handoff đầy đủ KHÔNG nội tuyến (chống bloat context).
+> On-demand: MCP get_last_handoff(project=ATP) hoặc đọc pack AI_HANDOFF_LATEST.md + AI_HANDOFF_ARCHIVE.md.
+<!-- AI_OS:END MANAGED BLOCK -->
 
-### Added — codex + cursor CLI-agent adapters (parity with claude-code)
+<!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=AGCP_CLAUDE -->
+## AGCP Protocol — canonical at `~/AI_OS/00_AUTHORITY/AGCP_PROTOCOL.md`
 
-- `adapters/codex.py` — `CodexAdapter` spawns OpenAI `codex` CLI in the
-  target repo. Template rendering + same base_ctx helpers as
-  claude_code (uppercase REPO / BRANCH / YYYYMMDD / etc.). Validates
-  `codex --version` + `OPENAI_API_KEY` at execute().
-- `adapters/cursor.py` — `CursorAdapter` spawns Cursor `cursor-agent`
-  CLI. Same config shape; Cursor's own auth handles credentials (no
-  API key env needed). `FileNotFoundError` caught with install hint
-  pointing to cursor.com/docs/cli.
-- `bridge/bridge_server.py` — router refactored: new
-  `_run_cli_agent_adapter(incoming, adapter_kind)` handles all 3
-  (`claude-code` | `codex` | `cursor`) so adding a 4th adapter is a
-  one-branch change. Back-compat shim `_run_claude_code_adapter` still
-  exports the old name.
-- CodexAdapterConfig + CursorAdapterConfig accept `workspace_dir` +
-  `isolation` for interface parity with ClaudeCodeAdapterConfig, even
-  though the CLI flow doesn't use them yet.
+**AGCP — Agentic Git Coordination Protocol** — shared rules for all AI agents working on AI_OS-managed repos. Prevents (a) orphan worktrees nobody owns, (b) silent code loss across session/AI handoffs, (c) two AIs racing on the same branch.
 
-### Added — launchd wrapper reads Keychain for API keys
+**Mandatory for any AI tool touching git in this ecosystem:**
+1. **Register worktrees** after `git worktree add` — call MCP tool `register_worktree(path, created_by, branch, session_id)` (Tier 1) or CLI `aios wt register <path>` (Tier 2). Anonymous worktrees are out-of-protocol.
+2. **Acquire lease** before destructive ops (`merge-main`, `tag`, `rebase-main`, `reset`) — `acquire_lease("worktree:<path>"|"branch:<name>", ttl=1800)`. Lease auto-released on session end or 10min no-heartbeat.
+3. **Heartbeat** every 10min (cron) plus on every git op (event-driven) — keeps session alive in registry; expired sessions release leases automatically.
+4. **Never bypass GSGR** for destructive git — GSGR pre-hook calls AGCP `propose_action()`. Default mode `warn` (prints, proceeds); CI runs `enforce` (blocks). `--no-agcp` flag exists for emergency bypass when MCP service down — only honored outside `enforce` mode, always logged to bypass audit.
+5. **Handoff explicitly** when passing work to another AI — `handoff_to(target_ai_tool, payload)` (Tier 1) or `aios session handoff <target>` (Tier 2). Receiving AI calls `aios session start --resume-from <handoff_id>`.
+6. **Build ở ĐÚNG máy — `G-BUILDTOPO-1`, bắt buộc.** ⛔ **CẤM `pnpm run build` AOKP trên server** (dù còn RAM): `next build` truy vết tệp sẽ đi bộ cả `data/` **30 GB** → hết bộ nhớ. Đo đối chiếu: server 30 GB RAM **hỏng 2 lần**; CI runner **8 GB** xong **45 giây** (khác biệt duy nhất: checkout sạch không có `data/`). Vi phạm ngày 20/7/2026 đã **phá bản dựng đang phục vụ** (`.next` 51 MB → 1,5 MB) — dịch vụ vẫn trả 200 vì bản cũ nằm trong bộ nhớ, khởi động lại là mất trắng. Trước khi build trên bất kỳ máy đích nào: `du -sh . && du -sh data` → **> 2 GB thì đi CI**. Không chắc → **đi CI** (sai thì mất 45 giây; dựng tại chỗ sai thì mất dịch vụ). Luôn xoay `.next`→`.next.prev` trước khi thay, và **khởi động lại + gọi thật endpoint** mới được nói đã xong. Bảng tra từng module + luồng đầy đủ: **`~/AI_OS/00_AUTHORITY/Global_Build_Deploy_Topology_Rule.md`**. Build nặng buộc phải chạy trên máy Owner thì giữ lease trước: `acquire_lease("host-compute:<machine_id>", ttl=1800, intent="<what>")`; `granted=False` thì **chờ**, không chạy song song. Kill tiến trình thử/gỡ lỗi ngay sau khi dùng. Xem §8.5.
 
-- `~/AI_OS/30_RUNTIME/agents/launchd/atp-bridge-start.sh` — resolves
-  `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `CURSOR_API_KEY` from macOS
-  Keychain (service names match env-var names — same service names
-  AIOS-OC `/api/keys` writes to). Explicit PATH + full-path python3
-  ensures Homebrew Python 3.14 (with jinja2) instead of
-  CommandLineTools 3.9. plist now execs this wrapper.
-
----
-
-
-## Handoff: v2.0.2 — reverse sync from source repo
-**Date**: 2026-04-19
-
-### What changed in v2.0.2
-## [2.0.2] — 2026-04-19
-
-### Fixed — claude-code adapter template ctx + bridge persist silent-fail
-
-- **`adapters/claude_code.py` `_render_template`** — base Jinja context now
-  includes uppercase aliases (`REPO`, `BRANCH`, `MODEL`, `SCOPE_SUMMARY`,
-  `ISO_TIMESTAMP`, `NOW`, `TIMESTAMP`, `YYYYMMDD`, `YYYY`, `MM`, `DD`,
-  `HHMM`, `HH`, `YYYYMMDD_HHMM`) in addition to the existing lowercase
-  keys. Fixes `'YYYYMMDD' is undefined` Jinja errors when rendering
-  playbook templates under `~/SOURCE_DEV/meta/claude-playbooks/prompts/`.
-- **`bridge/bridge_server.py` persistence reporting** — when
-  `persist_bridge_run` returns `{persisted: False, reason: "…"}`, the
-  bridge response now surfaces the reason (as
-  `persistence: {persisted: false, reason}`) and emits a structured
-  `bridge.persist.error` log event, instead of the previous silent drop
-  that made `persistence: null` responses indistinguishable from
-  "persistence disabled". Unchanged for `reason == "disabled"` (benign).
-- Verified end-to-end with AIOS-OC v3.8.0 Flow Canvas — a full
-  `claude-code-agent` run (AOKP repo, prompts/01-uv-version-bump.md,
-  sonnet) now persists to `~/SOURCE_DEV/workspace/atp-runs/<req_id>/`
-  with request/routing/executor-outputs zones + run-summary.json.
-
----
-
-
-## Handoff: v2.0.2 — reverse sync from source repo
-**Date**: 2026-04-19
-
-### What changed in v2.0.2
-## [2.0.2] — 2026-04-19
-
-### Fixed — claude-code adapter template ctx + bridge persist silent-fail
-
-- **`adapters/claude_code.py` `_render_template`** — base Jinja context now
-  includes uppercase aliases (`REPO`, `BRANCH`, `MODEL`, `SCOPE_SUMMARY`,
-  `ISO_TIMESTAMP`, `NOW`, `TIMESTAMP`, `YYYYMMDD`, `YYYY`, `MM`, `DD`,
-  `HHMM`, `HH`, `YYYYMMDD_HHMM`) in addition to the existing lowercase
-  keys. Fixes `'YYYYMMDD' is undefined` Jinja errors when rendering
-  playbook templates under `~/SOURCE_DEV/meta/claude-playbooks/prompts/`.
-- **`bridge/bridge_server.py` persistence reporting** — when
-  `persist_bridge_run` returns `{persisted: False, reason: "…"}`, the
-  bridge response now surfaces the reason (as
-  `persistence: {persisted: false, reason}`) and emits a structured
-  `bridge.persist.error` log event, instead of the previous silent drop
-  that made `persistence: null` responses indistinguishable from
-  "persistence disabled". Unchanged for `reason == "disabled"` (benign).
-- Verified end-to-end with AIOS-OC v3.8.0 Flow Canvas — a full
-  `claude-code-agent` run (AOKP repo, prompts/01-uv-version-bump.md,
-  sonnet) now persists to `~/SOURCE_DEV/workspace/atp-runs/<req_id>/`
-  with request/routing/executor-outputs zones + run-summary.json.
-
----
-
-
-## Handoff: v2.0.1 — reverse sync from source repo
-**Date**: 2026-04-19
-
-### What changed in v2.0.1
-## [2.0.1] — 2026-04-19
-
-### Chore — ecosystem alignment bump
-- Administrative patch bump as part of `uv all` (option B) across managed projects. ATP's `/run` and governance-hook behaviour unchanged; no new provider adapters added in this release.
-- aios-flow (§5.4.1) is now a formal Transformation subsystem that consumes ATP `/run` per step — reconfirms the boundary that **every LLM / adapter call still flows through ATP**; aios-flow never calls providers directly.
-- Pack hydrated via `aios sync reverse ATP --apply`.
-
----
-
-
-## Handoff: v2.0.1 — reverse sync from source repo
-**Date**: 2026-04-19
-
-### What changed in v2.0.1
-## [2.0.1] — 2026-04-19
-
-### Chore — ecosystem alignment bump
-- Administrative patch bump as part of `uv all` (option B) across managed projects. ATP's `/run` and governance-hook behaviour unchanged; no new provider adapters added in this release.
-- aios-flow (§5.4.1) is now a formal Transformation subsystem that consumes ATP `/run` per step — reconfirms the boundary that **every LLM / adapter call still flows through ATP**; aios-flow never calls providers directly.
-- Pack hydrated via `aios sync reverse ATP --apply`.
-
----
-
-
-## Handoff: v2.0.0 — reverse sync from source repo
-**Date**: 2026-04-18
-
-### What changed in v2.0.0
-## [2.0.0] — 2026-04-15
-
-### Added — Streaming & Cancellation (BREAKING)
-- **SSE streaming endpoint** `POST /run/stream` — Server-Sent Events streaming for cloud adapters
-  - Events: `start`, `token`, `tool_call`, `manifest`, `error`, `done`, `aborted`
-  - Supported by Anthropic and OpenAI (Ollama/local not supported in v2.0.0)
-  - Optional `request_id` in body; auto-generated `stream-<hash>` if omitted
-  - Respects `MODEL_ALLOWLIST` + `MAX_BODY_BYTES` security checks
-- **Request cancellation** `DELETE /runs/<id>` — abort in-flight request
-  - Sets abort event on in-flight tracker; adapter checks between SSE chunks
-  - Adapter yields `aborted` event and stops when flag set
-  - Returns 200 `{cancelled: true}` for active requests, 404 otherwise
-- **In-flight tracker** (`core/in_flight_tracker.py`) — thread-safe request registry
-  - `register(request_id, provider, model)` → `threading.Event`
-  - `cancel(request_id)` → bool
-  - `list_active()` → snapshot of active requests
-  - `GET /runs/active` lists in-flight requests for AIOS-OC monitoring
-- **SSE formatter** (`core/streaming.py`) — canonical event emission
-- **Anthropic streaming** (`execute_anthropic_stream`) — uses `stream=true` Messages API
-  - Parses `content_block_delta`, `content_block_start/stop`, `message_delta`
-  - Streams text deltas + accumulated tool_use input JSON
-  - Captures `stop_reason`, token usage at stream end
-- **OpenAI streaming** (`execute_openai_stream`) — uses `stream=true` + `stream_options.include_usage`
-  - Aggregates tool_calls piecewise (OpenAI streams function arguments as partial strings)
-  - Captures `finish_reason`, token usage from final chunk
-
-### Changed
-- Bridge server docstring updated for 3 new endpoints
-- AIOS-OC v2.9.1 abort feature now has end-to-end ATP integration (finally wire-compatible)
-
----
-
-
-## Handoff: v2.0.0 — reverse sync from source repo
-**Date**: 2026-04-15
-
-### What changed in v2.0.0
-## [2.0.0] — 2026-04-15
-
-### Added — Streaming & Cancellation (BREAKING)
-- **SSE streaming endpoint** `POST /run/stream` — Server-Sent Events streaming for cloud adapters
-  - Events: `start`, `token`, `tool_call`, `manifest`, `error`, `done`, `aborted`
-  - Supported by Anthropic and OpenAI (Ollama/local not supported in v2.0.0)
-  - Optional `request_id` in body; auto-generated `stream-<hash>` if omitted
-  - Respects `MODEL_ALLOWLIST` + `MAX_BODY_BYTES` security checks
-- **Request cancellation** `DELETE /runs/<id>` — abort in-flight request
-  - Sets abort event on in-flight tracker; adapter checks between SSE chunks
-  - Adapter yields `aborted` event and stops when flag set
-  - Returns 200 `{cancelled: true}` for active requests, 404 otherwise
-- **In-flight tracker** (`core/in_flight_tracker.py`) — thread-safe request registry
-  - `register(request_id, provider, model)` → `threading.Event`
-  - `cancel(request_id)` → bool
-  - `list_active()` → snapshot of active requests
-  - `GET /runs/active` lists in-flight requests for AIOS-OC monitoring
-- **SSE formatter** (`core/streaming.py`) — canonical event emission
-- **Anthropic streaming** (`execute_anthropic_stream`) — uses `stream=true` Messages API
-  - Parses `content_block_delta`, `content_block_start/stop`, `message_delta`
-  - Streams text deltas + accumulated tool_use input JSON
-  - Captures `stop_reason`, token usage at stream end
-- **OpenAI streaming** (`execute_openai_stream`) — uses `stream=true` + `stream_options.include_usage`
-  - Aggregates tool_calls piecewise (OpenAI streams function arguments as partial strings)
-  - Captures `finish_reason`, token usage from final chunk
-
-### Changed
-- Bridge server docstring updated for 3 new endpoints
-- AIOS-OC v2.9.1 abort feature now has end-to-end ATP integration (finally wire-compatible)
-
----
-
-
-- **Last updated:** 2026-04-13
-- **Suggested chat name:** `ATP v1.6.0 released — all gaps closed`
-
----
-
-## HANDOFF BLOCK — copy this block into a new chat if needed
-
-You are joining an active project workflow.
-
-**Project:** ATP
-**Repo:** ~/SOURCE_DEV/platforms/ATP
-**Branch:** `main` (stable, HEAD = a4f8bbd)
-**Baseline:** `v1.6.0` — **RELEASED** (tagged + pushed 2026-04-13)
-
-**Phase:** Complete — all architectural gaps closed
-**Current state:**
-- v1.6.0 released: observability & hardening (config, structured logging, error codes, cost tracking, security)
-- 375+ tests PASS
-- Full lineage: v0.7.0 → v1.0.0–v1.0.4 → v1.1.0 → v1.2.0 → v1.3.0 → v1.4.0 → v1.5.0 → v1.6.0
-- PR #15 merged (feature/v1.6-observability-hardening)
-
-**Next step:** Requires human approval — possible directions:
-1. AIOS-OC deep ATP integration
-2. AOKP improvements
-3. New product target
-
-**Open gates (approval required):**
-- Any new bounded line / feature work
-- merge/push/tag on main
-
-**Rules in effect:**
-- GSGR: Check → Switch → Re-check → Execute
-- Auto-Integration: `00_AUTHORITY/Global_Auto_Integration_and_Execution_Rule.md`
-- Version bump: `00_AUTHORITY/Global_Post_Dev_Version_Bump_Rule.md`
-- Approval required for: merge `main`, push `main`, tag release, new bounded line
-
-**Context files:**
-- `20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md`
-- `20_PROJECTS/ATP/AI_NEXT_STEP.md`
-- `20_PROJECTS/ATP/AI_CURRENT_BASELINE.md`
-
----
-
-## Lineage summary
-
-```text
-v0.7.0  <- final v0 baseline (frozen)
-  ->
-v1.0.0–v1.0.4  <- Slices A–E (all frozen)
-  ->
-v1.1.0  <- Ollama + Anthropic + bridge + governance gate (frozen)
-  ->
-v1.2.0  <- Structural hardening (frozen)
-  ->
-v1.3.0  <- AOKP Phase 1 knowledge integration (frozen)
-  ->
-v1.4.0  <- Gaps closure: schema validation, bridge introspection, docs (frozen)
-  ->
-v1.5.0  <- Artifact persistence M8 (frozen)
-  ->
-v1.6.0  <- Observability & hardening: config, logging, error codes, cost, security
-           PR #15 merged, tagged v1.6.0, pushed (2026-04-13) ✅
-```
+**Full doctrine:** `~/AI_OS/00_AUTHORITY/AGCP_PROTOCOL.md`. AI agents read this file before any worktree/branch/lease action. AI tool capability matrix: `~/AI_OS/01_PERSONAL/AI_TOOL_CAPABILITIES.md`.
 <!-- AI_OS:END MANAGED BLOCK -->

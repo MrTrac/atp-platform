@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=COPILOT -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260429T162751Z
+GeneratedAtUTC: 20260727T034142Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 83311c19a37da480e589c5f521609249a371faa015221ee068e83b305935df74
+SHA256: d5ff66d7b1784895460851f5e40ee69ec76d304425706ccffe2a985570a6a390
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.3.0
-- **Last synced:** 2026-04-29 (via aios sync reverse)
+- **Version:** v2.6.0
+- **Last synced:** 2026-07-27 (via aios sync reverse)
 
 ## Status
 
@@ -108,13 +108,40 @@ SHA256: 83311c19a37da480e589c5f521609249a371faa015221ee068e83b305935df74
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 60a29283d7984f60ff9a05d99c9438bcf512d2e0168e48af7c043f911d32c2be
+SHA256: 92903a17da1cdd270814283cd8fce4c67bf96d5eb5cdadbe1dc28288d71434c8
 ----
 # AI Next Step — ATP
 
-- **Last updated:** 2026-04-29
-- **Phase:** v2.3.0 — OpenAI Batch API adapter (async jobs at 50% cost)
-- **Current state:** v2.3.0 implemented in worktree; commit + merge gate + tag pending human approval.
+- **Last updated:** 2026-05-04
+- **Phase:** v2.6.0 — Doctrine v6.0 D6.2 closed via M4 scope-cut (ATP synthesis surface complete)
+- **Current state:** v2.6.0 implemented + D6.2 closed. 8/8 generators functional, NotImplementedError removed from all dispatch paths. 81/81 generator tests pass, 0 regression. AOKP-side cutover deferred to v6.1 per M4 fallback (ATP runbook §3 mid-step gate).
+
+---
+
+## D6.2 closure rationale (M4 scope-cut, 2026-05-04)
+
+ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above estimate. Original D6.2 estimate: 1.0h. Realistic full-cutover effort: 1+ week. >>50% over → M4 invoked.
+
+**Phase 1 SHIPPED (D6.2 acceptance §9 partial):**
+- ✅ ATP exposes generator surface (≥3 generators) — actually 8/8 ported
+- ✅ Citation tracking functional
+- ⏸ AIOS-OC + ATCC_HCM consume `ATP_*_v3` — deferred v6.1
+- ⏸ AOKP no longer hosts generators — deferred v6.1
+- ⏸ Lifecycle: stable — incubating until consumer cutover (v6.1)
+
+**Why NOT continue Phase 2 today:** AOKP `synthesizer.ts` has deep value-add ATP doesn't replicate (structured JSON sections + suggestion-engine domain-aware + quality-guard LLM retry + citation-grounding Jaccard verifier + Vietnamese prompt-bank). Naive cutover would degrade AOKP output quality. True cutover = port ~600 LOC TS→Python (6-10h dedicated session, not this scope).
+
+## v6.1 backlog (Phase 2-4 detailed scope)
+
+| Phase | Description | Effort |
+|---|---|---|
+| **2a** | Port AOKP `quality-guard.ts` + `suggestion-engine.ts` + `citation-grounding.ts` + structured-JSON parser into ATP `generators/stubs/report_v2.py` | 4-6h |
+| **2b** | Vietnamese-aware prompt-bank port (synthesis prompts + retry hints) into ATP `generators/prompts/` | 1-2h |
+| **2c** | AOKP-side: thin TS client `src/runtime/synthesis/atp-client.ts`; `synthesizer.ts` checks `AOKP_USE_ATP_SYNTHESIS=1` flag → calls ATP `report_v2` | 2-3h |
+| **2d** | AOKP unit tests + integration tests against ATP `/api/synthesis/generate` mock | 1-2h |
+| **3** | 24h compressed soak (per D8.2 precedent), divergence diff log, flip flag default | 1 day passive |
+| **4** | Promote `ATP_AIOS-OC_v3` contract `incubating → stable`, ATP synthesis lifecycle `incubating → stable`, remove (or keep as fallback) AOKP internal `synthesizer.ts` | 1-2h |
+| **TOTAL v6.1** | | **9-15h + 1 day soak** |
 
 ---
 
@@ -163,27 +190,6 @@ Remaining stubs (not blockers):
 
 ---
 
-## 4. Out-of-scope
-
-- Không mở bounded line mới khi chưa có human approval
-- Không reopen frozen feature chains
-- Không merge/push/tag khi chưa có explicit approval
-
----
-
-## 5. Version consistency rule (`uv` — Global_Post_Dev_Version_Bump_Rule.md)
-
-Khi bump version / tag release cho ATP, PHẢI update đồng bộ tất cả 7 files:
-
-1. `VERSION` — bump to new version
-2. `pyproject.toml` — version field
-3. `CHANGELOG.md` — new entry with date and changes
-4. `README.md` — baseline version reference
-5. `AGENTS.md` — version in identity section
-6. `~/AI_OS/20_PROJECTS/ATP/AI_CURRENT_BASELINE.md` — version, commit, lineage
-7. `~/AI_OS/20_PROJECTS/ATP/AI_NEXT_STEP.md` — phase, current state
-
-**Enforcement:** CLAUDE.md and AGENTS.md in ATP repo explicitly reference this rule and block `git tag` if any of the 7 files still shows old version.
 
 ## Cross-Session Context (CTX-P0)
 Workspace ID: `f557573632b576e4` (SHA-256 first-16-hex of canonical repo path)
@@ -238,4 +244,20 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 
 - Workspace/shorthand: `pr-con <PROJECT>` / `pr-con-copy <PROJECT>` — `01_PERSONAL/AI_OS_PR_CON_SYSTEM_SPEC.md`.
 - Handoff phiên: `aios pr handoff <PROJECT>` hoặc `AI_HANDOFF_LATEST.md` trong pack.
+<!-- AI_OS:END MANAGED BLOCK -->
+
+<!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=AGCP_COPILOT -->
+## AGCP Protocol — canonical at `~/AI_OS/00_AUTHORITY/AGCP_PROTOCOL.md`
+
+**AGCP — Agentic Git Coordination Protocol** — shared rules for all AI agents working on AI_OS-managed repos. Prevents (a) orphan worktrees nobody owns, (b) silent code loss across session/AI handoffs, (c) two AIs racing on the same branch.
+
+**Mandatory for any AI tool touching git in this ecosystem:**
+1. **Register worktrees** after `git worktree add` — call MCP tool `register_worktree(path, created_by, branch, session_id)` (Tier 1) or CLI `aios wt register <path>` (Tier 2). Anonymous worktrees are out-of-protocol.
+2. **Acquire lease** before destructive ops (`merge-main`, `tag`, `rebase-main`, `reset`) — `acquire_lease("worktree:<path>"|"branch:<name>", ttl=1800)`. Lease auto-released on session end or 10min no-heartbeat.
+3. **Heartbeat** every 10min (cron) plus on every git op (event-driven) — keeps session alive in registry; expired sessions release leases automatically.
+4. **Never bypass GSGR** for destructive git — GSGR pre-hook calls AGCP `propose_action()`. Default mode `warn` (prints, proceeds); CI runs `enforce` (blocks). `--no-agcp` flag exists for emergency bypass when MCP service down — only honored outside `enforce` mode, always logged to bypass audit.
+5. **Handoff explicitly** when passing work to another AI — `handoff_to(target_ai_tool, payload)` (Tier 1) or `aios session handoff <target>` (Tier 2). Receiving AI calls `aios session start --resume-from <handoff_id>`.
+6. **Build ở ĐÚNG máy — `G-BUILDTOPO-1`, bắt buộc.** ⛔ **CẤM `pnpm run build` AOKP trên server** (dù còn RAM): `next build` truy vết tệp sẽ đi bộ cả `data/` **30 GB** → hết bộ nhớ. Đo đối chiếu: server 30 GB RAM **hỏng 2 lần**; CI runner **8 GB** xong **45 giây** (khác biệt duy nhất: checkout sạch không có `data/`). Vi phạm ngày 20/7/2026 đã **phá bản dựng đang phục vụ** (`.next` 51 MB → 1,5 MB) — dịch vụ vẫn trả 200 vì bản cũ nằm trong bộ nhớ, khởi động lại là mất trắng. Trước khi build trên bất kỳ máy đích nào: `du -sh . && du -sh data` → **> 2 GB thì đi CI**. Không chắc → **đi CI** (sai thì mất 45 giây; dựng tại chỗ sai thì mất dịch vụ). Luôn xoay `.next`→`.next.prev` trước khi thay, và **khởi động lại + gọi thật endpoint** mới được nói đã xong. Bảng tra từng module + luồng đầy đủ: **`~/AI_OS/00_AUTHORITY/Global_Build_Deploy_Topology_Rule.md`**. Build nặng buộc phải chạy trên máy Owner thì giữ lease trước: `acquire_lease("host-compute:<machine_id>", ttl=1800, intent="<what>")`; `granted=False` thì **chờ**, không chạy song song. Kill tiến trình thử/gỡ lỗi ngay sau khi dùng. Xem §8.5.
+
+**Full doctrine:** `~/AI_OS/00_AUTHORITY/AGCP_PROTOCOL.md`. AI agents read this file before any worktree/branch/lease action. AI tool capability matrix: `~/AI_OS/01_PERSONAL/AI_TOOL_CAPABILITIES.md`.
 <!-- AI_OS:END MANAGED BLOCK -->

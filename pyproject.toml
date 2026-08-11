@@ -1,6 +1,6 @@
 [project]
 name = "atp-platform"
-version = "2.5.0"
+version = "2.6.0"
 description = "Autonomous Task Platform — Transformation Plane for the multi-AI ecosystem"
 readme = "README.md"
 license = {text = "MIT"}
@@ -8,13 +8,23 @@ requires-python = ">=3.11"
 authors = [
     {name = "MrTrac"},
 ]
+# ATP uses stdlib only — no runtime dependencies.
+# External services (Ollama, AOKP) are accessed via HTTP.
+# NOTE: must stay inside [project] — it was under [project.urls] until 19/7/2026,
+# which TOML read as project.urls.dependencies and broke `pip install -e .`.
+dependencies = []
 
 [project.urls]
 Repository = "https://github.com/MrTrac/atp-platform"
 
-# ATP uses stdlib only — no runtime dependencies.
-# External services (Ollama, AOKP) are accessed via HTTP.
-dependencies = []
+[tool.setuptools.packages.find]
+# ATP dùng flat-layout: mã nguồn nằm ở nhiều thư mục top-level, KHÔNG có src/.
+# Không khai rõ thì setuptools báo "Multiple top-level packages discovered in a
+# flat-layout" và `pip install -e .` hỏng (sửa 19/7/2026).
+# Chỉ 5 thư mục dưới đây chứa mã .py; schemas/prompts/registry/profiles/templates
+# là dữ liệu thuần nên không đóng gói.
+include = ["adapters*", "bridge*", "cli*", "core*", "generators*"]
+namespaces = true
 
 [project.optional-dependencies]
 dev = [
