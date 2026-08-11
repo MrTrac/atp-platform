@@ -1,20 +1,40 @@
-"""ATP generator stub: react (Step 2 W9-10 staging).
+"""ATP generator stub: react (D1.9 staging + D4.3 registry wired).
 
-Migration source (AOKP, TypeScript): src/runtime/agents/react/ — multi-agent ReAct (executor + coordinator + tools)
+Migration source (AOKP, TypeScript): src/runtime/agents/react/
 
 Status: STUB — actual port scheduled per tasks.json D5.x (Step 4 W17-W20).
+The registry decorator is live so /api/synthesis/generators can advertise
+the descriptor immediately; /api/synthesis/generate dispatch raises
+NotImplementedError until the body is filled in.
 """
 
 from __future__ import annotations
 
-from generators.types import GeneratorRequest, GeneratorResult
+from generators.registry import (
+    GeneratorRequest,
+    GeneratorResult,
+    SynthesisResult,
+    register_generator,
+)
 
 
-GENERATOR_NAME = "react"
-
-
-def run(req: GeneratorRequest) -> GeneratorResult:
+@register_generator(
+    name="react",
+    version="0.1.0",
+    lifecycle="incubating",
+    description="ReAct multi-agent loop",
+    source_aokp_module="src/runtime/agents/react/",
+    params_schema={
+        "type": "object",
+        "properties": {
+            "query": {"type": "string"},
+            "context": {"type": "object", "additionalProperties": True},
+        },
+        "required": ["query"],
+    },
+)
+def run(req: GeneratorRequest) -> SynthesisResult:
     raise NotImplementedError(
-        f"ATP generator '{GENERATOR_NAME}' is a Step 2 W9-10 staging stub. "
+        f"ATP generator 'react' is a Step 2 W9-10 staging stub. "
         f"Port from AOKP scheduled for D5.x (Doctrine v6.0 Step 4 W17-W20)."
     )
