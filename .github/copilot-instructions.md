@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=COPILOT -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260923T092138Z
+GeneratedAtUTC: 20261010T165512Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,13 +90,13 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 9615225029e3c9673acee4868f17221d834a7afb63687a6188cf90f8519fb9d1
+SHA256: 0c1517211a9dc27384b69414f969078a1b0e944f4d9951a87706693798f555fd
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.6.0
-- **Released:** unknown
-- **Last synced:** 2026-09-23 (via aios sync reverse)
+- **Version:** v2.6.1
+- **Released:** 2026-10-10T23:53:53+07:00
+- **Last synced:** 2026-10-10 (via aios sync reverse)
 
 ## Status
 

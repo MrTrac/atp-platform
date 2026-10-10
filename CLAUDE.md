@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20260923T092138Z
+GeneratedAtUTC: 20261010T165511Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,13 +90,13 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 9615225029e3c9673acee4868f17221d834a7afb63687a6188cf90f8519fb9d1
+SHA256: 0c1517211a9dc27384b69414f969078a1b0e944f4d9951a87706693798f555fd
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.6.0
-- **Released:** unknown
-- **Last synced:** 2026-09-23 (via aios sync reverse)
+- **Version:** v2.6.1
+- **Released:** 2026-10-10T23:53:53+07:00
+- **Last synced:** 2026-10-10 (via aios sync reverse)
 
 ## Status
 
@@ -251,212 +251,35 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 344dd0401f5757d55b73faea01c68fdbd2cd2fb5158794894c1c261dc8013fc8
+SHA256: 062c541b5fe0baee3c6baaa90852447f275e0208b6832664acd038102e058624
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.6.0 — reverse sync from source repo
-**Date**: 2026-07-27
+## Handoff: v2.6.1 — reverse sync from source repo
+**Date**: 2026-10-10
 
-### What changed in v2.6.0
-## [2.6.0] — 2026-06-26
+### What changed in v2.6.1
+## [2.6.1] — 2026-10-10
 
-### Removed — Ollama provider (Anthropic is now the sole/default LLM provider)
+### Fixed — `/health` reported a stale hand-set number, not the running version
 
-Per `~/AI_OS/00_AUTHORITY/Global_Mac_No_Ollama_Rule.md` (no local LLM on macOS).
+The bridge answered `GET /health` with `"version": "1.7"` while the platform was 2.6.0
+(`SERVER_VERSION` was a constant nobody maintained). A deployment could not prove which release
+was actually running, and AIOS-OC's ecosystem-health panel showed `1.7`.
 
-- Deleted `adapters/ollama/`, `registry/providers/ollama_local.yaml`,
-  `tests/integration/test_ollama_integration.py`.
-- `executor.py`: removed the ollama adapter/dispatch; Anthropic is the primary path.
-  Generalised result keys `ollama_manifest`/`ollama_routing` → `manifest`/`routing`.
-- Bridge: `DEFAULT_MODEL` → `claude-haiku-4-5-20251001`, `DEFAULT_PROVIDER` →
-  `anthropic`; unprefixed/unknown models default to anthropic. Dropped
-  `OLLAMA_BASE_URL`/`OLLAMA_TIMEOUT` from config and the ollama pricing default.
+- `core/version.py` (new) — single source for `VERSION` and `RELEASED`.
+- `bridge/bridge_server.py` — `/health`, `/` and `/status` now return `version` = platform
+  version and `released` (ISO-8601 with timezone, G-VERSTAMP-1). The old `1.7` is kept as
+  `bridge_version`; it is the bridge server revision, not the platform version. Additive for any
+  client that only reads `status`; the one known reader of `version` (AIOS-OC) only displays it.
+- `RELEASED` file next to `VERSION`.
+- `tests/unit/test_version_consistency.py` (new) — keeps `VERSION`, `pyproject.toml`, `core/version.py`,
+  `RELEASED` and this changelog's entry date in agreement, and checks the bridge serves them.
 
-### Fixed — cloud escalation used a deprecated model id → 404
+Release prerequisite for publishing ATP through `aios-publish` (the release store checks that the
+version inside a tag equals the version being published).
 
-`DEFAULT_CLOUD_MODEL` was `claude-sonnet-4-20250514` (deprecated 2026-06-15 → 404),
-which broke every escalated run. Updated to `claude-sonnet-4-5-20250929`.
-
-Verify: bridge healthy; named/bare/no-model runs default to anthropic (succeeded);
-edited test files 103 passed / 0 failed.
-
-## [2.5.0] — 2026-04-29
-
-### Added — OpenAI Batch `wait` helper (full lifecycle parity with aios-flow)
-
-- `adapters/cloud/openai_batch.py:wait_for_batch()` — polls
-  `GET /v1/batches/{id}` until terminal state (`completed | failed |
-  expired | cancelled | canceling`) or `timeout_s` elapses.
-  Defaults: `timeout_s=600` (10min), `poll_interval_s=30`. Returns the
-  ATP envelope plus `waited_s`, `poll_count`, `timed_out`. Short-
-  circuits immediately on HTTP errors so callers don't spin until the
-  timeout when OpenAI is down.
-- `dispatch()` now routes `action="wait"` to `wait_for_batch` (joins
-  the existing create / status / results / cancel / list actions).
-- 8 new unit tests in `tests/unit/test_openai_batch.py`: missing
-  batch_id rejected, terminal-on-first-poll, polls until terminal,
-  timeout fires after configured wait, short-circuits on status error,
-  recognizes `failed` as terminal, dispatch routes `wait`, dispatch
-  error message mentions `wait`. Tests inject `sleep_fn` and `now_fn`
-  for deterministic timing.
-
-### Why
-Mirrors the v2.4.0 aios-flow Phase 2 pattern (status + wait) so callers
-can program against a uniform "submit → poll → terminate" lifecycle for
-both DAG runs and Batch jobs. Closes the polling-helper gap noted after
-v2.3.0 — batches with light queue often complete in minutes; an in-
-process wait is now ergonomic without external orchestration.
-
-## [2.4.0] — 2026-04-29
-
-### Added — aios-flow Phase 2 (status + wait actions)
-
-- `adapters/aios_flow/aios_flow_adapter.py` extended with two new actions
-  routed via the existing top-level `dispatch()` function:
-    - `action="status"` — single-shot snapshot via `GET /api/runs/{id}`,
-      returns `flow_status` + full `flow_run` body. G9 trace records the
-      route as `/api/runs/{id}` with method `GET`.
-    - `action="wait"` — polls until terminal state (`success` |
-      `succeeded` | `failed` | `cancelled` | `canceled` | `error`) or
-      `timeout_s` elapses (default 300s, poll every `poll_interval_s`,
-      default 2s). Returns `waited_s`, `poll_count`, `timed_out`.
-- The original submit behavior is preserved as `action="dispatch"`
-  (default when `action` is missing) — full backward compatibility with
-  v2.1.0 callers.
-- Wait function accepts injectable `sleep_fn` and `now_fn` for
-  deterministic testing without real time delays.
-- 11 new unit tests in `tests/unit/test_aios_flow_adapter.py`: status
-  snapshot success/error, trace route correctness, wait reaches
-  terminal, wait times out, wait short-circuits on failed/error, wait
-  returns network error, wait via dispatch router, unknown action
-  rejected, default action backward compat.
-
-### Why
-Closes the v2.1.0 Phase 2 commitment: callers couldn't programmatically
-wait for a flow run to complete without polling externally. This makes
-ATP a complete client for aios-flow's bounded execution lifecycle.
-
-## [2.3.0] — 2026-04-29
-
-### Added — OpenAI Batch API adapter (50% cost discount, async jobs)
-
-- `adapters/cloud/openai_batch.py` — five functions wrapping OpenAI's Batch
-  API:
-    - `create_batch(requests, ...)` — uploads JSONL via `POST /v1/files`
-      then creates batch via `POST /v1/batches`. Returns `batch_id`,
-      `input_file_id`, `request_count`.
-    - `get_batch_status(batch_id)` — `GET /v1/batches/{id}`. Returns
-      `batch_status` (validating | in_progress | finalizing | completed |
-      failed | expired | cancelled) + `request_counts`.
-    - `get_batch_results(batch_id)` — looks up batch, downloads output
-      file via `GET /v1/files/{id}/content`, parses JSONL into `results`
-      list.
-    - `cancel_batch(batch_id)` — `POST /v1/batches/{id}/cancel`.
-    - `list_batches(limit, after)` — paginated list of recent batches.
-- Stdlib only (urllib + multipart upload via hand-rolled boundary).
-  Uses Bearer auth via `OPENAI_API_KEY` env var or per-request `api_key`.
-- `bridge/openclaw_bridge.py` routing — `POST /run` with
-  `adapter="openai-batch"` + `action=create|status|results|cancel|list`
-  short-circuits to `openai_batch.dispatch()` (same pattern as `tdf-run`
-  and `aios-flow`).
-- 19 new unit tests in `tests/unit/test_openai_batch.py`: success +
-  error paths for each of the 5 functions, JSONL serialization assertion,
-  multipart upload assertion, dispatch routing for all 5 actions.
-
-### Why
-Batch API lets users submit 1000s of requests asynchronously at 50% cost
-of the standard chat/completions endpoint. Useful for evaluation runs,
-bulk dataset generation, and offline analysis — workloads that don't
-need sub-second response times. Closes the v2.0.x gap noted in
-`AI_NEXT_STEP.md` (option 5).
-
-## [2.2.0] — 2026-04-29
-
-### Added — Ollama streaming (parity with cloud providers)
-
-- `adapters/ollama/ollama_adapter.py` — new `execute_ollama_stream()` generator
-  function. Sets `stream: true` on Ollama's `/api/chat` endpoint and yields
-  `(event_kind, data)` tuples matching the cloud-provider stream protocol:
-  `token`, `manifest`, `error`, `aborted`. Token deltas come from each NDJSON
-  line's `message.content`; the final `done: true` line populates the
-  manifest with `input_tokens` (`prompt_eval_count`), `output_tokens`
-  (`eval_count`), `stop_reason` (`done_reason`), and `cost_usd: 0.0`.
-- `bridge/bridge_server.py` — `/run/stream` provider allowlist now includes
-  `ollama` alongside `anthropic` and `openai`. Dispatch routes to
-  `execute_ollama_stream` for Ollama requests.
-- 8 new unit tests in `adapters/ollama/test_ollama_adapter.py` covering: token
-  flow + manifest fields, contract validation (missing model / prompt),
-  URLError handling, abort_event support, blank/invalid JSON line tolerance,
-  `stream: true` payload assertion, empty-output completion validation.
-- Tool-use deltas are NOT streamed — Ollama returns tool_calls only on the
-  final `done` line, not as incremental deltas. Same behaviour applies if
-  Ollama gains streaming tool support; the manifest event would carry it.
-
-### Why
-Closes the v2.0.x gap noted in `AI_NEXT_STEP.md`: streaming was cloud-only.
-Ollama is now a first-class streaming citizen for local LLM workflows.
-
-## [2.1.0] — 2026-04-29
-
-### Added — Doctrine v5 compliance (G9 observability + aios-flow + evaluator)
-
-- `core/trace.py` — G9 recordTrace() infrastructure: `generate_request_id()` (16-char hex),
-  `build_traceparent()` (W3C `00-{32hex}-{16hex}-01`), `trace_headers()` (x-request-id /
-  traceparent / x-source-module), `record_trace()` (JSONL append to
-  `~/.aios/state/cross_module_trace.jsonl`, silent-fail, chmod 0o600)
-- Instrumented `adapters/aokp/aokp_adapter.py` — W3C trace headers + record_trace on all 3
-  routes (health / search / graph) with contract_version="AOKP_ATP_v2.3"
-- Instrumented `bridge/tdf_run.py` — W3C trace headers + record_trace on TDF dispatch with
-  contract_version="TDF_ATP_v1"
-- `adapters/aios_flow/aios_flow_adapter.py` — new DAG runner provider dispatching to
-  aios-flow :7700 `POST /api/runs`; routing short-circuit in `bridge/openclaw_bridge.py`
-- `registry/providers/aios_flow.yaml` — aios-flow provider registration (incubating)
-- `core/evaluator.py` — post-run evaluator: http-probe native (status + JSON key/value check);
-  llm-judge / visual-diff stub to aios-flow delegation (Phase 2)
-- Evaluator hook in `bridge/openclaw_bridge.py`: optional `"evaluator"` field triggers
-  `run_evaluator()` and appends result to bridge response
-- 28 new unit tests: `tests/unit/test_trace.py` (10), `tests/unit/test_aios_flow_adapter.py`
-  (8), `tests/unit/test_evaluator.py` (10)
-
-### Fixed
-
-- Doctrine §4: corrected ATP framework description (`FastAPI` → `stdlib HTTP server (no framework)`)
-  in `~/AI_OS/00_AUTHORITY/AI_OS_DOCTRINE_v5.0.md`
-
-### Docs
-
-- `AI_CURRENT_BASELINE.md` expanded (13 → ~100 lines) — closes DP#22
-- `MODULE_BOUNDARY.md` trace_coverage updated to 80% achieved (G9 rollout complete)
-
-## [2.0.4] — 2026-04-25
-
-### Added — `tdf-run` bridge provider (P3 ATP↔TDF integration)
-
-- `bridge/tdf_run.py` — new non-LLM provider that dispatches structured
-  execution tasks to TDF Web Control Panel's `/api/exec/execute` endpoint
-  (port `:4180`). Pass-through pattern: ATP owns task envelope + governance
-  classification; TDF owns bounded execution + RBAC + audit trail.
-- Routing in `bridge/openclaw_bridge.py`: requests with explicit
-  `provider="tdf-run"` short-circuit BEFORE the `text`/`model` parser
-  (TDF tasks carry structured target/params/mode envelopes, not prompts).
-- Governance class mapping (per `~/SOURCE_DEV/products/TDF/tdf/docs/integrations/ATP_BRIDGE_INTEGRATION.md`):
-    - `dry_run: true` → class **C** (auto-approved, preview only)
-    - `validate` / non-destructive ops real → class **C**
-    - `deploy.*` / `install.*` real → class **B** (requires human gate)
-    - `rollback.*` / `uninstall.*` / `undeploy.*` real → class **A** (strict review)
-- Env var: `TDF_WEB_URL` (default `http://localhost:4180`)
-- 16 unit tests in `tests/unit/test_tdf_run.py`: validation, success path,
-  failure modes (HTTP error, unreachable TDF, non-JSON response),
-  governance class mapping for all op types.
-
-### Why
-Closes the P3 connection point in the AI_OS ecosystem roadmap. TDF v6.7.0
-shipped a contract + reference Python skeleton in October 2025; this
-release wires the ATP side. AOKP and AIOS-OC remain independent of this
-provider — it only affects ATP's bridge dispatch table.
-
-## [2.0.3] — 2026-04-19
+Đầy đủ / full history: `/Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP/CHANGELOG.md`
 
 ---
 
