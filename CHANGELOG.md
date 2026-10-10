@@ -2,6 +2,26 @@
 
 All notable changes to ATP are documented here.
 
+## [2.6.1] — 2026-10-10
+
+### Fixed — `/health` reported a stale hand-set number, not the running version
+
+The bridge answered `GET /health` with `"version": "1.7"` while the platform was 2.6.0
+(`SERVER_VERSION` was a constant nobody maintained). A deployment could not prove which release
+was actually running, and AIOS-OC's ecosystem-health panel showed `1.7`.
+
+- `core/version.py` (new) — single source for `VERSION` and `RELEASED`.
+- `bridge/bridge_server.py` — `/health`, `/` and `/status` now return `version` = platform
+  version and `released` (ISO-8601 with timezone, G-VERSTAMP-1). The old `1.7` is kept as
+  `bridge_version`; it is the bridge server revision, not the platform version. Additive for any
+  client that only reads `status`; the one known reader of `version` (AIOS-OC) only displays it.
+- `RELEASED` file next to `VERSION`.
+- `tests/unit/test_version_consistency.py` (new) — keeps `VERSION`, `pyproject.toml`, `core/version.py`,
+  `RELEASED` and this changelog's entry date in agreement, and checks the bridge serves them.
+
+Release prerequisite for publishing ATP through `aios-publish` (the release store checks that the
+version inside a tag equals the version being published).
+
 ## [2.6.0] — 2026-06-26
 
 ### Removed — Ollama provider (Anthropic is now the sole/default LLM provider)

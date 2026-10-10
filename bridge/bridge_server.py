@@ -50,6 +50,7 @@ from bridge.context_enrichment import enrich_context  # noqa: E402
 from core.routing.route_prepare import _discover_active_providers, _discover_active_nodes  # noqa: E402
 from core import config  # noqa: E402
 from core import in_flight_tracker  # noqa: E402
+from core.version import RELEASED as APP_RELEASED, VERSION as APP_VERSION  # noqa: E402
 
 # D4.3 + D5.x — synthesis generator surface (Z2 contract: ATP_AIOS-OC_v3).
 import generators as _generators  # noqa: E402  (eager-imports the registry stubs)
@@ -61,7 +62,16 @@ ALLOWED_ORIGIN = config.BRIDGE_CORS_ORIGIN
 DEFAULT_PORT = config.BRIDGE_PORT
 MAX_BODY_BYTES = config.BRIDGE_MAX_BODY_BYTES
 MODEL_ALLOWLIST = config.MODEL_ALLOWLIST
-SERVER_VERSION = "1.7"
+SERVER_VERSION = "1.7"  # bridge server revision; served as `bridge_version`, NOT the platform version
+
+
+def _build_health_response() -> dict:
+    return {
+        "status": "ok",
+        "version": APP_VERSION,
+        "released": APP_RELEASED,
+        "bridge_version": SERVER_VERSION,
+    }
 
 
 # ─── D4.3 + D5.x synthesis surface helpers ─────────────────────────────────
@@ -257,7 +267,9 @@ def _build_status_response() -> dict:
 
     return {
         "status": "ok",
-        "version": SERVER_VERSION,
+        "version": APP_VERSION,
+        "released": APP_RELEASED,
+        "bridge_version": SERVER_VERSION,
         "providers": [p.get("provider") for p in providers],
         "provider_count": len(providers),
         "nodes": [n.get("node") for n in nodes],
@@ -334,12 +346,14 @@ class BridgeHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802
         if self.path == "/health":
-            self._send_json(200, {"status": "ok", "version": SERVER_VERSION})
+            self._send_json(200, _build_health_response())
         elif self.path == "/":
             self._send_json(200, {
                 "status": "ok",
                 "service": "ATP Bridge Server",
-                "version": SERVER_VERSION,
+                "version": APP_VERSION,
+                "released": APP_RELEASED,
+                "bridge_version": SERVER_VERSION,
             })
         elif self.path == "/status":
             self._send_json(200, _build_status_response())
@@ -729,7 +743,7 @@ def main() -> None:
 
     signal.signal(signal.SIGTERM, _handle_sigterm)
 
-    print(f"[{_timestamp()}] ATP Bridge Server v{SERVER_VERSION} starting on port {port}", flush=True)
+    print(f"[{_timestamp()}] ATP Bridge Server v{APP_VERSION} (released {APP_RELEASED}, bridge {SERVER_VERSION}) starting on port {port}", flush=True)
     print(f"[{_timestamp()}] CORS allowed origin: {ALLOWED_ORIGIN}", flush=True)
     if MODEL_ALLOWLIST:
         print(f"[{_timestamp()}] Model allowlist: {MODEL_ALLOWLIST}", flush=True)
