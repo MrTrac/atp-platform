@@ -31,6 +31,7 @@ import os
 import signal
 import socket
 import sys
+import threading
 import time
 from pathlib import Path
 from datetime import datetime, timezone
@@ -738,8 +739,11 @@ def main() -> None:
 
     def _handle_sigterm(signum: int, frame: object) -> None:
         log_event("server.shutdown", reason="SIGTERM")
-        server.shutdown()
-        sys.exit(0)
+        # shutdown() blocks until serve_forever() returns, and serve_forever() runs on this very
+        # (main) thread, which is inside this handler: calling it here deadlocks and the process
+        # only dies when systemd's TimeoutStopSec (90 s) ends in SIGKILL. Ask from another thread;
+        # serve_forever() then returns and the `finally` below closes the socket.
+        threading.Thread(target=server.shutdown, daemon=True).start()
 
     signal.signal(signal.SIGTERM, _handle_sigterm)
 

@@ -19,6 +19,15 @@ was actually running, and AIOS-OC's ecosystem-health panel showed `1.7`.
 - `tests/unit/test_version_consistency.py` (new) — keeps `VERSION`, `pyproject.toml`, `core/version.py`,
   `RELEASED` and this changelog's entry date in agreement, and checks the bridge serves them.
 
+### Fixed — SIGTERM did not stop the bridge (every restart waited for SIGKILL)
+
+`_handle_sigterm` called `server.shutdown()` from the main thread, the same thread running
+`serve_forever()`, so it waited for a loop it was blocking: the process ignored SIGTERM (measured: two
+SIGTERMs, still listening; only SIGKILL stopped it). Under systemd (`TimeoutStopUSec=1min 30s`) each
+`systemctl restart aios-atp` took up to 90 s and the old process kept serving until then. The handler now
+asks for the shutdown from another thread. `tests/unit/test_bridge_sigterm.py` starts the real server and
+requires it to exit 0 within 5 s of SIGTERM.
+
 Release prerequisite for publishing ATP through `aios-publish` (the release store checks that the
 version inside a tag equals the version being published).
 
