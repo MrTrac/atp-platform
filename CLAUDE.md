@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261010T165511Z
+GeneratedAtUTC: 20261011T101156Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,13 +90,13 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 0c1517211a9dc27384b69414f969078a1b0e944f4d9951a87706693798f555fd
+SHA256: cbdc5be287ddc083f1b8f2578086194b42d7fdff97007b8e0d703f4d1dd5c4c3
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.6.1
-- **Released:** 2026-10-10T23:53:53+07:00
-- **Last synced:** 2026-10-10 (via aios sync reverse)
+- **Version:** v2.6.2
+- **Released:** 2026-10-11T17:09:57+07:00
+- **Last synced:** 2026-10-11 (via aios sync reverse)
 
 ## Status
 
@@ -251,33 +251,42 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 062c541b5fe0baee3c6baaa90852447f275e0208b6832664acd038102e058624
+SHA256: 8acf12697a0c9e39634784bb63599e9148d16bd286c4c6ea7d258ec10a8ec97f
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.6.1 — reverse sync from source repo
-**Date**: 2026-10-10
+## Handoff: v2.6.2 — reverse sync from source repo
+**Date**: 2026-10-11
 
-### What changed in v2.6.1
-## [2.6.1] — 2026-10-10
+### What changed in v2.6.2
+## [2.6.2] — 2026-10-11
 
-### Fixed — `/health` reported a stale hand-set number, not the running version
+### Fixed — every `python cli/*.py` crashed on Python ≥ 3.12 (the server runs 3.12.3)
 
-The bridge answered `GET /health` with `"version": "1.7"` while the platform was 2.6.0
-(`SERVER_VERSION` was a constant nobody maintained). A deployment could not prove which release
-was actually running, and AIOS-OC's ecosystem-health panel showed `1.7`.
+`cli/inspect.py` shadowed the standard-library `inspect`. A script run as `python cli/<x>.py` has `cli/` first on `sys.path`, so the next stdlib import that needs
+`inspect` (`dataclasses`, from Python 3.12) died with `module 'inspect' has no attribute 'get_annotations'`. Measured on `aios-server` (read-only): `python cli/run.py --help` crashed;
+the bridge itself was unaffected (it never launches `cli/` scripts), which is why `/health` stayed green. CI ran 3.11, which does not trigger it, so CI never saw it.
+Renamed to `cli/inspect_task.py` (the `./atp inspect` command is unchanged). `tests/unit/test_cli_module_names.py` fails if any `cli/` module takes a stdlib name and
+starts every `cli/*.py` on the running interpreter.
 
-- `core/version.py` (new) — single source for `VERSION` and `RELEASED`.
-- `bridge/bridge_server.py` — `/health`, `/` and `/status` now return `version` = platform
-  version and `released` (ISO-8601 with timezone, G-VERSTAMP-1). The old `1.7` is kept as
-  `bridge_version`; it is the bridge server revision, not the platform version. Additive for any
-  client that only reads `status`; the one known reader of `version` (AIOS-OC) only displays it.
-- `RELEASED` file next to `VERSION`.
-- `tests/unit/test_version_consistency.py` (new) — keeps `VERSION`, `pyproject.toml`, `core/version.py`,
-  `RELEASED` and this changelog's entry date in agreement, and checks the bridge serves them.
+### Fixed — `./atp inspect --run-id <id>` could not find any run written by the current writer
 
-Release prerequisite for publishing ATP through `aios-publish` (the release store checks that the
-version inside a tag equals the version being published).
+Since 2.0.4 the writer puts current-task exchanges under `<workspace>/_shared/exchange/current-task/`, but the reader still looked only under `<workspace>/exchange/current-task/`.
+It now looks at the current layout first and the pre-2.0.4 layout second, and the error names both paths. Covered by a test that moves a run between the two layouts.
+
+### Fixed — CI
+
+* `ci` was red on every push: three test modules import `pytest`, which CI never installed (`unittest discover` could not even import them). CI now installs `.[dev]`, runs `make test`
+  through pytest, and tests on 3.11 **and** 3.12 (the server's version).
+* `Security Audit` was red on a vulnerability in the runner's own `setuptools` (PYSEC-2026-3447, fixed in 83.0.0), not in ATP (ATP has no runtime dependencies); the job now upgrades it first.
+* `test_creates_artifact_directory` still expected the pre-2.0.4 `atp-artifacts/` directory; the code writes `ATP/artifacts/` (commit `6e43db6`). Test corrected.
+
+### Included — SIGTERM fix (`aee4f7f`), merged after 2.6.1 and not released until now
+
+### Not changed (needs an owner decision, see Global_Build_Deploy_Topology_Rule §8 item 15)
+
+`adapters/claude_code.py`, `codex.py` and `cursor.py` import `jinja2` in `_render_template`, but `pyproject.toml` declares no dependency (`dependencies = []`), and the server's venv
+has none, so those three adapters would raise `ModuleNotFoundError` the first time they render a prompt. `adapters/exchange_adapter.py` still writes bundles to `<ws>/exchange/current-task/`.
 
 Đầy đủ / full history: `/Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP/CHANGELOG.md`
 
