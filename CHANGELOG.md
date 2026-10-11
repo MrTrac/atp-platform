@@ -26,10 +26,16 @@ It now looks at the current layout first and the pre-2.0.4 layout second, and th
 
 ### Included — SIGTERM fix (`aee4f7f`), merged after 2.6.1 and not released until now
 
-### Not changed (needs an owner decision, see Global_Build_Deploy_Topology_Rule §8 item 15)
+### Added — `jinja2` declared as the optional extra `adapters`
 
-`adapters/claude_code.py`, `codex.py` and `cursor.py` import `jinja2` in `_render_template`, but `pyproject.toml` declares no dependency (`dependencies = []`), and the server's venv
-has none, so those three adapters would raise `ModuleNotFoundError` the first time they render a prompt. `adapters/exchange_adapter.py` still writes bundles to `<ws>/exchange/current-task/`.
+`adapters/claude_code.py`, `codex.py` and `cursor.py` import `jinja2` in `_render_template`, but `pyproject.toml` declared no dependency (`dependencies = []`) and the server's venv has none, so those three
+adapters would raise `ModuleNotFoundError` the first time they render a prompt (nothing noticed: the tests ran on a machine that had jinja2). Now `pip install -e ".[adapters]"` brings it in (`jinja2>=3,<4`).
+The core stays dependency-free (ADR-0001) and `aios-server` does **not** install the extra: its journal since 7/10 shows only `/health` requests, no adapter run. `tests/unit/test_declared_dependencies.py`
+fails if any shipped module imports a third-party package that `pyproject.toml` does not declare.
+
+### Known, not changed
+
+`adapters/filesystem/exchange_adapter.py:40` still writes exchange bundles to `<ws>/exchange/current-task/` (the writer uses `_shared/exchange/...` since 2.0.4); no observed use, left alone.
 
 ## [2.6.1] — 2026-10-10
 

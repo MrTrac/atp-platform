@@ -7,4 +7,4 @@ pyproject.toml and the CHANGELOG entry.
 """
 
 VERSION = "2.6.2"
-RELEASED = "2026-10-11T17:09:57+07:00"
+RELEASED = "2026-10-11T17:45:47+07:00"
