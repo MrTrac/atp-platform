@@ -64,7 +64,11 @@ class TestClaudeCodeAdapterValidate(unittest.TestCase):
         adapter = ClaudeCodeAdapter(cfg)
 
         async def _run() -> tuple[bool, str]:
-            with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_proc:
+            # The repo must RESOLVE for validate() to reach the template check. Resolving "ATP" by name only works on a machine that has an ATP checkout
+            # in the expected place (the author's Mac); on CI it gave "Repo not found: ATP". Make the test hermetic.
+            with tempfile.TemporaryDirectory() as repo_dir, \
+                    patch.object(ClaudeCodeAdapter, "_find_repo", return_value=pathlib.Path(repo_dir)), \
+                    patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_proc:
                 proc = MagicMock()
                 proc.returncode = 0
                 proc.communicate = AsyncMock(return_value=(b"1.0", b""))
