@@ -10,7 +10,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-from cli.inspect import main as inspect_main
+from cli.inspect_task import main as inspect_main
 from cli.run import preview_run
 
 
@@ -104,6 +104,46 @@ class TestInspectCurrentTask(unittest.TestCase):
             self.assertEqual(summary["supersede_trace"]["previous_run_id"], "run-inspect-prev")
             self.assertEqual(summary["supersede_trace"]["previous_current_task_id"], "current-task-run-inspect-prev")
 
+
+
+    def test_inspect_reads_both_the_current_layout_and_the_pre_2_0_4_layout(self) -> None:
+        """Runs written by the current writer live under _shared/exchange; runs persisted before 2.0.4 live under exchange/. inspect must find both."""
+        import shutil
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace_root = Path(temp_dir) / "SOURCE_DEV" / "workspace"
+            with patch(
+                "cli.run.validate_artifacts",
+                return_value={
+                    "request_id": "req-atp-m7-exec-echo-0001",
+                    "validation_status": "incomplete",
+                    "artifact_ids": ["artifact-authoritative-req-atp-m7-exec-echo-0001"],
+                },
+            ):
+                preview_run(str(FIXTURE_PATH), "run-inspect-layout", workspace_root=workspace_root)
+
+            def run_inspect() -> tuple[int, dict]:
+                out = io.StringIO()
+                with redirect_stdout(out):
+                    code = inspect_main(["--workspace-root", str(workspace_root), "--run-id", "run-inspect-layout"])
+                return code, json.loads(out.getvalue())
+
+            self.assertTrue((workspace_root / "_shared" / "exchange" / "current-task" / "run-inspect-layout").is_dir(), "writer layout changed")
+            code, payload = run_inspect()
+            self.assertEqual(code, 0)
+            self.assertIn("_shared/exchange/current-task", payload["summary"]["exchange_root"])
+
+            legacy = workspace_root / "exchange"
+            shutil.move(str(workspace_root / "_shared" / "exchange"), str(legacy))
+            code, payload = run_inspect()
+            self.assertEqual(code, 0)
+            self.assertNotIn("_shared", payload["summary"]["exchange_root"])
+
+            shutil.rmtree(legacy)
+            code, payload = run_inspect()
+            self.assertEqual(code, 1)
+            self.assertIn("_shared/exchange/current-task/run-inspect-layout", payload["error"])
+            self.assertIn("exchange/current-task/run-inspect-layout", payload["error"])
 
 
 if __name__ == "__main__":

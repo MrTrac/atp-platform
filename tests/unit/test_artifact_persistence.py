@@ -37,7 +37,7 @@ class TestStoreArtifact(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             ws = Path(tmpdir)
             store_artifact({"artifact_id": "art-dir-test"}, workspace_root=ws)
-            self.assertTrue((ws / "atp-artifacts" / "art-dir-test").is_dir())
+            self.assertTrue((ws / "ATP" / "artifacts" / "art-dir-test").is_dir())   # layout since 2.0.4 (was atp-artifacts/)
 
 
 class TestWriteExchangeBundle(unittest.TestCase):

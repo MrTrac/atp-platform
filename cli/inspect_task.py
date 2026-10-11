@@ -53,11 +53,19 @@ def _load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+# The writer (adapters.filesystem.workspace_writer.resolve_exchange_current_task_root) has put current-task exchanges under
+# `_shared/exchange/current-task` since 2.0.4; runs persisted before that live under the bare `exchange/current-task`. This reader kept
+# looking only at the old place, so `./atp inspect --run-id <id>` could never find a run written by the current writer.
+_CURRENT_TASK_LAYOUTS = (("_shared", "exchange", "current-task"), ("exchange", "current-task"))
+
+
 def _inspect_current_task(workspace_root: Path, run_id: str) -> dict:
-    current_task_root = workspace_root / "exchange" / "current-task"
+    candidates = [workspace_root.joinpath(*parts) for parts in _CURRENT_TASK_LAYOUTS]
+    current_task_root = next((root for root in candidates if (root / run_id).is_dir()), None)
+    if current_task_root is None:
+        looked = " | ".join(str(root / run_id) for root in candidates)
+        raise ValueError(f"Current-task root does not exist for run_id={run_id}: {looked}")
     exchange_root = current_task_root / run_id
-    if not exchange_root.is_dir():
-        raise ValueError(f"Current-task root does not exist for run_id={run_id}: {exchange_root}")
 
     current_task_state = _load_json(exchange_root / "current-task-state.json")
     recovery_contract_path = exchange_root / "continue-pending-recovery.json"

@@ -2,6 +2,35 @@
 
 All notable changes to ATP are documented here.
 
+## [2.6.2] — 2026-10-11
+
+### Fixed — every `python cli/*.py` crashed on Python ≥ 3.12 (the server runs 3.12.3)
+
+`cli/inspect.py` shadowed the standard-library `inspect`. A script run as `python cli/<x>.py` has `cli/` first on `sys.path`, so the next stdlib import that needs
+`inspect` (`dataclasses`, from Python 3.12) died with `module 'inspect' has no attribute 'get_annotations'`. Measured on `aios-server` (read-only): `python cli/run.py --help` crashed;
+the bridge itself was unaffected (it never launches `cli/` scripts), which is why `/health` stayed green. CI ran 3.11, which does not trigger it, so CI never saw it.
+Renamed to `cli/inspect_task.py` (the `./atp inspect` command is unchanged). `tests/unit/test_cli_module_names.py` fails if any `cli/` module takes a stdlib name and
+starts every `cli/*.py` on the running interpreter.
+
+### Fixed — `./atp inspect --run-id <id>` could not find any run written by the current writer
+
+Since 2.0.4 the writer puts current-task exchanges under `<workspace>/_shared/exchange/current-task/`, but the reader still looked only under `<workspace>/exchange/current-task/`.
+It now looks at the current layout first and the pre-2.0.4 layout second, and the error names both paths. Covered by a test that moves a run between the two layouts.
+
+### Fixed — CI
+
+* `ci` was red on every push: three test modules import `pytest`, which CI never installed (`unittest discover` could not even import them). CI now installs `.[dev]`, runs `make test`
+  through pytest, and tests on 3.11 **and** 3.12 (the server's version).
+* `Security Audit` was red on a vulnerability in the runner's own `setuptools` (PYSEC-2026-3447, fixed in 83.0.0), not in ATP (ATP has no runtime dependencies); the job now upgrades it first.
+* `test_creates_artifact_directory` still expected the pre-2.0.4 `atp-artifacts/` directory; the code writes `ATP/artifacts/` (commit `6e43db6`). Test corrected.
+
+### Included — SIGTERM fix (`aee4f7f`), merged after 2.6.1 and not released until now
+
+### Not changed (needs an owner decision, see Global_Build_Deploy_Topology_Rule §8 item 15)
+
+`adapters/claude_code.py`, `codex.py` and `cursor.py` import `jinja2` in `_render_template`, but `pyproject.toml` declares no dependency (`dependencies = []`), and the server's venv
+has none, so those three adapters would raise `ModuleNotFoundError` the first time they render a prompt. `adapters/exchange_adapter.py` still writes bundles to `<ws>/exchange/current-task/`.
+
 ## [2.6.1] — 2026-10-10
 
 ### Fixed — `/health` reported a stale hand-set number, not the running version

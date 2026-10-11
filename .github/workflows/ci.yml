@@ -7,12 +7,20 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 is what aios-server runs (3.12.3). 3.11 alone hid a crash that only appears from 3.12 on (cli/inspect.py shadowing the stdlib).
+        python-version: ["3.11", "3.12"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: ${{ matrix.python-version }}
+      - name: Install test dependencies
+        # Several test modules import pytest; ATP itself has no runtime dependencies (see pyproject.toml).
+        run: python -m pip install -e ".[dev]"
       - name: Run tests
         run: make test

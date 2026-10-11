@@ -99,7 +99,7 @@ case "${1:-help}" in
     exec python3 "$ROOT_DIR/cli/run.py" "${@:2}"
     ;;
   inspect)
-    exec python3 "$ROOT_DIR/cli/inspect.py" "${@:2}"
+    exec python3 "$ROOT_DIR/cli/inspect_task.py" "${@:2}"
     ;;
   validate)
     exec python3 "$ROOT_DIR/cli/validate.py" "${@:2}"

@@ -68,7 +68,7 @@ class TestFeature04ControlPlaneHardening(unittest.TestCase):
 
     def test_inspect_help_is_explicitly_read_only(self) -> None:
         result = subprocess.run(
-            ["python3", str(ROOT_DIR / "cli" / "inspect.py"), "-h"],
+            ["python3", str(ROOT_DIR / "cli" / "inspect_task.py"), "-h"],
             check=False,
             capture_output=True,
             text=True,

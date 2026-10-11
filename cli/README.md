@@ -4,7 +4,7 @@
 
 - `atp`: shell entrypoint
 - `run.py`: preview flow ATP v0 và materialize runtime outputs theo baseline đã freeze
-- `inspect.py`: read-only inspect cho summary file hoặc current-task state đã materialize dưới workspace
+- `inspect_task.py`: read-only inspect cho summary file hoặc current-task state đã materialize dưới workspace
 - `validate.py`: preview flow validate không thực thi execution
 
 Phạm vi hiện hành:

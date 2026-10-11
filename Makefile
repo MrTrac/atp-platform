@@ -37,10 +37,10 @@ smoke:
 test: test-unit test-integration
 
 test-unit:
-	@python3 -m unittest discover -s tests/unit -p 'test_*.py'
+	@python3 -m pytest -q -p no:cacheprovider tests/unit
 
 test-integration:
-	@python3 -m unittest discover -s tests/integration -p 'test_*.py'
+	@python3 -m pytest -q -p no:cacheprovider tests/integration
 
 bridge:
 	@./scripts/bridge_with_keychain.sh
