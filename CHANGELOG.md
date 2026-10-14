@@ -2,6 +2,21 @@
 
 All notable changes to ATP are documented here.
 
+## [Unreleased]
+
+### Changed — the four placeholder adapter directories are kept, and their status is now a contract (KD-ATP-009)
+
+`adapters/api`, `desktop_bridge`, `local_service` and `ui_bridge` were an open question ("delete or keep?"). Measured 14/10/2026: they come from the v0 skeleton (`2403d9d`, 14/3/2026), each holds a README and an
+`__init__.py` that says "Architectural slot ... not scheduled for implementation", nothing imports them, no test or registry file mentions them. `adapters/README.md` calls them "placeholders có chủ đích" and `AGENTS.md`
+makes the adapter shape part of the frozen doctrine, so deleting them is an architectural decision with no functional gain. Decision (Owner, 14/10/2026): keep them.
+
+What changed: `adapters/README.md` has a status table (reviewed 14/10/2026: no use case or owner assigned) and the rule for promoting a placeholder; `adapters/local_service/README.md` says there is no use case yet and that the
+slot must not bring a local LLM back on macOS (`Global_Mac_No_Ollama_Rule`) — the `ollama HTTP endpoint` example suggested by the 2/4/2026 design audit (item N-4) is no longer valid, and the audit carries a labelled addendum
+saying so. `tests/unit/test_placeholder_adapters.py` (5 tests) makes the status checkable: a placeholder holds no code beyond a docstring-only `__init__.py`; its README still says "placeholder"; nothing imports it; the README
+table lists exactly these four; and a NEW adapter directory with no code must be declared. Seeded defects, all caught by the intended test: real code added to a placeholder, a statement in an `__init__.py`, a README that
+stops saying "placeholder", an import from `core/` and from `bridge/` (both import forms), a row dropped from the table, an undeclared new code-less directory; adding code to a REAL adapter is correctly not flagged.
+No runtime code changed.
+
 ## [2.6.6] — 2026-10-14
 
 ### Fixed — `with_retry` dropped every retried `HTTPError` without closing it (KD-ATP-013)

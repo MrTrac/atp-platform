@@ -48,6 +48,8 @@ Unit tests mix three naming conventions: `test_sliceNN_*.py` (10 files), `test_f
 `adapters/local_service/` implies a local service integration, but its README describes it as a placeholder for "service-backed local integration." This is distinct from `adapters/subprocess/` (process-level execution) and a future `adapters/local_llm/`. The name does not convey what kind of service it targets.
 **Recommendation:** Rename to `adapters/local_http_service/` or clarify in README with concrete planned examples (e.g., ollama HTTP endpoint).
 
+> **Cập nhật 14/10/2026 (KD-ATP-009):** ví dụ "ollama HTTP endpoint" không còn hợp lệ — macOS không chạy Ollama hay model local (`Global_Mac_No_Ollama_Rule`, hiệu lực 3/6/2026). Thư mục được giữ nguyên tên, README đã ghi rõ chưa có use case; xem `adapters/README.md`, mục "Trạng thái placeholder và stub".
+
 ---
 
 ## 2. Module / Contract Design
