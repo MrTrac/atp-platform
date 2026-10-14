@@ -1,19 +1,20 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T140627Z
+GeneratedAtUTC: 20261014T141254Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
-SHA256: fdf8af54828e954987d4425eb6716ac5c100a011f9fd39c28b474c8a268d1f7e
+SHA256: 35d5453215c4306cb971b3302770cd2ede844ab825acd6ea106626ca6d242da5
 ----
 # AI Project Context — ATP
 ## Autonomous Task Platform
 
 - **Project:** ATP (Autonomous Task Platform)
 - **Repo path:** ~/SOURCE_DEV/platforms/ATP
-- **Stable baseline on `main`:** **v2.0.0** (tag) — HEAD `7100f0b`
-- **Last updated:** 2026-04-15
+- **Stable baseline on `main`:** **v2.6.4** (tag `v2.6.4` → `1e8d0c5`, RELEASED 2026-10-14T21:05:12+07:00)
+- **Last updated:** 2026-10-14
+- **Khiếm khuyết đã biết + trạng thái từng mục:** `~/AI_OS/20_PROJECTS/ATP/AI_ISSUE_LEDGER.yaml` (mã `KD-ATP-<số>`); lịch sử thay đổi: `CHANGELOG.md` trong repo.
 
 ---
 
@@ -25,35 +26,38 @@ ATP là một platform repository có governance-first discipline, phục vụ b
 requested user ⇄ ATP ⇄ products
 ```
 
-ATP là **Transformation Plane** trong 6-plane multi-AI ecosystem. Current execution reality trên `main` (v2.0.0):
+ATP là **Transformation Plane** trong 6-plane multi-AI ecosystem. Current execution reality trên `main` (v2.6.4):
 
 - repo-local, JSON-first, human-gated, bounded
-- **provider-abstracted** — 4 execution providers:
-  - Ollama local LLM (qwen3:14b/8b, deepseek-r1:8b)
-  - Anthropic cloud (chat + tool_use + json_mode + vision + streaming)
-  - OpenAI cloud (gpt-4o/5, o1, o3 + tool_use + json_mode + vision + streaming)
-  - Subprocess (local shell/git/build)
-- **bridge-enabled** — HTTP bridge server tại localhost:8765, 12 endpoints
-  - POST /run (blocking) + POST /run/stream (SSE)
-  - DELETE /runs/<id> (cancellation)
-  - GET /status, /providers, /capabilities, /runs, /runs/active, /runs/<id>
-- **knowledge-integrated** — AOKP adapter (opt-in, v2.3.x, 6 endpoints)
-- **governance-gated** — aios-gate phân loại artifacts tier A–E
-- **production-resilient** — retry/backoff for 429/5xx/network, per-model timeout, per-model pricing
-- **agentic-ready** — tool use, JSON mode, vision (cloud providers)
-- **streaming-capable** — SSE streaming + request cancellation via threading.Event
-- **observable** — central config, structured JSON logging, 7 typed error codes
-- non-persistent runtime by default (artifacts optional via ATP_PERSIST_RUNS)
+- **provider-abstracted** — execution providers (đối chiếu `registry/providers/*.yaml` + `EXECUTOR_MAP` ngày 2026-10-14):
+  - **Anthropic cloud** — provider LLM mặc định (chat + tool_use + json_mode + vision + streaming); model mặc định của cầu nối `claude-haiku-4-5-20251001`, escalation lên Sonnet
+  - **OpenAI cloud** (gpt-4o/5, o1, o3 + tool_use + json_mode + vision + streaming + Batch API)
+  - **non_llm_execution** — shell/git/build/test/lint chạy local (subprocess)
+  - dispatcher mức cầu nối: `tdf-run` (TDF Web Panel :4180), `aios-flow` (DAG workflow :7700)
+  - **KHÔNG có LLM local.** Adapter Ollama đã xoá từ v2.6.0; máy macOS không chạy Ollama/model local (`00_AUTHORITY/Global_Mac_No_Ollama_Rule.md`). Provider `ollama/...` không có handler — từ v2.6.4 mặc định của generators cũng không còn trỏ tới nó
+- **bridge-enabled** — HTTP bridge server (stdlib) tại localhost:8765; route đối chiếu `bridge/bridge_server.py`:
+  - POST `/run` (blocking), `/run/stream` (SSE), `/api/synthesis/generate`
+  - DELETE `/runs/<id>` (cancellation)
+  - GET `/health` và `/` (từ v2.6.1 trả `version` = phiên bản nền tảng + `released`), `/status`, `/providers`, `/capabilities`, `/runs`, `/runs/active`, `/runs/<id>`, `/api/synthesis/generators`
+- **knowledge-integrated** — AOKP adapter (opt-in, 6 truy vấn: health, knowledge, graph, chat, graph-rag, temporal)
+- **synthesis generators** (v2.6.0) — 8: analyze, federation, graphrag_synth, react, report, temporal, tot, transform. Cutover phía AOKP/AIOS-OC/ATCC_HCM chưa làm (KD-ATP-006)
+- **observable** — central config, structured JSON logging, 7 mã lỗi có kiểu (`core/error_codes.py`)
+- **production-resilient / agentic-ready / streaming-capable** — có `core/retry.py`, `core/pricing.py`, `core/streaming.py`, `core/in_flight_tracker.py`
+- **governance-gated** — aios-gate phân loại artifacts tier A–E *(mang từ bản v2.0.0, CHƯA kiểm lại ở v2.6.4)*
+- non-persistent runtime by default (artifacts optional via ATP_PERSIST_RUNS / ATP_PERSIST_ARTIFACTS)
 - non-orchestrating (không có scheduler hay graph execution)
 - non-daemonized (bridge server là opt-in, không auto-start)
 
-Current accepted line status (v2.0.0):
+Current accepted line status (v2.6.4):
 - v1.6.0 observability baseline frozen
 - v1.7.0 cloud API key passthrough + AOKP v2.3.x frozen
-- **v1.8.0 Cloud Foundations released** (OpenAI adapter, retry, pricing, timeout)
-- **v1.9.0 Agentic Capabilities released** (tool use, JSON mode, vision, capabilities matrix)
-- **v2.0.0 Streaming & Cancellation released** (SSE streaming, DELETE /runs/<id>, in-flight tracker)
-- PRs #19, #20, #21 merged 2026-04-15; tagged v1.8.0 / v1.9.0 / v2.0.0
+- v1.8.0 Cloud Foundations (OpenAI adapter, retry, pricing, timeout)
+- v1.9.0 Agentic Capabilities (tool use, JSON mode, vision, capabilities matrix)
+- v2.0.0 Streaming & Cancellation (SSE streaming, DELETE /runs/<id>, in-flight tracker)
+- v2.0.1–v2.0.4 ecosystem alignment, codex/cursor adapters, tdf-run bridge provider
+- v2.1.0 G9 observability, aios-flow adapter, evaluator wiring · v2.2.0 Ollama streaming parity (lịch sử; Ollama đã xoá ở v2.6.0) · v2.3.0 OpenAI Batch API · v2.4.0 aios-flow status + wait · v2.5.0 OpenAI Batch `wait` helper
+- **v2.6.0** Ollama provider removed (Anthropic là mặc định duy nhất) + synthesis generators surface; **v2.6.1** `/health` báo đúng phiên bản + SIGTERM dừng được bridge; **v2.6.2** `cli/inspect.py` che stdlib `inspect` (sửa), CI ma trận 3.11/3.12, `jinja2` là extra tùy chọn `adapters`; **v2.6.3** `write_exchange_bundle` ghi vào `_shared/exchange/current-task/`; **v2.6.4** model mặc định của `generators/llm.py` không còn là `ollama/qwen3:8b`
+- (lịch sử) PRs #19, #20, #21 merged 2026-04-15; tagged v1.8.0 / v1.9.0 / v2.0.0
 
 ---
 
@@ -83,10 +87,6 @@ Nếu AI_OS projected planning wording mâu thuẫn với accepted repo-local ex
 - **Stable core** không được thay đổi tùy tiện — thay đổi core cần human-approved architectural decision
 
 Stable core của ATP bao gồm tối thiểu:
-- repo/workspace boundary
-- control-plane shape
-- artifact lifecycle discipline
-- human-gated flow
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
@@ -111,13 +111,13 @@ SHA256: 82600697cb86ac2518a15308faecf0d14dd4d6c3f0425e94d3343e9491e03ad4
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: e415e102139504b49260e0db73747de94748b78c33c90cebc35c26fd4a432815
+SHA256: e342d551d8fb769cd1c992c3c96e69162cd362c0cbd048e1a0680bdea86737cf
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-10-14
-- **Phase:** v2.6.3 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
-- **Current state:** v2.6.3 (RELEASED 2026-10-14T20:43:55+07:00). 2.6.1 `/health` reports the real version; 2.6.2 `cli/` stdlib-shadow fix + CI matrix 3.11/3.12 + `jinja2` as optional extra `adapters`; 2.6.3 `write_exchange_bundle` writes to `_shared/exchange/current-task/` like the run writer. Last verified on 2.6.3: `make test` 658 unit passed + 22 integration passed (7 skipped). Known open: bare `python3 -m pytest` fails `test_cli_scripts_start_on_this_interpreter` (`cli/output_contract.py` imports `core` without a `sys.path` shim; passes under `make test` because the Makefile exports `PYTHONPATH=.`). v2.6.0 baseline facts: 8/8 generators functional, 81/81 generator tests pass; AOKP-side cutover deferred to v6.1 per M4 fallback (ATP runbook §3 mid-step gate).
+- **Phase:** v2.6.4 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
+- **Current state:** v2.6.4 (RELEASED 2026-10-14T21:05:12+07:00). 2.6.4 `generators/llm.py` default model no longer `ollama/qwen3:8b` (empty = bridge default, anthropic); 2.6.1 `/health` reports the real version; 2.6.2 `cli/` stdlib-shadow fix + CI matrix 3.11/3.12 + `jinja2` as optional extra `adapters`; 2.6.3 `write_exchange_bundle` writes to `_shared/exchange/current-task/` like the run writer. Last verified on 2.6.4: `make test` 661 unit passed + 22 integration passed (7 skipped). Known open: bare `python3 -m pytest` fails `test_cli_scripts_start_on_this_interpreter` (`cli/output_contract.py` imports `core` without a `sys.path` shim; passes under `make test` because the Makefile exports `PYTHONPATH=.`). v2.6.0 baseline facts: 8/8 generators functional, 81/81 generator tests pass; AOKP-side cutover deferred to v6.1 per M4 fallback (ATP runbook §3 mid-step gate).
 
 ---
 
