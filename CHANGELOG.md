@@ -2,7 +2,7 @@
 
 All notable changes to ATP are documented here.
 
-## [Unreleased]
+## [2.6.5] — 2026-10-14
 
 ### Fixed — `HTTPError` responses were never closed by the code that caught them (KD-ATP-012)
 
