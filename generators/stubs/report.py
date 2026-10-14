@@ -124,7 +124,7 @@ def _llm_synthesis(query: str, chunks: list[dict[str, Any]], locale: str, model:
             },
             "model": {
                 "type": "string",
-                "description": "Provider-prefixed model id (e.g. 'ollama/qwen3:8b'). Used when llm_mode='real'.",
+                "description": "Provider-prefixed model id (e.g. 'anthropic/claude-haiku-4-5-20251001'; empty = bridge default). Used when llm_mode='real'.",
             },
             "context_chunks": {
                 "type": "array",

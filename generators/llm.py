@@ -22,7 +22,10 @@ from __future__ import annotations
 import os
 from typing import Callable, Protocol
 
-DEFAULT_MODEL = os.environ.get("ATP_GENERATORS_DEFAULT_MODEL", "ollama/qwen3:8b")
+# Empty = let bridge_request apply the bridge's own default (anthropic / DEFAULT_MODEL in bridge/openclaw_bridge.py), so there is ONE source for it.
+# Never default to a provider the executor has no handler for: "ollama/..." resolved to provider "ollama", fell through to the deferred SSH stub and
+# every llm_mode=real call without an explicit model failed (Ollama adapter removed in 2.6.0; no local LLM on macOS, Global_Mac_No_Ollama_Rule).
+DEFAULT_MODEL = os.environ.get("ATP_GENERATORS_DEFAULT_MODEL", "")
 
 
 class LlmError(RuntimeError):
@@ -52,8 +55,8 @@ def _default_provider(prompt: str, model: str | None = None) -> str:
         raise LlmError(f"bridge_request failed: {e}") from e
 
     # bridge_request returns ATP's CLI-execution-shaped result. The LLM
-    # text lives in `stdout` (verified live 2026-05-03 against
-    # ollama/qwen3:8b — keys: execution_id, request_id, product,
+    # text lives in `stdout` (verified live 2026-05-03, when the default was
+    # the since-removed ollama/qwen3:8b provider — keys: execution_id, request_id, product,
     # selected_provider, selected_node, command, exit_code, stdout,
     # stderr, status, source_stage, notes, bridge, ollama_manifest,
     # ollama_routing). Status field is "succeeded" on success.
