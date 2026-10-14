@@ -4,6 +4,46 @@ All notable changes to ATP are documented here.
 
 ## [Unreleased]
 
+### Added — the aios-flow adapter authenticates as `svc:atp` (aios-flow 1.2.0 enforces `Authorization: Bearer <aios-identity access token>`)
+
+aios-flow 1.2.0 (tag `v1.2.0`, not yet deployed to aios-server, which runs 1.1.2) answers 401 to any caller without a token; contract and rollout order: aios-flow `docs/RUNS_API.md` §1–§3. ATP must be released BEFORE enforcement is switched on, and an extra
+header is harmless against today's unauthenticated aios-flow. New `adapters/aios_flow/identity_token.py` + changes in `aios_flow_adapter.py`: when `AIOS_FLOW_IDENTITY_URL` is set (https, or a loopback address), every request to aios-flow carries the access token of the
+service account `svc:atp` (role `service-account`: may start and read runs, never resolve an approval). The token comes from `POST {identity}/service-account/token {username, secret, consumer: "ATP"}`; the secret is `AIOS_FLOW_IDENTITY_SECRET` (macOS: the login
+Keychain through `scripts/bridge_with_keychain.sh`, service name = variable name, now in its list; aios-server: a root-owned EnvironmentFile) and is read from nowhere else — not from the repo, never logged, never in a result, an error text, `repr()` or the G9 trace file
+(identity's own error message is scrubbed of the secret before use). `AIOS_FLOW_IDENTITY_USER` overrides the default `svc:atp`. With `AIOS_FLOW_IDENTITY_URL` unset nothing changes: no token is requested or sent. URL set and secret empty is an error at the first call,
+never a silent downgrade to unauthenticated.
+
+Lifetime — measured, not assumed. Against the real aios-identity 1.2.4 the answer advertises `expires_in` = 31536000 (a year) while the JWT lives 3600 s (`exp - iat`) and the server enforces the JWT; identity 1.2.5 (`main`, `d3dbcc8`) now really issues 365 days.
+The provider therefore ignores `expires_in` and reads `exp - iat` from the token itself (iat, not the local clock, so a skewed Mac clock changes nothing), assumes 3600 s when the token cannot be read, and renews `min(300 s, lifetime / 2)` before the end: 3300 s against 1.2.4,
+31 535 700 s against 1.2.5 — verified against both real servers (below). Every mint leaves a year-long session row at identity, so minting is rationed: one token shared by all threads with one mint at a time, a token aios-flow rejected is replaced at most once per 30 s (and at most once per
+request), and a refusal of the credentials (wrong secret, wrong URL) is remembered for 60 s instead of asking identity again on every request. The mint is itself a G9 cross-module call (`aios-identity`, `/service-account/token`, outcome only).
+
+The token goes to aios-flow and nowhere else. It is attached with `add_unredirected_header`: urllib copies `request.headers` onto a redirected request whatever the new host, so a token in `request.headers` would follow a 302 to another machine (the wire test shows the
+difference). It is only sent over https or to a loopback host (`AIOS_FLOW_URL=http://10.x.x.x:7700` with authentication configured is refused before any token is requested), and `core.trace.trace_headers` — shared by every adapter — carries no Authorization header; a test fails if any
+module other than the aios-flow adapter imports the token module.
+
+### Fixed — an authentication failure no longer looks like an outage, and `wait` no longer gives up on a healthy run at the first transient 503
+
+Measured 14/10/2026 against the real aios-flow and the real aios-identity: (1) an enforcing aios-flow answered an unauthenticated ATP with 401 and the adapter reported `aios-flow unreachable: HTTP Error 401` — the body (which carries the reason) was never read, and a 404 `flow_not_found`
+or a 400 `invalid_pipeline` were reported as "unreachable" the same way; (2) `_wait_for_run` ended on any poll whose envelope said `error`, so one `503 identity_unavailable` + `Retry-After: 5` — what aios-flow answers when identity is briefly unreachable at the expiry of its 30 s verdict cache — aborted
+the wait on a run that was fine. Now every failure keeps `status == "error"` and `error` (text; "aios-flow unreachable: …" is kept for a real network failure) and adds `error_code` (`auth_failed` | `unavailable` | `unreachable` | `http_error` | `bad_response`), `retryable`, `http_status`, `reason_code`
+(the server's own code, e.g. `invalid_token`, `forbidden`, `identity_unavailable`, `flow_not_found`, or ours: `missing_secret`, `insecure_transport`), `auth_source` (`aios-flow` | `aios-identity` | `config`) and `retry_after_s`. 401/403 are explained from the body's code and never
+retried in a loop: a 401 for a token the adapter holds gets ONE fresh token and the request is repeated once (a second 401 is final); a 403 is final at once. `wait` retries `unavailable` (429/502/503/504, identity unable to issue a token) and `unreachable` within each poll through the existing
+`core.retry.with_retry` — exponential backoff, `Retry-After` honoured, at most 4 attempts and 60 s per poll and never beyond the wait's own `timeout_s`; errors that waiting cannot fix (401/403, 404, non-JSON) still end the wait at once. `dispatch` is never retried by itself (a POST that
+failed in transit may have started the run, so repeating it is the caller's decision) and `status` is a single shot. A read timeout, which `urlopen` lets escape as a bare `TimeoutError`, is now converted so `with_retry` sees a network
+error. Each attempt leaves its own G9 trace record. Every error path closes the `HTTPError` response it holds (KD-ATP-012/013): new `core.http_errors.read_error_body` / `error_code_and_message` read the body first; `tests/unit/test_http_errors_closed.py` lists the new module in its guard.
+
+Verification (G-AUTOVERIFY-1), 14/10/2026. `tests/unit` + `tests/integration`: 856 passed, 7 skipped on Python 3.11, 3.12 and 3.14, 0 warnings with `ResourceWarning` and `RuntimeWarning` promoted to errors (+147 tests: provider 66, adapter auth/retry/close 55, error-body helpers 22, and 4 over REAL sockets — header on the wire, no forward across a 302, a real `Retry-After`
+header object, a server that never answers retried like any network failure). 23 seeded defects, 22 caught by the suite (the 23rd was an equivalent mutant: a `close_http_error` that could never see an `HTTPError`, removed as dead code) (token sent via `add_header` → the redirect test; `wait` without retry; 403 handled as retryable; a 401/403 or mint response left open; retries past the wait's timeout; cleartext flow URL allowed;
+`expires_in` trusted; no re-mint cooldown; no single-flight lock; refusal not remembered; token shape unchecked; secret in `repr`; identity message not scrubbed; missing secret silently downgrading; …); one first showed as MISSED (a second 401 re-minted again) because the cooldown masked it — a test with a clock that
+jumps past the cooldown now pins it. REAL STACK (script outside the repo: real aios-identity on a throwaway DB + real aios-flow uvicorn with `AIOS_FLOW_AUTH=enforce` + THIS adapter unmodified, identity 1.2.4 and 1.2.5): unconfigured adapter → `auth_failed` `missing_token` with the setting to configure; dispatch +
+wait with the `svc:atp` token → `succeeded`, `requested_by` = `svc:atp`, one mint for dispatch + status + all polls, no token or secret in the trace file or any result; wrong secret → `auth_failed` `invalid_service_credentials` and aios-flow's own access log shows no request; a revoked session → one 401 from aios-flow,
+one replacement token, request repeated; identity paused (SIGSTOP, by PID) at the verdict-cache expiry → 503 `identity_unavailable` + `Retry-After: 5`, the wait retried and ended `succeeded`; identity paused for good → the wait gave up after 4 attempts (35 s) with `unavailable`/503/`identity_unavailable`/`retry_after_s` 5.0.
+NOT verified: renewal after the real 3600 s (never waited out; covered by tests with a manual clock and by the measured `exp - iat`); TLS to a real https identity (the sandbox is plain loopback http; the https/loopback rule is unit-tested); the Mac Keychain wrapper end to end; anything on aios-server.
+
+To switch it on (operator, nothing is active until then): set `AIOS_FLOW_IDENTITY_URL` and `AIOS_FLOW_IDENTITY_SECRET` in the environment of the process that runs the bridge — macOS: add the secret to the login Keychain (`security add-generic-password -U -s AIOS_FLOW_IDENTITY_SECRET -a "$USER" -T /usr/bin/security -w`,
+which prompts for the value) and add `_maybe_export AIOS_FLOW_IDENTITY_SECRET` plus the URL to the launchd wrapper `atp-bridge-start.sh` (it lives in AI_OS `30_RUNTIME/agents/launchd/`, outside this repo); aios-server: the ATP unit's EnvironmentFile.
+
 ### Fixed — `with_retry` dropped every retried `HTTPError` without closing it (KD-ATP-013)
 
 KD-ATP-012 closed the response of an `HTTPError` in the 14 handlers that name a network exception, and said it had NOT audited broad handlers. Audited 14/10/2026 with `ast`: of the 15 `urlopen` call sites, 13 sit in a `try`

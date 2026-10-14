@@ -30,6 +30,7 @@ _ROOT = Path(__file__).resolve().parents[2]
 _SCAN_DIRS = ("adapters", "core", "bridge", "generators", "cli")
 _NETWORK_MODULES_EXPECTED = {
     "adapters/aios_flow/aios_flow_adapter.py",
+    "adapters/aios_flow/identity_token.py",
     "adapters/aokp/aokp_adapter.py",
     "adapters/cloud/anthropic_adapter.py",
     "adapters/cloud/openai_adapter.py",
