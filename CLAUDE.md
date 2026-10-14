@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T141254Z
+GeneratedAtUTC: 20261014T141628Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -251,12 +251,14 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 4d1ab8ebadb2b66e56040e469e0c5fe21a5644a5069e357c715d6dd7fde37dc9
+SHA256: a1eb536277d36d5eb2b38665728587cfd95d5253bd1658c4ce50bfe3c23925c9
 ----
 # AI_HANDOFF_LATEST — ATP
 
 ## Handoff: v2.6.4 — reverse sync from source repo
 **Date**: 2026-10-14
+**Release report (G-RELREPORT-1)**: ledger `~/AI_OS/20_PROJECTS/ATP/AI_ISSUE_LEDGER.yaml` · user report `~/AI_Shared_Outputs/AIOS_Ecosystem/ATP/bao-cao-phat-hanh/Bao_Cao_Phat_Hanh_ATP_2.6.4.{md,html,pdf,docx,pptx}`
+**Open at release**: KD-ATP-007 (2.6.3 + 2.6.4 NOT deployed; aios-server runs 2.6.2) · KD-ATP-004 partial (fixed locally, NOT pushed: ATP db7abdf, AI_OS 6 commits) · KD-ATP-011 (README/AGENTS '12 endpoints') · KD-ATP-003/005/006/008/009
 
 ### What changed in v2.6.4
 ## [2.6.4] — 2026-10-14
