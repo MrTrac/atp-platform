@@ -2,7 +2,7 @@
 
 All notable changes to ATP are documented here.
 
-## [Unreleased]
+## [2.6.3] — 2026-10-14
 
 ### Fixed — `write_exchange_bundle()` wrote to the pre-2.0.4 exchange layout
 

@@ -6,5 +6,5 @@ tests/unit/test_version_consistency.py keeps them equal to VERSION, RELEASED,
 pyproject.toml and the CHANGELOG entry.
 """
 
-VERSION = "2.6.2"
-RELEASED = "2026-10-11T17:45:47+07:00"
+VERSION = "2.6.3"
+RELEASED = "2026-10-14T20:43:55+07:00"
