@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=FUTURE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T134425Z
+GeneratedAtUTC: 20261014T135917Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -111,13 +111,13 @@ SHA256: 8bcf3d44abb879d1edaa629146fc201dd3618f6678d9d8bddb1e5fbe73488a7c
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 92903a17da1cdd270814283cd8fce4c67bf96d5eb5cdadbe1dc28288d71434c8
+SHA256: e415e102139504b49260e0db73747de94748b78c33c90cebc35c26fd4a432815
 ----
 # AI Next Step — ATP
 
-- **Last updated:** 2026-05-04
-- **Phase:** v2.6.0 — Doctrine v6.0 D6.2 closed via M4 scope-cut (ATP synthesis surface complete)
-- **Current state:** v2.6.0 implemented + D6.2 closed. 8/8 generators functional, NotImplementedError removed from all dispatch paths. 81/81 generator tests pass, 0 regression. AOKP-side cutover deferred to v6.1 per M4 fallback (ATP runbook §3 mid-step gate).
+- **Last updated:** 2026-10-14
+- **Phase:** v2.6.3 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
+- **Current state:** v2.6.3 (RELEASED 2026-10-14T20:43:55+07:00). 2.6.1 `/health` reports the real version; 2.6.2 `cli/` stdlib-shadow fix + CI matrix 3.11/3.12 + `jinja2` as optional extra `adapters`; 2.6.3 `write_exchange_bundle` writes to `_shared/exchange/current-task/` like the run writer. Last verified on 2.6.3: `make test` 658 unit passed + 22 integration passed (7 skipped). Known open: bare `python3 -m pytest` fails `test_cli_scripts_start_on_this_interpreter` (`cli/output_contract.py` imports `core` without a `sys.path` shim; passes under `make test` because the Makefile exports `PYTHONPATH=.`). v2.6.0 baseline facts: 8/8 generators functional, 81/81 generator tests pass; AOKP-side cutover deferred to v6.1 per M4 fallback (ATP runbook §3 mid-step gate).
 
 ---
 
