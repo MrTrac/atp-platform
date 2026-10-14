@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=FUTURE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T154344Z
+GeneratedAtUTC: 20261014T155200Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -111,13 +111,13 @@ SHA256: 76d44dda493c2d08053000a739ca9bf380f93c25308cb65dc665a348bfc8606e
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: ebbc7e8816f4e44ee95635e27cb9a4f526e7ae3b8ed71304617c4174680c4a86
+SHA256: edcca8690c4cf9b5d66d6bbce23bd8413b4d25f8950637c575959efc05ecb4e2
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-10-14
-- **Phase:** v2.6.5 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
-- **Current state:** v2.6.5 (RELEASED 2026-10-14T22:10:10+07:00) = v2.6.4 + KD-ATP-003/008/011/012 (test fixes, route docs, `HTTPError` responses closed in 14 handlers). Where it runs and how it was verified: §1.
+- **Phase:** v2.6.6 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
+- **Current state:** v2.6.6 (RELEASED 2026-10-14T22:42:17+07:00) = v2.6.5 + KD-ATP-013 (`core/retry.with_retry` closes each retried `HTTPError`). Where it runs and how it was verified: §1.
 ---
 
 ## D6.2 closure rationale (M4 scope-cut, 2026-05-04)
@@ -149,14 +149,14 @@ ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above 
 
 ## 1. Current state (verified 2026-10-14 unless marked)
 
-**Release.** v2.6.5 (tag `v2.6.5` -> `acd57b4`, RELEASED 2026-10-14T22:10:10+07:00). Running on `aios-server` from `/opt/aios/atp/current -> releases/2.6.5` since 2026-10-14T15:19:15Z (checked after the install: `/health` reports `2.6.5` + `released`, 7 routes answer 200, service active, 0 restarts, new modules import on the server's Python 3.12.3).
-Previous release `2.6.4` is kept on the server as the `--rollback` target; the rollback itself has **not** been exercised on the live service (KD-ATP-014). `2.6.3` was never installed (2.6.2 -> 2.6.4 -> 2.6.5).
+**Release.** v2.6.6 (tag `v2.6.6` -> `d0ff2e4`, RELEASED 2026-10-14T22:42:17+07:00). Running on `aios-server` from `/opt/aios/atp/current -> releases/2.6.6` since 2026-10-14T15:49:48Z (checked after the install: `/health` reports `2.6.6` + `released`, 7 routes answer 200, service active, 0 restarts; the changed function `with_retry` was run for real on the server's Python 3.12.3 with fake `HTTPError`s: dropped attempts closed, last one left open and readable).
+Previous release `2.6.5` is kept on the server as the `--rollback` target; the rollback itself has **not** been exercised on the live service (KD-ATP-014). `2.6.3` was never installed.
 
-**New in 2.6.5 (since 2.6.4).** Tests + docs: KD-ATP-003 (`cli/` launch test only runs real entry points), KD-ATP-011 (README/AGENTS list the bridge routes; guard test reads
+**In 2.6.5 (since 2.6.4).** Tests + docs: KD-ATP-003 (`cli/` launch test only runs real entry points), KD-ATP-011 (README/AGENTS list the bridge routes; guard test reads
 them from `bridge/bridge_server.py` with `ast`), KD-ATP-008 (`test_execute_timeout` uses the real `asyncio.wait_for` and asserts the kill). **Runtime code:** KD-ATP-012 — 14 `except` handlers in 7 modules now close the response an
-`HTTPError` holds open, through `core/http_errors.close_http_error` (error-path only; low risk). Deployed with 2.6.5; no real HTTP error has been pushed through the adapters on the server (needs an outbound call), only the import and the helper were exercised there.
+`HTTPError` holds open, through `core/http_errors.close_http_error` (error-path only; low risk). Deployed with 2.6.5.
 
-**After 2.6.5, on `main`, not in any release:** KD-ATP-013 — `core/retry.with_retry` (the only broad `except Exception` that can receive an `HTTPError` without re-raising it) now closes each retried error; the LAST one is left open on purpose (re-raised; adapters read its body). Runtime code in `core/retry.py`: needs a release + `aios-deploy atp` to run on the server, which still runs 2.6.5.
+**New in 2.6.6 (since 2.6.5):** KD-ATP-013 — `core/retry.with_retry` (the only broad `except Exception` that can receive an `HTTPError` without re-raising it) now closes each retried error; the LAST one is left open on purpose (re-raised; adapters read its body). Deployed with 2.6.6. No real 429 from a provider has been pushed through the adapters on the server (needs an outbound call); the function itself was exercised there with fake errors.
 
 **Execution stack** (read from `registry/providers/*.yaml`, `EXECUTOR_MAP`, `bridge/bridge_server.py`):
 - LLM providers: **Anthropic** (default; bridge default model `claude-haiku-4-5-20251001`) and **OpenAI**. `non_llm_execution` for shell/git/build/test/lint. Bridge-level dispatchers: `tdf-run` (:4180), `aios-flow` (:7700). AOKP adapter opt-in (6 queries).
@@ -192,7 +192,7 @@ Known gaps / stubs (measured 2026-10-14):
 ## 3. Possible next steps (all require human approval)
 
 1. **v6.1 synthesis cutover** (KD-ATP-006) — see the backlog above; needs a dedicated 6-10h session and Owner scheduling.
-2. **Release the retry fix** (KD-ATP-013) — runtime change in `core/retry.py`; cut the next version (README/AGENTS version lines + the 7-file rule §5), `/ship`, then `aios-deploy atp <ver>`; or leave it until another runtime change needs a release.
+2. **Placeholder adapters** (KD-ATP-009) — decide: delete the 4 empty dirs and `adapters/contracts`, or give them an owner and a use case. Evidence above.
 
 ## Cross-Session Context (CTX-P0)
 Workspace ID: `f557573632b576e4` (SHA-256 first-16-hex of canonical repo path)
