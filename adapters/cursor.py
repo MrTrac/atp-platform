@@ -20,10 +20,11 @@ from __future__ import annotations
 
 import asyncio
 import dataclasses
-import os
 import pathlib
 import signal
 from typing import Any
+
+from core.child_env import agent_environ
 
 from .claude_code import AdapterResult  # shared dataclass
 
@@ -149,7 +150,7 @@ class CursorAdapter:
             cmd.extend(["--model", self.config.model_id])
 
         self._stdout_lines = []
-        child_env = dict(os.environ)
+        child_env = agent_environ()
 
         try:
             self._process = await asyncio.create_subprocess_exec(

@@ -10,6 +10,15 @@
 #   security add-generic-password -U -s OPENAI_API_KEY -a "$USER" \
 #     -T /usr/bin/security -w "sk-..."
 #
+# aios-flow authentication (aios-flow >= 1.2.0 enforces it): the adapter signs in to
+# aios-identity as the service account svc:atp. The SECRET of that account is item
+# AIOS_FLOW_IDENTITY_SECRET below; the non-secret AIOS_FLOW_IDENTITY_URL (e.g.
+# https://<host>/identity) is plain environment. Leave both unset while aios-flow does not
+# enforce: the adapter then sends nothing. To store the secret WITHOUT it entering your shell
+# history, end the command with a bare -w, which makes `security` prompt for the value:
+#   security add-generic-password -U -s AIOS_FLOW_IDENTITY_SECRET -a "$USER" \
+#     -T /usr/bin/security -w
+#
 # This wrapper is a no-op on non-macOS hosts: it silently skips keychain
 # lookup and starts the bridge with whatever env vars are already set.
 
@@ -25,6 +34,7 @@ KEYCHAIN_SERVICES=(
   XAI_API_KEY
   GROQ_API_KEY
   CURSOR_API_KEY
+  AIOS_FLOW_IDENTITY_SECRET
 )
 
 loaded=0
