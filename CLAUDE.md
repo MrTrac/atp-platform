@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T134120Z
+GeneratedAtUTC: 20261014T134425Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: ff5d07a607cedad3b50983979af915971c0f2e082b8b27427deee47254ce9e6d
+SHA256: 8bcf3d44abb879d1edaa629146fc201dd3618f6678d9d8bddb1e5fbe73488a7c
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.6.2
-- **Released:** 2026-10-11T17:45:47+07:00
+- **Version:** v2.6.3
+- **Released:** 2026-10-14T20:43:55+07:00
 - **Last synced:** 2026-10-14 (via aios sync reverse)
 
 ## Status
@@ -251,48 +251,21 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 18d08ceafd596bfd516bcad6e88a9a03fb30acd329635fd53505255b3dab534e
+SHA256: 57f36a8d4f172eaa10f014613a6ecb6438d89308a55d2c368f9cebb1e06a7274
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.6.2 — reverse sync from source repo
+## Handoff: v2.6.3 — reverse sync from source repo
 **Date**: 2026-10-14
 
-### What changed in v2.6.2
-## [2.6.2] — 2026-10-11
+### What changed in v2.6.3
+## [2.6.3] — 2026-10-14
 
-### Fixed — every `python cli/*.py` crashed on Python ≥ 3.12 (the server runs 3.12.3)
+### Fixed — `write_exchange_bundle()` wrote to the pre-2.0.4 exchange layout
 
-`cli/inspect.py` shadowed the standard-library `inspect`. A script run as `python cli/<x>.py` has `cli/` first on `sys.path`, so the next stdlib import that needs
-`inspect` (`dataclasses`, from Python 3.12) died with `module 'inspect' has no attribute 'get_annotations'`. Measured on `aios-server` (read-only): `python cli/run.py --help` crashed;
-the bridge itself was unaffected (it never launches `cli/` scripts), which is why `/health` stayed green. CI ran 3.11, which does not trigger it, so CI never saw it.
-Renamed to `cli/inspect_task.py` (the `./atp inspect` command is unchanged). `tests/unit/test_cli_module_names.py` fails if any `cli/` module takes a stdlib name and
-starts every `cli/*.py` on the running interpreter.
-
-### Fixed — `./atp inspect --run-id <id>` could not find any run written by the current writer
-
-Since 2.0.4 the writer puts current-task exchanges under `<workspace>/_shared/exchange/current-task/`, but the reader still looked only under `<workspace>/exchange/current-task/`.
-It now looks at the current layout first and the pre-2.0.4 layout second, and the error names both paths. Covered by a test that moves a run between the two layouts.
-
-### Fixed — CI
-
-* `ci` was red on every push: three test modules import `pytest`, which CI never installed (`unittest discover` could not even import them). CI now installs `.[dev]`, runs `make test`
-  through pytest, and tests on 3.11 **and** 3.12 (the server's version).
-* `Security Audit` was red on a vulnerability in the runner's own `setuptools` (PYSEC-2026-3447, fixed in 83.0.0), not in ATP (ATP has no runtime dependencies); the job now upgrades it first.
-* `test_creates_artifact_directory` still expected the pre-2.0.4 `atp-artifacts/` directory; the code writes `ATP/artifacts/` (commit `6e43db6`). Test corrected.
-
-### Included — SIGTERM fix (`aee4f7f`), merged after 2.6.1 and not released until now
-
-### Added — `jinja2` declared as the optional extra `adapters`
-
-`adapters/claude_code.py`, `codex.py` and `cursor.py` import `jinja2` in `_render_template`, but `pyproject.toml` declared no dependency (`dependencies = []`) and the server's venv has none, so those three
-adapters would raise `ModuleNotFoundError` the first time they render a prompt (nothing noticed: the tests ran on a machine that had jinja2). Now `pip install -e ".[adapters]"` brings it in (`jinja2>=3,<4`).
-The core stays dependency-free (ADR-0001) and `aios-server` does **not** install the extra: its journal since 7/10 shows only `/health` requests, no adapter run. `tests/unit/test_declared_dependencies.py`
-fails if any shipped module imports a third-party package that `pyproject.toml` does not declare.
-
-### Known, not changed
-
-`adapters/filesystem/exchange_adapter.py:40` still writes exchange bundles to `<ws>/exchange/current-task/` (the writer uses `_shared/exchange/...` since 2.0.4); no observed use, left alone.
+`adapters/filesystem/exchange_adapter.py` still wrote bundles to `<workspace>/exchange/current-task/<run_id>/`, while the run writer (`workspace_writer.resolve_exchange_current_task_root`)
+has used `<workspace>/_shared/exchange/current-task/<run_id>/` since 2.0.4 — so the two writers disagreed, and `./atp inspect` only found the adapter's output through its legacy fallback.
+The adapter now calls the same resolver. It has no caller outside its tests today, so no running path changes. Covered by `test_writes_under_shared_exchange_layout`.
 
 Đầy đủ / full history: `/Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP/CHANGELOG.md`
 
