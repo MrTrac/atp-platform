@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T153634Z
+GeneratedAtUTC: 20261014T160403Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 139d1b029dc6d2b3130ad98db128ad3d38f92ef64a454459f583dd61aeaf0110
+SHA256: 76d44dda493c2d08053000a739ca9bf380f93c25308cb65dc665a348bfc8606e
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.6.5
-- **Released:** 2026-10-14T22:10:10+07:00
+- **Version:** v2.6.6
+- **Released:** 2026-10-14T22:42:17+07:00
 - **Last synced:** 2026-10-14 (via aios sync reverse)
 
 ## Status
@@ -111,13 +111,13 @@ SHA256: 139d1b029dc6d2b3130ad98db128ad3d38f92ef64a454459f583dd61aeaf0110
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: ebbc7e8816f4e44ee95635e27cb9a4f526e7ae3b8ed71304617c4174680c4a86
+SHA256: 02fdb24a32ff3aa0f4569479d5f34e52f8a8ceb03e2567b37647bb48b03fc769
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-10-14
-- **Phase:** v2.6.5 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
-- **Current state:** v2.6.5 (RELEASED 2026-10-14T22:10:10+07:00) = v2.6.4 + KD-ATP-003/008/011/012 (test fixes, route docs, `HTTPError` responses closed in 14 handlers). Where it runs and how it was verified: §1.
+- **Phase:** v2.6.6 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
+- **Current state:** v2.6.6 (RELEASED 2026-10-14T22:42:17+07:00) = v2.6.5 + KD-ATP-013 (`core/retry.with_retry` closes each retried `HTTPError`). Where it runs and how it was verified: §1.
 ---
 
 ## D6.2 closure rationale (M4 scope-cut, 2026-05-04)
@@ -149,14 +149,16 @@ ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above 
 
 ## 1. Current state (verified 2026-10-14 unless marked)
 
-**Release.** v2.6.5 (tag `v2.6.5` -> `acd57b4`, RELEASED 2026-10-14T22:10:10+07:00). Running on `aios-server` from `/opt/aios/atp/current -> releases/2.6.5` since 2026-10-14T15:19:15Z (checked after the install: `/health` reports `2.6.5` + `released`, 7 routes answer 200, service active, 0 restarts, new modules import on the server's Python 3.12.3).
-Previous release `2.6.4` is kept on the server as the `--rollback` target; the rollback itself has **not** been exercised on the live service (KD-ATP-014). `2.6.3` was never installed (2.6.2 -> 2.6.4 -> 2.6.5).
+**Release.** v2.6.6 (tag `v2.6.6` -> `d0ff2e4`, RELEASED 2026-10-14T22:42:17+07:00). Running on `aios-server` from `/opt/aios/atp/current -> releases/2.6.6` since 2026-10-14T15:49:48Z (checked after the install: `/health` reports `2.6.6` + `released`, 7 routes answer 200, service active, 0 restarts; the changed function `with_retry` was run for real on the server's Python 3.12.3 with fake `HTTPError`s: dropped attempts closed, last one left open and readable).
+Previous release `2.6.5` is kept on the server as the `--rollback` target; the rollback itself has **not** been exercised on the live service (KD-ATP-014). `2.6.3` was never installed.
 
-**New in 2.6.5 (since 2.6.4).** Tests + docs: KD-ATP-003 (`cli/` launch test only runs real entry points), KD-ATP-011 (README/AGENTS list the bridge routes; guard test reads
+**In 2.6.5 (since 2.6.4).** Tests + docs: KD-ATP-003 (`cli/` launch test only runs real entry points), KD-ATP-011 (README/AGENTS list the bridge routes; guard test reads
 them from `bridge/bridge_server.py` with `ast`), KD-ATP-008 (`test_execute_timeout` uses the real `asyncio.wait_for` and asserts the kill). **Runtime code:** KD-ATP-012 — 14 `except` handlers in 7 modules now close the response an
-`HTTPError` holds open, through `core/http_errors.close_http_error` (error-path only; low risk). Deployed with 2.6.5; no real HTTP error has been pushed through the adapters on the server (needs an outbound call), only the import and the helper were exercised there.
+`HTTPError` holds open, through `core/http_errors.close_http_error` (error-path only; low risk). Deployed with 2.6.5.
 
-**After 2.6.5, on `main`, not in any release:** KD-ATP-013 — `core/retry.with_retry` (the only broad `except Exception` that can receive an `HTTPError` without re-raising it) now closes each retried error; the LAST one is left open on purpose (re-raised; adapters read its body). Runtime code in `core/retry.py`: needs a release + `aios-deploy atp` to run on the server, which still runs 2.6.5.
+**New in 2.6.6 (since 2.6.5):** KD-ATP-013 — `core/retry.with_retry` (the only broad `except Exception` that can receive an `HTTPError` without re-raising it) now closes each retried error; the LAST one is left open on purpose (re-raised; adapters read its body). Deployed with 2.6.6. No real 429 from a provider has been pushed through the adapters on the server (needs an outbound call); the function itself was exercised there with fake errors.
+
+**After 2.6.6, on `main`, not in any release (docs + tests only, no runtime change):** KD-ATP-009 — the 4 placeholder adapter dirs are kept by Owner decision; their status is documented in `adapters/README.md` and checked by `tests/unit/test_placeholder_adapters.py`. Nothing to deploy.
 
 **Execution stack** (read from `registry/providers/*.yaml`, `EXECUTOR_MAP`, `bridge/bridge_server.py`):
 - LLM providers: **Anthropic** (default; bridge default model `claude-haiku-4-5-20251001`) and **OpenAI**. `non_llm_execution` for shell/git/build/test/lint. Bridge-level dispatchers: `tdf-run` (:4180), `aios-flow` (:7700). AOKP adapter opt-in (6 queries).
@@ -183,7 +185,7 @@ Verified in code on 2026-10-14:
 Per CHANGELOG, **not re-verified today**: vision (image inputs), per-model timeout, per-model pricing values, OpenAI Batch API + `wait` helper (v2.3.0 / v2.5.0), aios-flow status/wait (v2.4.0), evaluator wiring (v2.1.0).
 
 Known gaps / stubs (measured 2026-10-14):
-- **4 placeholder adapter dirs**: `adapters/api`, `desktop_bridge`, `local_service`, `ui_bridge` — only a README and `__init__.py`, imported by nothing. Plus `adapters/contracts/` (4 files, 138 lines) which no non-test code imports (not examined further).
+- **4 placeholder adapter dirs** (`adapters/api`, `desktop_bridge`, `local_service`, `ui_bridge`): deliberate architectural slots from the v0 skeleton; **kept by Owner decision 2026-10-14 (KD-ATP-009)**. Status table in `adapters/README.md`, guarded by `tests/unit/test_placeholder_adapters.py`. No use case or owner assigned. `adapters/contracts/` is the documented `typing.Protocol` contract layer (no non-test code imports it; not concluded dead).
 - **SSH remote execution** (`adapters/ssh_remote/ssh_exec_adapter.py`, 49 lines): a stub that never executes anything and returns `status=deferred`. It is also where requests for an unknown provider end up.
 - ~~Resource leak~~ **fixed on `main` (KD-ATP-012, unreleased):** `HTTPError` responses are now closed by every handler that can receive one; guarded by a static `ast` check + a behaviour test per call site (`tests/unit/test_http_errors_closed.py`). Broad handlers audited with `ast` (KD-ATP-013): the only one that could receive an open `HTTPError` was `core/retry.with_retry`, now closed too.
 
@@ -191,8 +193,6 @@ Known gaps / stubs (measured 2026-10-14):
 
 ## 3. Possible next steps (all require human approval)
 
-1. **v6.1 synthesis cutover** (KD-ATP-006) — see the backlog above; needs a dedicated 6-10h session and Owner scheduling.
-2. **Release the retry fix** (KD-ATP-013) — runtime change in `core/retry.py`; cut the next version (README/AGENTS version lines + the 7-file rule §5), `/ship`, then `aios-deploy atp <ver>`; or leave it until another runtime change needs a release.
 
 ## Cross-Session Context (CTX-P0)
 Workspace ID: `f557573632b576e4` (SHA-256 first-16-hex of canonical repo path)
@@ -251,56 +251,34 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 6e9c27101e0d2abc7fdc245931ad544d9bcfab3f92b5413fb06853a20d222d4c
+SHA256: 58feb574de0fd2bc2e061ad6f25b678e4ad05aaebe2a4ff05aaa742e52bf7886
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.6.5 — reverse sync from source repo
+## Handoff: v2.6.6 — reverse sync from source repo
 **Date**: 2026-10-14
-**Release report (G-RELREPORT-1)**: ledger `~/AI_OS/20_PROJECTS/ATP/AI_ISSUE_LEDGER.yaml` · user report `~/AI_Shared_Outputs/AIOS_Ecosystem/ATP/bao-cao-phat-hanh/Bao_Cao_Phat_Hanh_ATP_2.6.5.{md,html,pdf,docx,pptx}`
-**Open items**: read the ledger `carry_over` blocks — they are updated after release and are authoritative. Deployed: aios-server runs 2.6.5 (verified 2026-10-14 15:19Z).
+**Release report (G-RELREPORT-1)**: ledger `~/AI_OS/20_PROJECTS/ATP/AI_ISSUE_LEDGER.yaml` · user report `~/AI_Shared_Outputs/AIOS_Ecosystem/ATP/bao-cao-phat-hanh/Bao_Cao_Phat_Hanh_ATP_2.6.6.{md,html,pdf,docx,pptx}`
+**Open items**: read the ledger `carry_over` blocks — they are updated after release and are authoritative. Deployed: aios-server runs 2.6.6 (verified 2026-10-14 15:49Z).
 
-### What changed in v2.6.5
-## [2.6.5] — 2026-10-14
+### What changed in v2.6.6
+## [2.6.6] — 2026-10-14
 
-### Fixed — `HTTPError` responses were never closed by the code that caught them (KD-ATP-012)
+### Fixed — `with_retry` dropped every retried `HTTPError` without closing it (KD-ATP-013)
 
-`urlopen` raises `HTTPError` for every non-2xx answer, and that exception object IS the response: it owns the open socket until `close()` or garbage collection. `with urlopen(...)` closes
-successful responses, but 14 handlers across 7 modules (`anthropic_adapter` ×2, `openai_adapter` ×2, `openai_batch`, `tdf_run`, `evaluator`, `aios_flow_adapter` ×2, `aokp_adapter` ×6 — the AOKP ones
-catch `URLError`, of which `HTTPError` is a subclass) caught the error, read or ignored the body and left the close to the garbage collector. Measured 14/10/2026 with a probe over the whole suite:
-15 `HTTPError` created, 0 closed by anyone; with `ResourceWarning` enabled, `Implicitly cleaning up <HTTPError ...>` ×8. CPython frees the object at once, so nothing ever failed: this is a
-hidden dependency on refcounting, not a crash.
+KD-ATP-012 closed the response of an `HTTPError` in the 14 handlers that name a network exception, and said it had NOT audited broad handlers. Audited 14/10/2026 with `ast`: of the 15 `urlopen` call sites, 13 sit in a `try`
+whose handlers 2.6.5 already closes; the other two (`_do_request` in `execute_anthropic` / `execute_openai`) run through `core/retry.with_retry`, which has `except Exception` around a caller-supplied function. It received
+every retryable error (429, 502, 503, 504 — exactly what a rate limit produces) and dropped it on the way to the next attempt without closing it. A name-based scan did not see it: `with_retry` reaches the network through a
+callable PARAMETER, not by name. It is the only broad handler in the code base that can receive an `HTTPError` and does not re-raise it; there is no network path other than `urlopen` (no `http.client`, `requests`, `httpx`,
+`aiohttp`, `socket`).
 
-New `core/http_errors.close_http_error(exc)` (closes an `HTTPError`, no-op for anything else, never raises) is called by each of the 14 handlers once it has read what it needs (`code`, `reason`,
-`str(exc)` stay valid after the close). Where the body is read, the close is in a `finally`. The suite's own `HTTPError` objects (retry tests, the AOKP integration helper) are closed too.
-`tests/unit/test_http_errors_closed.py` (15 tests + 6 subtests): the helper; a static `ast` guard that fails when any handler in a module that calls `urlopen` can receive an `HTTPError` and does not close
-it (so a new handler cannot forget); and a behaviour test per call site that raises a tracked `HTTPError` through the real code path. Seeded defects, all caught: the close removed at 9 different sites (one per
-module, both ends of `aokp` and `aios_flow`), and a new handler that forgets to close (only the static guard can see that one). Reverting the 7 production files to the old code turns all 14 site tests red.
-Probe after the fix: 33 `HTTPError` created, 33 closed, 0 never closed. Suite with `ResourceWarning` and `RuntimeWarning` promoted to errors: 0 warnings (was 8). NOT audited: handlers that catch only
-`Exception` (or are bare) around a network call; the static guard and this fix cover handlers that name `HTTPError`, `URLError` or `OSError`.
-
-### Fixed — `test_execute_timeout` did not test the timeout and left a coroutine un-awaited (KD-ATP-008)
-
-The test patched `asyncio.wait_for` to raise `TimeoutError` at once. That (1) left the `communicate()` coroutine it had just created un-awaited — the `RuntimeWarning` that showed in every run —
-and (2) skipped the timeout mechanism entirely: it never checked that `timeout_seconds` reaches `wait_for`, and it never asserted that the hung `claude` process is killed. Measured 14/10/2026:
-removing `self._process.kill()` from `ClaudeCodeAdapter.execute`, or making it ignore `timeout_seconds`, left the old test green. With the default `timeout_seconds` of 7200 a missing kill would
-leave an orphaned `claude` running for hours. The test now uses the real `asyncio.wait_for` with a 0.05 s timeout and a hung `communicate()`, and asserts the error text, `exit_code == -1`, that
-`communicate()` was awaited, that `kill()` was called once, and that it returned in under 5 s. Seeded defects (all caught): no `kill()`; `timeout_seconds * 200`; a different error message.
-Default test run: 1 warning -> 0.
-
-### Fixed — bare `python3 -m pytest` failed on a library that was never meant to be launched (KD-ATP-003)
-
-`tests/unit/test_cli_module_names.py::test_cli_scripts_start_on_this_interpreter` ran `python cli/<x>.py -h` for EVERY module in `cli/`, including `cli/output_contract.py`: a 745-line
-library (no `__main__`, no argparse) that eight scripts `import` and `./atp` never runs. Launched bare it died with `No module named 'core'`; `make test` hid it because the Makefile exports
-`PYTHONPATH=.`. The defect was in the test, not in the code. The test now launches only entry points (modules with an `if __name__ == "__main__"` guard, read with `ast`), and a second test
-requires every script `./atp` launches to be one of them, so a script that loses its guard cannot silently drop out of the launch check. Bare `python3 -m pytest`: 1 failed -> 687 passed, 0 failed.
-Seeded-defect checks (all caught): shim removed from `cli/validate.py`; guard string renamed in `cli/run.py`; guard replaced by `if True`.
-
-### Changed — README.md / AGENTS.md list the bridge routes instead of "12 endpoints" (KD-ATP-011)
-
-"12 endpoints" is ambiguous (12 distinct paths, 13 method+path pairs: `/runs/<id>` serves GET and DELETE) and nothing kept it true. Both files now list the routes, and
-`tests/unit/test_bridge_routes_documented.py` reads the real routes from `bridge/bridge_server.py` with `ast` and requires the documented list to match them exactly, with no hand-counted
-number. Seeded-defect checks (all caught): route renamed in the server; non-existent route documented; "12 endpoints" re-added; documented route dropped.
+`with_retry` now calls `close_http_error(exc)` just before it sleeps for the next attempt. The LAST error is deliberately left open: it is re-raised, and the adapters read its body (`exc.read()`) to build the error message;
+closing it too would have made every exhausted-retry message lose the provider's explanation. `Retry-After` is read before the close (headers stay valid after it).
+`tests/unit/test_http_errors_closed.py` (+7 tests): `with_retry` closes dropped attempts and returns the success; with exhausted retries it closes all but the last and the last body is still readable; a non-retryable
+error and a wait-budget break are raised untouched; end to end through `execute_anthropic` with 429 on every attempt all three errors end up closed and the message carries the provider's text; and a static guard that
+fails when a broad handler (`except Exception` / bare) in a module that deals with `HTTPError` can receive one — it calls `urlopen`, a function of the module that does, or a callable parameter — and does not close it.
+Seeded defects, all caught: `with_retry` not closing; `with_retry` closing the last error too (6 tests red, two of them older tests about the error body); a new broad handler around a parameter in a network module;
+and one in an unrelated module is correctly NOT flagged. Reverting `core/retry.py` turns 4 tests red. Probe over the whole suite: 45 `HTTPError` created, 45 closed, 0 never closed. Suite with `ResourceWarning` and
+`RuntimeWarning` as errors: 0 warnings. Not covered: a broad handler in a module that neither calls `urlopen` nor imports `urllib.error` (none can receive an `HTTPError` today).
 
 Đầy đủ / full history: `/Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP/CHANGELOG.md`
 
