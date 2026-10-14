@@ -14,7 +14,7 @@ Current runtime components (v2.6.4):
 - **AOKP adapter (v2.3.x):** 6 endpoints — health, search, graph, chat, graph-rag, temporal (opt-in)
 - **tdf-run bridge provider:** structured task dispatch to TDF Web Panel :4180 (governance-classified A–C)
 - **aios-flow adapter:** DAG workflow dispatch + **status + wait actions** (v2.4.0) for full lifecycle (:7700)
-- **Bridge server:** stdlib HTTP (no framework) at localhost:8765 (12 endpoints incl. /run/stream, /runs/active, DELETE /runs/<id>)
+- **Bridge server:** stdlib HTTP (no framework) at localhost:8765. Routes: POST /run, /run/stream, /api/synthesis/generate; DELETE /runs/<id>; GET /health, /, /status, /providers, /capabilities, /runs, /runs/active, /runs/<id>, /api/synthesis/generators
 - **SSE streaming:** `POST /run/stream` emits event-stream (start/token/tool_call/manifest/done/aborted)
 - **Request cancellation:** `DELETE /runs/<id>` aborts in-flight via threading.Event
 - **In-flight tracker:** core/in_flight_tracker.py (thread-safe registry)
