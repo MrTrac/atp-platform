@@ -64,6 +64,24 @@ NOT verified: renewal after the real 3600 s (never waited out; tests with a manu
 
 To switch it on (operator, nothing is active until then): set `AIOS_FLOW_IDENTITY_URL` and `AIOS_FLOW_IDENTITY_SECRET` in the environment of the process that runs the bridge — macOS: add the secret to the login Keychain (`security add-generic-password -U -s AIOS_FLOW_IDENTITY_SECRET -a "$USER" -T /usr/bin/security -w`,
 which prompts for the value) and add `_maybe_export AIOS_FLOW_IDENTITY_SECRET` plus the URL to the launchd wrapper `atp-bridge-start.sh` (it lives in AI_OS `30_RUNTIME/agents/launchd/`, outside this repo); aios-server: the ATP unit's EnvironmentFile.
+### Fixed — an unknown provider on the local node answered `deferred` instead of an error (KD-ATP-015)
+
+`core/execution/executor.invoke_executor` sent every provider without a handler to the SSH stub, which answers `status=deferred` with an empty `stdout` ("Remote SSH execution is deferred in ATP M6"). That fallback was designed
+for remote nodes (`adapters/ssh_remote/README.md`), but the only registered node is `local_mac` (`locality: local`) and `bridge_request` always selects it, so a typo in the model prefix — or a provider that was removed, such as
+`ollama` — came back as HTTP 200 with a result that looked like a pending job. It is exactly how KD-ATP-010 (the generators defaulting to `ollama/qwen3:8b`) stayed hidden from 2.6.0 to 14/10/2026.
+
+Now: a provider with no handler on a node the registry marks local raises `UnsupportedProviderError` (a subclass of `ExecutionError`, so existing `except ExecutionError` callers keep working), whose message names the provider, the node and
+the providers that ARE registered. `bridge_request` turns it into `BridgeError` (it echoes the caller's model spec), so `POST /run` answers HTTP 400 `{"status": "failed", "error": "Unsupported provider 'ollama' on local node 'local_mac' ...
+Model spec was 'ollama/qwen3:8b'."}` and the generators surface an `LlmError` with the same text. Unchanged: known providers; a provider with no handler on a node the registry does NOT know as local still gets the `deferred`
+remote stub (pinned by the existing `test_unknown_provider_with_node_falls_back_to_remote`); `adapter` requests (`claude-code`, `codex`, `cursor`, `openai-batch`) are dispatched before any provider check.
+
+Who could be affected was measured, not assumed (read-only survey of the 9 ecosystem repos that mention the bridge, one agent per repo): 8 never call ATP; AIOS-OC is the only consumer, and its survey was re-checked by a second, independent agent (the other 8 had nothing to re-check), through `POST /run`, and nothing in it checks for
+`deferred`. Its callers test `status === "failed" || error`, so the new 400 is shown as a failure where the old 200 was shown as "done" with an empty result. Every `model` value it sends (bare `claude-*` names, `anthropic/`, `openai/`) still
+resolves to a provider with an executor. Not changed here, found by the survey: AIOS-OC `flow-generate` drops the error text of a non-2xx answer (shows only `ATP HTTP 400`), and its `toCompliantModel` only rewrites the `ollama/` prefix.
+
+`tests/unit/test_unsupported_provider.py` (9 tests, 11 subtests; the bridge is started in a thread on an ephemeral port for the HTTP ones) and 4 new tests in `test_registry_driven_dispatch.py`. Seeded defects, all caught: the old fallback restored (7 tests red);
+`_is_local_node` always true / never true; the error not mapped to `BridgeError` (a 500 instead); the message losing the model spec or the list of supported providers; the new error no longer an `ExecutionError`; a bare `claude-*` resolving to a provider
+with no handler; the CORS header missing on the 400 (an AIOS-OC page calls the bridge straight from the browser); adapter requests no longer dispatched first; bare names no longer defaulting to anthropic.
 
 ### Changed — the four placeholder adapter directories are kept, and their status is now a contract (KD-ATP-009)
 

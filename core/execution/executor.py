@@ -20,6 +20,12 @@ class ExecutionError(ValueError):
     """Raised when ATP cannot execute the selected route."""
 
 
+class UnsupportedProviderError(ExecutionError):
+    """The selected provider has no registered executor, and the selected node is local, so there is no remote path to defer to (KD-ATP-015).
+
+    A subclass of ExecutionError: existing `except ExecutionError` callers keep working; the bridge maps this one to HTTP 400."""
+
+
 # Cloud escalation fallback. Must be a CURRENT, non-deprecated Anthropic model
 # id — `claude-sonnet-4-20250514` was deprecated 2026-06-15 and now 404s.
 DEFAULT_CLOUD_MODEL = "claude-sonnet-4-5-20250929"
@@ -189,6 +195,16 @@ def register_executor(provider: str, handler: ExecutorHandler) -> None:
     EXECUTOR_MAP[provider] = handler
 
 
+def _is_local_node(node: str) -> bool:
+    """True when the node registry says `node` is local (registry/nodes/<node>.yaml: `locality: local`). A node the registry does not know is NOT assumed local: it may be a remote one."""
+    from core.routing.route_prepare import _discover_active_nodes  # lazy: route_prepare imports the intake/loader stack
+
+    for entry in _discover_active_nodes():
+        if entry.get("node") == node:
+            return entry.get("locality") == "local"
+    return False
+
+
 def invoke_executor(
     normalized_request: dict[str, Any],
     routing_result: dict[str, Any],
@@ -202,8 +218,15 @@ def invoke_executor(
     if handler is not None:
         return handler(normalized_request, routing_result)
 
-    # Fallback: unknown provider with a node → attempt SSH remote (deferred)
+    # Fallback: a provider with no handler on a node that is NOT local is assumed to be a remote path -> the SSH stub, which answers `deferred` (documented in
+    # adapters/ssh_remote/README.md). On a LOCAL node there is no remote to defer to, so an unknown provider is an error: a typo, or one that was removed (e.g. "ollama",
+    # gone since 2.6.0). Answering `deferred` there made that failure look like a job still pending, and hid KD-ATP-010 from 2.6.0 to 14/10/2026.
     if provider and node:
+        if _is_local_node(node):
+            raise UnsupportedProviderError(
+                f"Unsupported provider {provider!r} on local node {node!r}: no executor is registered for it "
+                f"(registered: {', '.join(sorted(EXECUTOR_MAP))})."
+            )
         return execute_remote(normalized_request)
 
     raise ExecutionError("Unsupported execution route.")

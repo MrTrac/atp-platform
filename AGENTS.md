@@ -109,7 +109,7 @@ Preserve boundaries strictly. Follow the source of truth in order. Make the smal
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=AGENTS -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T160404Z
+GeneratedAtUTC: 20261014T162348Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -219,7 +219,7 @@ SHA256: 76d44dda493c2d08053000a739ca9bf380f93c25308cb65dc665a348bfc8606e
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 02fdb24a32ff3aa0f4569479d5f34e52f8a8ceb03e2567b37647bb48b03fc769
+SHA256: c15d986e75f42bbd982bf247cb30dcc84ebacfbf5151ffa50f0fb3c38d17fa12
 ----
 # AI Next Step — ATP
 
@@ -266,7 +266,7 @@ them from `bridge/bridge_server.py` with `ast`), KD-ATP-008 (`test_execute_timeo
 
 **New in 2.6.6 (since 2.6.5):** KD-ATP-013 — `core/retry.with_retry` (the only broad `except Exception` that can receive an `HTTPError` without re-raising it) now closes each retried error; the LAST one is left open on purpose (re-raised; adapters read its body). Deployed with 2.6.6. No real 429 from a provider has been pushed through the adapters on the server (needs an outbound call); the function itself was exercised there with fake errors.
 
-**After 2.6.6, on `main`, not in any release (docs + tests only, no runtime change):** KD-ATP-009 — the 4 placeholder adapter dirs are kept by Owner decision; their status is documented in `adapters/README.md` and checked by `tests/unit/test_placeholder_adapters.py`. Nothing to deploy.
+**After 2.6.6, on `main`, not in any release:** (a) KD-ATP-009 — docs + tests only: the 4 placeholder adapter dirs are kept by Owner decision, status in `adapters/README.md`, checked by `tests/unit/test_placeholder_adapters.py`. (b) **KD-ATP-015 — RUNTIME change** (`core/execution/executor.py`, `bridge/openclaw_bridge.py`): a provider with no handler on a LOCAL node now raises `UnsupportedProviderError` -> `POST /run` answers HTTP 400 `{"status":"failed","error":"Unsupported provider ..."}` instead of 200 `deferred`; a node the registry does not know as local still gets the `deferred` SSH stub. Consumer survey (9 repos): only AIOS-OC talks to ATP and nothing in it checks `deferred`. Needs a release + `aios-deploy atp` to take effect; the server still runs 2.6.6 and still answers `deferred`.
 
 **Execution stack** (read from `registry/providers/*.yaml`, `EXECUTOR_MAP`, `bridge/bridge_server.py`):
 - LLM providers: **Anthropic** (default; bridge default model `claude-haiku-4-5-20251001`) and **OpenAI**. `non_llm_execution` for shell/git/build/test/lint. Bridge-level dispatchers: `tdf-run` (:4180), `aios-flow` (:7700). AOKP adapter opt-in (6 queries).

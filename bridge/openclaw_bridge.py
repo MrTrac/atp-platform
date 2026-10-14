@@ -25,7 +25,7 @@ from typing import Any
 
 from bridge.context_enrichment import enrich_context
 from core.evaluator import run_evaluator
-from core.execution.executor import invoke_executor
+from core.execution.executor import UnsupportedProviderError, invoke_executor
 from core.execution.output_normalizer import normalize_output
 
 
@@ -137,7 +137,11 @@ def bridge_request(incoming: dict[str, Any]) -> dict[str, Any]:
     }
 
     # Execute through the ATP executor layer
-    raw_result = invoke_executor(normalized_request, routing_result)
+    try:
+        raw_result = invoke_executor(normalized_request, routing_result)
+    except UnsupportedProviderError as exc:
+        # A client error (the "model" prefix names a provider ATP has no executor for): HTTP 400 {"status": "failed"}, not a silent `deferred` and not a generic 500.
+        raise BridgeError(f"{exc} Model spec was {incoming.get('model', '')!r}.") from exc
 
     # Normalize into the standard ATP output shape
     normalized = normalize_output(
