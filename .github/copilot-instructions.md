@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=COPILOT -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T164650Z
+GeneratedAtUTC: 20261014T181248Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -111,13 +111,13 @@ SHA256: b1f8565d29bb551319341a6a88239e6fcf4e832bfc00bd64cab04ac44f61ec8c
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: c15d986e75f42bbd982bf247cb30dcc84ebacfbf5151ffa50f0fb3c38d17fa12
+SHA256: cce4a19e9a6165526e82fd91c3fe234a04507c251cddade5fb8679dbb42fcb9f
 ----
 # AI Next Step — ATP
 
-- **Last updated:** 2026-10-14
-- **Phase:** v2.6.6 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
-- **Current state:** v2.6.6 (RELEASED 2026-10-14T22:42:17+07:00) = v2.6.5 + KD-ATP-013 (`core/retry.with_retry` closes each retried `HTTPError`). Where it runs and how it was verified: §1.
+- **Last updated:** 2026-10-15
+- **Phase:** v2.7.0 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
+- **Current state:** v2.7.0 (RELEASED 2026-10-14T23:45:28+07:00) = v2.6.6 + the aios-flow adapter authenticates as `svc:atp` and names its errors (KD-ATP-016/017/020), an unknown provider on the local node answers HTTP 400 (KD-ATP-015), and the tests no longer write into the real G9 trace (KD-ATP-018). Installed on `aios-server`; the authentication is **NOT switched on** there (KD-ATP-021). Where it runs and how it was verified: §1.
 ---
 
 ## D6.2 closure rationale (M4 scope-cut, 2026-05-04)
@@ -147,29 +147,34 @@ ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above 
 
 ---
 
-## 1. Current state (verified 2026-10-14 unless marked)
+## 1. Current state (verified 2026-10-15 unless marked)
 
-**Release.** v2.6.6 (tag `v2.6.6` -> `d0ff2e4`, RELEASED 2026-10-14T22:42:17+07:00). Running on `aios-server` from `/opt/aios/atp/current -> releases/2.6.6` since 2026-10-14T15:49:48Z (checked after the install: `/health` reports `2.6.6` + `released`, 7 routes answer 200, service active, 0 restarts; the changed function `with_retry` was run for real on the server's Python 3.12.3 with fake `HTTPError`s: dropped attempts closed, last one left open and readable).
-Previous release `2.6.5` is kept on the server as the `--rollback` target; the rollback itself has **not** been exercised on the live service (KD-ATP-014). `2.6.3` was never installed.
+**Release.** v2.7.0 (tag `v2.7.0` -> `c1d379c`, RELEASED 2026-10-14T23:45:28+07:00). Running on `aios-server` from `/opt/aios/atp/current -> releases/2.7.0` since 2026-10-14T17:23:39Z (00:23 +07, 15/10; published to the VPS store by hand, see Deploy path). Checked independently after the install: `/health` = `2.7.0` + `released` equal to `RELEASED`, 8 GET routes 200, service `active`, 0 restarts, journal clean; 233/233 package files byte-identical to `git archive v2.7.0` (the tag files that are absent are exactly the `aios-publish` exclusions: `docs/`, `tests/`, `help-app/`, `.github/`, AI-context files); on the server's Python 3.12.3 `get_provider({})` is `None` and an unknown provider on `local_mac` raises `UnsupportedProviderError`. The release report says a real `POST /run` with `ollama/qwen3:8b` answered 400 there; this session confirmed the function, not the route.
+**Rollback (KD-ATP-014, `partial`).** Target `2.6.6` (`releases/`: `0-legacy`, `2.6.6`, `2.7.0`). `aios-deploy atp --rollback` picks the last successfully activated other release from `/opt/aios/atp/.deploy-history.log` (never `0-legacy`); `--rollback-to <ver>` and `--list` exist; no `--dry-run`. **Rehearsed live 2026-10-15 00:47 +07 (Owner's order):** 2.7.0 -> 2.6.6 -> 2.7.0, 2.6 s each, `/health` right each time, 8 routes 200, `MainPID` changed, 0 restarts; probed from the Mac every 0.1 s the service was unserved at most 0.31 s / 0.42 s (one measurement). **Not exercised:** the AUTOMATIC rollback when a new release's `/health` fails; a rollback with a run in flight (`/runs/active` empty a few minutes before and after; the 8 s between unmeasured). `2.6.3` was never installed.
 
-**In 2.6.5 (since 2.6.4).** Tests + docs: KD-ATP-003 (`cli/` launch test only runs real entry points), KD-ATP-011 (README/AGENTS list the bridge routes; guard test reads
-them from `bridge/bridge_server.py` with `ast`), KD-ATP-008 (`test_execute_timeout` uses the real `asyncio.wait_for` and asserts the kill). **Runtime code:** KD-ATP-012 — 14 `except` handlers in 7 modules now close the response an
-`HTTPError` holds open, through `core/http_errors.close_http_error` (error-path only; low risk). Deployed with 2.6.5.
+**History.** The 2.6.4–2.6.6 fixes (KD-ATP-003/008/011/012/013: tests, docs, `HTTPError` closing in the handlers and in `core/retry.with_retry`) are in CHANGELOG `[2.6.5]`/`[2.6.6]` and the ledger; not repeated here (context size, G-CTXBLOAT-1).
 
-**New in 2.6.6 (since 2.6.5):** KD-ATP-013 — `core/retry.with_retry` (the only broad `except Exception` that can receive an `HTTPError` without re-raising it) now closes each retried error; the LAST one is left open on purpose (re-raised; adapters read its body). Deployed with 2.6.6. No real 429 from a provider has been pushed through the adapters on the server (needs an outbound call); the function itself was exercised there with fake errors.
+**New in 2.7.0 (since 2.6.6)** — details: CHANGELOG `[2.7.0]` and the ledger block `2.7.0` (statuses are the ledger's):
+- **aios-flow authentication (KD-ATP-016, `fixed_verified`)** — `adapters/aios_flow/identity_token.py`: with `AIOS_FLOW_IDENTITY_URL` set (https/loopback) every aios-flow request carries the `svc:atp` token (secret `AIOS_FLOW_IDENTITY_SECRET`, never logged). URL unset = nothing changes; URL without secret = error at the first call. Checked against a real aios-identity (1.2.4, 1.2.5) + a real enforcing aios-flow, 18/18 each; NOT verified: renewal after 3600 s, TLS to a real https identity, a sleeping Mac, the Keychain wrapper, anything on `aios-server`.
+- **Errors named correctly (KD-ATP-016/017)** — aios-flow failures carry `error_code`, `retryable`, `reason_code`…; a 401 gets one fresh token; `wait` retries transient 429/502/503/504 (4 attempts max); `dispatch` is `retryable` only when no run can have been created.
+- **KD-ATP-020 / KD-ATP-018 (`fixed_verified`)** — `core/child_env.agent_environ()` keeps the secret out of the env of `claude -p`/`codex exec`/`cursor-agent` (defence in depth); tests no longer write into the real `~/.aios/state/cross_module_trace.jsonl` (2,200 fake records removed; 2026-10-15: 1,569 lines / 499,240 bytes, 0 `aios-identity` records).
+- **Unknown provider -> HTTP 400 (KD-ATP-015, `fixed_verified`)** — `/run` contract change (was 200 `deferred`). Only AIOS-OC calls the bridge; it shows "ATP HTTP 400" without the reason (AIOS-OC defect, §3). **KD-ATP-009 `wontfix`**: the 4 placeholder adapter dirs stay (contract test, no runtime change).
+- **KD-ATP-019 (`mitigated`, Owner: no code change)** — the bridge listens on `0.0.0.0:8765` unauthenticated; on `aios-server` ufw allows port 8765 only from the Mac `10.88.0.10` (read only, 14/10). Configure `AIOS_FLOW_IDENTITY_*` ONLY for the ATP on `aios-server`, never on the Mac; authenticate the bridge before opening it to more hosts.
+- **KD-ATP-021 (`new_open`): authentication installed but OFF on `aios-server`** (no `AIOS_FLOW_IDENTITY_*`, so ATP behaves as 2.6.6). Needs the operator's `svc:atp` secret and root, in this order: (1) AIOS-OC forwards the access token (another session); (2) ATP 2.7.0 installed (done); (3) operator adds `AIOS_FLOW_IDENTITY_URL=https://<host>/identity` + `AIOS_FLOW_IDENTITY_SECRET=<secret>` to `/etc/aios/secrets/atp.env` (root-owned) and runs `sudo systemctl restart aios-atp`; (4) aios-flow on `aios-server` moves to 1.2.x (1.1.2 does not enforce). Never set the URL without the secret. Then an AI measures it for real.
 
-**After 2.6.6, on `main`, not in any release:** (a) KD-ATP-009 — docs + tests only: the 4 placeholder adapter dirs are kept by Owner decision, status in `adapters/README.md`, checked by `tests/unit/test_placeholder_adapters.py`. (b) **KD-ATP-015 — RUNTIME change** (`core/execution/executor.py`, `bridge/openclaw_bridge.py`): a provider with no handler on a LOCAL node now raises `UnsupportedProviderError` -> `POST /run` answers HTTP 400 `{"status":"failed","error":"Unsupported provider ..."}` instead of 200 `deferred`; a node the registry does not know as local still gets the `deferred` SSH stub. Consumer survey (9 repos): only AIOS-OC talks to ATP and nothing in it checks `deferred`. Needs a release + `aios-deploy atp` to take effect; the server still runs 2.6.6 and still answers `deferred`.
+**After 2.7.0, on `main`, not in any release:** `make ci-local` (`scripts/ci_local.sh`; CHANGELOG `[Unreleased]`) tests one commit the way CI does (clean clone, scrubbed env, every Python of the CI matrix 3.11 + 3.12); replaying `c501335` reproduces CI's `1 failed, 704 passed`. Dev tooling, NO runtime change, nothing to deploy. **Run `make ci-local` before every push** (plain `make test` here uses `python3` 3.14, not in the CI matrix).
 
 **Execution stack** (read from `registry/providers/*.yaml`, `EXECUTOR_MAP`, `bridge/bridge_server.py`):
-- LLM providers: **Anthropic** (default; bridge default model `claude-haiku-4-5-20251001`) and **OpenAI**. `non_llm_execution` for shell/git/build/test/lint. Bridge-level dispatchers: `tdf-run` (:4180), `aios-flow` (:7700). AOKP adapter opt-in (6 queries).
-- **No local LLM.** The Ollama adapter was removed in v2.6.0; macOS hosts must not run Ollama or any local model (`Global_Mac_No_Ollama_Rule`). A provider with no handler (e.g. `ollama/...`) falls through to the deferred SSH stub and returns `status=deferred`.
+- LLM providers: **Anthropic** (default; bridge default model `claude-haiku-4-5-20251001`) and **OpenAI**. `non_llm_execution` for shell/git/build/test/lint. Bridge-level dispatchers: `tdf-run` (:4180), `aios-flow` (:7700; authenticated as `svc:atp` when configured, OFF on `aios-server`, KD-ATP-021). AOKP adapter opt-in (6 queries).
+- **No local LLM.** The Ollama adapter was removed in v2.6.0; macOS hosts must not run Ollama or any local model (`Global_Mac_No_Ollama_Rule`). A provider with no handler (e.g. `ollama/...`) on the local node is an error since 2.7.0 (`UnsupportedProviderError`, HTTP 400); only on a node the registry does not know as local does it still fall through to the deferred SSH stub and return `status=deferred`.
 - Bridge routes: 12 distinct paths / 13 method+path pairs, all listed in README and AGENTS and guarded by `tests/unit/test_bridge_routes_documented.py`.
 - Synthesis generators: 8 (`generators/stubs/`). Consumer cutover still open (§D6.2 / v6.1 above).
 
 **Deploy path.** Tag on GitHub -> a watcher publishes it to the VPS release store (it never deploys) -> `aios-deploy atp <version>` (Mac -> `sudo aios-deploy-local atp`): installs into a new `releases/<ver>` directory, swaps `current`, restarts,
 requires HTTP 200 **and** the exact version in `/health`, rolls back by itself on failure. See `Global_Build_Deploy_Topology_Rule.md` §5.2c and §8.
+Watcher note (2.7.0): the watcher `com.aios.publish-watch` was busy building `aios-oc@4.6.14` and held its one-run lock, so `aios-publish atp 2.7.0` was run by hand (the same work the watcher does; it does NOT deploy; idempotent for the same tag). The same was needed after the 2.6.6 tag (ledger block 2.6.6).
 
-**Tests (2.6.5).** `make test`: 680 unit + 22 integration passed (7 skipped). Bare `python3 -m pytest` (no `PYTHONPATH`): 702 passed, 0 failed. 0 warnings, including with `ResourceWarning` and `RuntimeWarning` promoted to errors. CI green on 3.11 and 3.12.
+**Tests (2.7.0).** At tag `v2.7.0` in the clean CI-like environment (`make ci-local --ref v2.7.0`, 2026-10-15): 931 unit (+29 subtests) + 26 integration passed (7 skipped) on Python 3.11.15 and 3.12.14; CI on the tag commit green. `main` (+22 `ci-local` tests): 953 + 26, CI green at `adbf856`. CHANGELOG `[2.7.0]` quotes "944 passed, 7 skipped"; the figure measured at the tag is 931 + 26 = 957 (cause not investigated).
 
 ---
 
@@ -181,18 +186,13 @@ Verified in code on 2026-10-14:
 - ✅ Tool use / JSON mode pass-through (`tools`, `tool_choice`, `json_mode` in `bridge_request`)
 - ✅ SSE streaming (`POST /run/stream`) and cancellation (`DELETE /runs/<id>`) with the in-flight tracker (`core/in_flight_tracker.py`)
 - ✅ `/health` reports the running version + `released`
+- ✅ (2026-10-15) aios-flow adapter: identity token provider, structured errors with `error_code`/`retryable`, `wait` retry — exercised by the 2.7.0 session against a real aios-identity and a real enforcing aios-flow on a throwaway stack; **OFF on `aios-server`** (KD-ATP-021)
+- ✅ (2026-10-15) an unknown provider on a local node -> `UnsupportedProviderError` -> HTTP 400 (checked on the server's Python 3.12.3)
 
-Per CHANGELOG, **not re-verified today**: vision (image inputs), per-model timeout, per-model pricing values, OpenAI Batch API + `wait` helper (v2.3.0 / v2.5.0), aios-flow status/wait (v2.4.0), evaluator wiring (v2.1.0).
+Per CHANGELOG, **not re-verified today**: vision (image inputs), per-model timeout, per-model pricing values, OpenAI Batch API + `wait` helper (v2.3.0 / v2.5.0), evaluator wiring (v2.1.0). (aios-flow status/wait were exercised against the real aios-flow in 2.7.0.)
 
-Known gaps / stubs (measured 2026-10-14):
+Known gaps / stubs (measured 2026-10-14; the last three added 2026-10-15):
 - **4 placeholder adapter dirs** (`adapters/api`, `desktop_bridge`, `local_service`, `ui_bridge`): deliberate architectural slots from the v0 skeleton; **kept by Owner decision 2026-10-14 (KD-ATP-009)**. Status table in `adapters/README.md`, guarded by `tests/unit/test_placeholder_adapters.py`. No use case or owner assigned. `adapters/contracts/` is the documented `typing.Protocol` contract layer (no non-test code imports it; not concluded dead).
-- **SSH remote execution** (`adapters/ssh_remote/ssh_exec_adapter.py`, 49 lines): a stub that never executes anything and returns `status=deferred`. It is also where requests for an unknown provider end up.
-- ~~Resource leak~~ **fixed on `main` (KD-ATP-012, unreleased):** `HTTPError` responses are now closed by every handler that can receive one; guarded by a static `ast` check + a behaviour test per call site (`tests/unit/test_http_errors_closed.py`). Broad handlers audited with `ast` (KD-ATP-013): the only one that could receive an open `HTTPError` was `core/retry.with_retry`, now closed too.
-
----
-
-## 3. Possible next steps (all require human approval)
-
 
 ## Cross-Session Context (CTX-P0)
 Workspace ID: `f557573632b576e4` (SHA-256 first-16-hex of canonical repo path)
