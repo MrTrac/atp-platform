@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T141747Z
+GeneratedAtUTC: 20261014T143919Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -251,14 +251,14 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 7a3b21d0aed32e472c12499ae84dc4fb2ed2825238550fe4c37631cde5f37579
+SHA256: 3bf66ce8dea2acf9908b73849545c7f00c99e7850b9bdaec4b6bd098ce5c89c8
 ----
 # AI_HANDOFF_LATEST — ATP
 
 ## Handoff: v2.6.4 — reverse sync from source repo
 **Date**: 2026-10-14
 **Release report (G-RELREPORT-1)**: ledger `~/AI_OS/20_PROJECTS/ATP/AI_ISSUE_LEDGER.yaml` · user report `~/AI_Shared_Outputs/AIOS_Ecosystem/ATP/bao-cao-phat-hanh/Bao_Cao_Phat_Hanh_ATP_2.6.4.{md,html,pdf,docx,pptx}`
-**Open at release**: KD-ATP-007 (2.6.3 + 2.6.4 NOT deployed; aios-server runs 2.6.2) · KD-ATP-004 partial (fixed locally, NOT pushed: see `git log origin/main..HEAD` in ATP and AI_OS) · KD-ATP-011 (README/AGENTS '12 endpoints') · KD-ATP-003/005/006/008/009
+**Open items**: read the ledger `carry_over` blocks — they are updated after release and are authoritative (a handoff line here goes stale: at 2.6.4 release KD-ATP-007 was 'not deployed'; it was deployed 2026-10-14 14:26Z). Still open after 2.6.4: KD-ATP-005/006/008/009.
 
 ### What changed in v2.6.4
 ## [2.6.4] — 2026-10-14
