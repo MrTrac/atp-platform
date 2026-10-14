@@ -2,7 +2,7 @@
 
 All notable changes to ATP are documented here.
 
-## [Unreleased]
+## [2.6.6] — 2026-10-14
 
 ### Fixed — `with_retry` dropped every retried `HTTPError` without closing it (KD-ATP-013)
 
