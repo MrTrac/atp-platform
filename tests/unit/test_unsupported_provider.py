@@ -127,7 +127,13 @@ class TestRunOverHttp(unittest.TestCase):
             seen["kind"] = kind
             return {"status": "completed", "adapter": kind}
 
-        with patch.object(bs, "_run_cli_agent_adapter", fake_agent_adapter):
+        def fake_governance(_artifact: dict) -> dict:
+            # After ANY successful dispatch /run shells out to ~/AI_OS/30_RUNTIME/bin/aios-gate (bridge/governance_hook.py). That file exists on the developer's Mac and not on the CI
+            # runner, so leaving it real made this test pass locally and fail in CI (first push of KD-ATP-015: 500 "No such file ... aios-gate" on 3.11 and 3.12). This test is about
+            # dispatch order, not governance: stub the review.
+            return {"governance_class": "C", "governance_status": "approved", "governance_reason": "stubbed in test", "requires_human": False}
+
+        with patch.object(bs, "_run_cli_agent_adapter", fake_agent_adapter), patch.object(bs, "run_governance_review", fake_governance):
             status, payload = self._post_run({"adapter": "claude-code", "config": {"model": "sonnet"}, "context": {}})
         self.assertEqual((status, payload.get("status")), (200, "completed"), payload)
         self.assertEqual(seen, {"kind": "claude-code"})
