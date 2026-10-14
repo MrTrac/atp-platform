@@ -118,30 +118,47 @@ class TestClaudeCodeAdapterExecute(unittest.TestCase):
         assert result.error is not None
 
     def test_execute_timeout(self) -> None:
-        import asyncio as _asyncio
+        """A hung `claude` process must be killed and reported as a timeout, through the REAL asyncio.wait_for.
 
-        cfg = ClaudeCodeAdapterConfig(repo="ATP", template="t.md", timeout_seconds=1)
+        The first version patched asyncio.wait_for to raise TimeoutError at once. That skipped the timeout mechanism altogether: it never checked that
+        `timeout_seconds` reaches it, never asserted the process is killed (default timeout is 7200 s, so a missing kill() leaves an orphan `claude`
+        running for hours and the test stayed green — measured 14/10/2026 by removing the kill), and left the `communicate()` coroutine un-awaited, which is
+        the RuntimeWarning that showed in every run (KD-ATP-008). Here wait_for is real, so the hung coroutine is cancelled and awaited like in production.
+        """
+        import time
+
+        # A float is fine at runtime (the annotation says int); 0.05 s keeps the test fast while still going through a real timeout.
+        cfg = ClaudeCodeAdapterConfig(repo="ATP", template="t.md", timeout_seconds=0.05)
         adapter = ClaudeCodeAdapter(cfg)
+        communicate_started = []
+
+        proc = MagicMock()
+        proc.returncode = None
+        proc.kill = MagicMock()
+
+        async def _hang(*args: object, **kwargs: object) -> None:
+            communicate_started.append(True)
+            await asyncio.sleep(999)
+
+        proc.communicate = _hang
 
         async def _run() -> AdapterResult:
             with patch.object(adapter, "validate", new_callable=AsyncMock, return_value=(True, "OK")):
                 with patch.object(adapter, "_find_repo", return_value=pathlib.Path("/tmp")):
                     with patch.object(adapter, "_render_template", return_value="prompt text"):
-                        with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock) as mock_exec:
-                            proc = MagicMock()
-                            proc.returncode = None
-                            # communicate hangs
-                            async def _hang(*args: object, **kwargs: object) -> None:
-                                await _asyncio.sleep(999)
-                            proc.communicate = _hang
-                            mock_exec.return_value = proc
-                            proc.kill = MagicMock()
-                            with patch("asyncio.wait_for", side_effect=_asyncio.TimeoutError):
-                                return await adapter.execute()
+                        with patch("asyncio.create_subprocess_exec", new_callable=AsyncMock, return_value=proc):
+                            return await adapter.execute()
 
+        started = time.monotonic()
         result = asyncio.run(_run())
+        elapsed = time.monotonic() - started
+
         assert not result.success
-        assert "Timeout" in (result.error or "")
+        assert result.error == "Timeout after 0.05s"
+        assert result.exit_code == -1
+        assert communicate_started == [True], "communicate() was never awaited: the timeout path was not really exercised"
+        proc.kill.assert_called_once_with()
+        assert elapsed < 5, f"took {elapsed:.1f}s: timeout_seconds did not reach asyncio.wait_for"
 
 
 class TestRunClaudeCodeAdapterDispatch(unittest.TestCase):
