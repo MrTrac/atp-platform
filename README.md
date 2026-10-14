@@ -2,7 +2,7 @@
 
 ATP là `platform repository` tại `SOURCE_DEV/platforms/ATP`.
 
-ATP là một governance-first platform tại baseline **v2.6.3**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
+ATP là một governance-first platform tại baseline **v2.6.4**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
 
 Trạng thái release:
 
@@ -27,9 +27,10 @@ Trạng thái release:
 - `v2.6.0` — Ollama provider removed (Anthropic là provider mặc định duy nhất); sửa model id cloud escalation đã deprecated
 - `v2.6.1` — `/health` báo đúng phiên bản đang chạy + `released`; SIGTERM dừng được bridge
 - `v2.6.2` — `cli/inspect.py` che stdlib `inspect` (mọi `python cli/*.py` chết từ Python 3.12); CI cài pytest + ma trận 3.11/3.12; `jinja2` là extra tùy chọn `adapters`
-- **`v2.6.3`** — **current released baseline** (`write_exchange_bundle` ghi vào `_shared/exchange/current-task/`, cùng bố cục với bộ ghi run)
+- `v2.6.3` — `write_exchange_bundle` ghi vào `_shared/exchange/current-task/`, cùng bố cục với bộ ghi run
+- **`v2.6.4`** — **current released baseline** (model mặc định của `generators/llm.py` không còn là `ollama/qwen3:8b`; để trống thì cầu nối dùng mặc định Anthropic)
 
-Runtime components (v2.6.3):
+Runtime components (v2.6.4):
 
 - **Anthropic adapter** — cloud + retry + pricing + tool use + JSON mode + vision + **streaming**
 - **OpenAI adapter** — gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision + **streaming** + **Batch API** (v2.3.0, async jobs at 50% cost) + **batch wait helper** (v2.5.0)

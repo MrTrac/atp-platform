@@ -2,6 +2,21 @@
 
 All notable changes to ATP are documented here.
 
+## [2.6.4] — 2026-10-14
+
+### Fixed — `generators/llm.py` defaulted to the removed Ollama provider, so every real-mode call without an explicit model failed
+
+`DEFAULT_MODEL` was `ollama/qwen3:8b`. `bridge_request` parsed it as provider `ollama`; the executor has had no handler for that provider since 2.6.0 removed the Ollama adapter, so the call
+fell through to the deferred SSH stub (`status=deferred`, empty `stdout`) and `generators.llm` raised `LlmError`. Measured 2026-10-14 by calling `invoke_executor` directly: no network,
+nothing launched. The default is now empty, so `bridge_request` applies the bridge's own default (anthropic, `claude-haiku-4-5-20251001`) — one source instead of a copy that can drift
+(the sonnet-4 id that went 404 in 2.6.0 is the precedent). `ATP_GENERATORS_DEFAULT_MODEL` still overrides. The `report` generator's `model` parameter example no longer suggests an Ollama model.
+
+macOS hosts must not run Ollama or any local LLM (`Global_Mac_No_Ollama_Rule`). Nothing in ATP can start one since 2.6.0; a read-only probe of the Mac on 2026-10-14 found no Ollama process,
+no listener on 11434, no `ollama` binary or app. Guarded by `tests/unit/test_generators_llm_default.py` (3 tests; all 3 fail against the old default). Not exercised against the real Anthropic
+API in this release: that needs a key and an outward call.
+
+### Changed — `README.md` and `AGENTS.md` baseline lines now say v2.6.4
+
 ## [2.6.3] — 2026-10-14
 
 ### Fixed — `write_exchange_bundle()` wrote to the pre-2.0.4 exchange layout
