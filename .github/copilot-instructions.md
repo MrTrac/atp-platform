@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=COPILOT -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T141254Z
+GeneratedAtUTC: 20261014T145006Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -111,14 +111,13 @@ SHA256: 82600697cb86ac2518a15308faecf0d14dd4d6c3f0425e94d3343e9491e03ad4
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: e342d551d8fb769cd1c992c3c96e69162cd362c0cbd048e1a0680bdea86737cf
+SHA256: 95d6dff70cb5bd4d72307ef6159e1509717f71edede2a06094378055567bd0b7
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-10-14
 - **Phase:** v2.6.4 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
-- **Current state:** v2.6.4 (RELEASED 2026-10-14T21:05:12+07:00). 2.6.4 `generators/llm.py` default model no longer `ollama/qwen3:8b` (empty = bridge default, anthropic); 2.6.1 `/health` reports the real version; 2.6.2 `cli/` stdlib-shadow fix + CI matrix 3.11/3.12 + `jinja2` as optional extra `adapters`; 2.6.3 `write_exchange_bundle` writes to `_shared/exchange/current-task/` like the run writer. Last verified on 2.6.4: `make test` 661 unit passed + 22 integration passed (7 skipped). Known open: bare `python3 -m pytest` fails `test_cli_scripts_start_on_this_interpreter` (`cli/output_contract.py` imports `core` without a `sys.path` shim; passes under `make test` because the Makefile exports `PYTHONPATH=.`). v2.6.0 baseline facts: 8/8 generators functional, 81/81 generator tests pass; AOKP-side cutover deferred to v6.1 per M4 fallback (ATP runbook §3 mid-step gate).
-
+- **Current state:** v2.6.4 (RELEASED 2026-10-14T21:05:12+07:00), running on aios-server since 2026-10-14T14:26:53Z. main carries unreleased test/doc fixes after the tag (KD-ATP-003/008/011). Details in §1; per-item state in `AI_ISSUE_LEDGER.yaml` (authoritative).
 ---
 
 ## D6.2 closure rationale (M4 scope-cut, 2026-05-04)
@@ -148,51 +147,52 @@ ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above 
 
 ---
 
-## 1. Current state
+## 1. Current state (verified 2026-10-14 unless marked)
 
-ATP v2.0.0 released. Full cloud AI production stack now present:
-- **v1.8.0:** OpenAI adapter + retry/backoff + per-model cost/timeout
-- **v1.9.0:** Tool use + JSON mode + vision + capabilities matrix
-- **v2.0.0:** SSE streaming + request cancellation + in-flight tracker
+**Release.** v2.6.4 (tag `v2.6.4` -> `1e8d0c5`). Running on `aios-server` from `/opt/aios/atp/current -> releases/2.6.4` (checked: `/health` reports `2.6.4` + `released`, service active, 0 restarts).
+Previous release `2.6.2` is kept on the server as the `--rollback` target; the rollback itself has **not** been exercised on the live service. `2.6.3` was never installed (2.6.2 -> 2.6.4).
 
-AIOS-OC v2.9.1's abort feature now has end-to-end ATP integration via `DELETE /runs/<id>`.
+**After the tag, on `main`, not in any release** (tests + docs only, nothing to deploy): KD-ATP-003 (`cli/` launch test only runs real entry points), KD-ATP-011 (README/AGENTS list the bridge routes; guard test reads
+them from `bridge/bridge_server.py` with `ast`), KD-ATP-008 (`test_execute_timeout` uses the real `asyncio.wait_for` and asserts the kill). Fold them into the next release that changes runtime code.
+
+**Execution stack** (read from `registry/providers/*.yaml`, `EXECUTOR_MAP`, `bridge/bridge_server.py`):
+- LLM providers: **Anthropic** (default; bridge default model `claude-haiku-4-5-20251001`) and **OpenAI**. `non_llm_execution` for shell/git/build/test/lint. Bridge-level dispatchers: `tdf-run` (:4180), `aios-flow` (:7700). AOKP adapter opt-in (6 queries).
+- **No local LLM.** The Ollama adapter was removed in v2.6.0; macOS hosts must not run Ollama or any local model (`Global_Mac_No_Ollama_Rule`). A provider with no handler (e.g. `ollama/...`) falls through to the deferred SSH stub and returns `status=deferred`.
+- Bridge routes: 12 distinct paths / 13 method+path pairs, all listed in README and AGENTS and guarded by `tests/unit/test_bridge_routes_documented.py`.
+- Synthesis generators: 8 (`generators/stubs/`). Consumer cutover still open (§D6.2 / v6.1 above).
+
+**Deploy path.** Tag on GitHub -> a watcher publishes it to the VPS release store (it never deploys) -> `aios-deploy atp <version>` (Mac -> `sudo aios-deploy-local atp`): installs into a new `releases/<ver>` directory, swaps `current`, restarts,
+requires HTTP 200 **and** the exact version in `/health`, rolls back by itself on failure. See `Global_Build_Deploy_Topology_Rule.md` §5.2c and §8.
+
+**Tests.** `make test`: 665 unit + 22 integration passed (7 skipped). Bare `python3 -m pytest` (no `PYTHONPATH`): 687 passed, 0 failed. Default run emits 0 warnings.
 
 ---
 
-## 2. ATP architectural status: MATURE
+## 2. Architectural status: MATURE, with the gaps listed below
 
-All critical cloud AI gaps closed:
-- ✅ OpenAI + Anthropic (end-to-end, not just auto-detection)
-- ✅ Retry/backoff on 429/5xx/network
-- ✅ Per-model pricing (13 models) + per-model timeout
-- ✅ Tool use / function calling (both providers)
-- ✅ JSON mode / structured outputs (both providers)
-- ✅ Vision (image inputs, cloud only)
-- ✅ SSE streaming with token/tool/manifest events
-- ✅ Request cancellation via DELETE /runs/<id>
-- ✅ In-flight tracking for monitoring
+Verified in code on 2026-10-14:
+- ✅ Anthropic + OpenAI handlers in `EXECUTOR_MAP`
+- ✅ Retry/backoff (`core/retry.py`), pricing table (`core/pricing.py`), typed error codes (7, `core/error_codes.py`)
+- ✅ Tool use / JSON mode pass-through (`tools`, `tool_choice`, `json_mode` in `bridge_request`)
+- ✅ SSE streaming (`POST /run/stream`) and cancellation (`DELETE /runs/<id>`) with the in-flight tracker (`core/in_flight_tracker.py`)
+- ✅ `/health` reports the running version + `released`
 
-Remaining stubs (not blockers):
-- SSH remote execution (no use case)
-- 4 placeholder adapter dirs (architectural slots, no roadmap)
-- Streaming not yet supported for Ollama adapter
+Per CHANGELOG, **not re-verified today**: vision (image inputs), per-model timeout, per-model pricing values, OpenAI Batch API + `wait` helper (v2.3.0 / v2.5.0), aios-flow status/wait (v2.4.0), evaluator wiring (v2.1.0).
+
+Known gaps / stubs (measured 2026-10-14):
+- **4 placeholder adapter dirs**: `adapters/api`, `desktop_bridge`, `local_service`, `ui_bridge` — only a README and `__init__.py`, imported by nothing. Plus `adapters/contracts/` (4 files, 138 lines) which no non-test code imports (not examined further).
+- **SSH remote execution** (`adapters/ssh_remote/ssh_exec_adapter.py`, 49 lines): a stub that never executes anything and returns `status=deferred`. It is also where requests for an unknown provider end up.
+- **Resource leak (suspected)**: with `ResourceWarning` enabled, 8 `HTTPError` objects are garbage-collected without being closed (pytest attributes them to the retry tests and the AOKP integration test, but it attributes by garbage-collection time, so where they are created is not established). Not yet known whether adapter code leaks them too (KD-ATP-012).
 
 ---
 
 ## 3. Possible next steps (all require human approval)
 
-1. **Commit + push + tag v2.0.4** — tdf-run provider locally implemented and tested (16/16 unit tests pass); requires explicit approval per GSGR before push/tag
-2. **End-to-end test** with TDF Web Panel running tại `:4180` — `curl -X POST http://localhost:8765/run -d '{"provider":"tdf-run","target":{"tool":"ops/checkos"},"mode":{"dry_run":true}}'`
-3. **AIOS-OC UI integration of streaming + cancellation**
-   - Wire `/run/stream` into AIOS-OC analyze node
-   - Wire `DELETE /runs/<id>` for true abort UX
-4. **Streaming for Ollama adapter** — current v2.0.x is cloud-only
-5. **Batch API support** — OpenAI batch endpoints
-6. **AOKP v2.4+ enrichments** — deeper knowledge integration
-7. **Agentic multi-tool loop** — server-side tool execution
-
----
-
+1. **v6.1 synthesis cutover** (KD-ATP-006) — see the backlog above; needs a dedicated 6-10h session and Owner scheduling.
+2. **`HTTPError` not closed** (KD-ATP-012) — find out whether `adapters/` close error responses; if so fix there, otherwise close them in the tests.
+3. **Placeholder adapters** (KD-ATP-009) — decide: delete the 4 empty dirs and `adapters/contracts`, or give them an owner and a use case. Evidence above.
+4. **Real-mode synthesis against the Anthropic API** (KD-ATP-010 caveat) — one outward call with a key; confirms "empty default model -> bridge picks anthropic" end to end. Not done.
+5. **Rehearse `aios-deploy atp --rollback`** on the live service (KD-ATP-007 caveat) — never exercised; the rehearsal harness exists in AI_OS (`deploy_local_rehearsal`).
 
 ## Cross-Session Context (CTX-P0)
 Workspace ID: `f557573632b576e4` (SHA-256 first-16-hex of canonical repo path)
