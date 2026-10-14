@@ -102,6 +102,12 @@ When preparing a tag release, ALL these files MUST be updated atomically:
 DO NOT run `git tag` if any file above still references an old version.
 If version mismatch detected, fix ALL files first, then tag.
 
+## Before pushing
+
+- Run `make ci-local` on the commit you are about to push. `make test` runs in your working copy with your machine's environment; CI runs a clean checkout on Python 3.11 and 3.12. CI was red while `make test` was green locally twice: in 2.6.2 (CI had no `pytest`, and nothing declared `jinja2`; the dev machine had both) and at `c501335` (a test needed `~/AI_OS/30_RUNTIME/bin/aios-gate`).
+- It tests a commit, so commit first. Changes it lists as "NOT in the commit under test" are not tested, and CI will not have them either.
+- A pass reported as "INCOMPLETE" means a Python version of the CI matrix is not installed here; say so when you report the result.
+
 ## Working principle
 
 Preserve boundaries strictly. Follow the source of truth in order. Make the smallest justified change. Keep ATP human-gated.

@@ -123,6 +123,16 @@ make smoke
 make test
 ```
 
+`make test` chạy trên cây làm việc và môi trường của chính máy bạn. **Trước khi push, chạy `make ci-local`**: nó clone sạch commit `HEAD`, chạy trong môi trường đã lọc (HOME rỗng, không biến môi trường nào lọt qua) và lần lượt trên từng phiên bản Python của ma trận CI (`.github/workflows/ci.yml`). Lý do: CI từng đỏ hai lần trong khi `make test` xanh ở máy local: ở 2.6.2 (CI chưa cài `pytest` và không ai khai báo `jinja2`, máy dev có cả hai) và ở `c501335` (một bài kiểm cần `~/AI_OS/30_RUNTIME/bin/aios-gate`).
+
+```bash
+make ci-local                                  # commit HEAD, mọi phiên bản Python của ma trận CI
+make ci-local CI_LOCAL_ARGS="--ref <commit>"   # một commit khác
+make ci-local CI_LOCAL_ARGS="--strict"         # exit 3 nếu máy thiếu một phiên bản của ma trận
+```
+
+Nó kiểm tra *commit*, không phải cây làm việc: thay đổi chưa commit và tệp mới chưa `git add` không nằm trong bản thử (CI cũng không có chúng), và script liệt kê chúng ra. Nó không phủ được hệ điều hành (macOS so với Ubuntu của CI), đường dẫn tuyệt đối gắn với máy này, và mạng. Chi tiết: `scripts/ci_local.sh`.
+
 ## Nguyên tắc khi phát triển trong repo này
 
 - giữ boundary giữa source repo và runtime zone

@@ -2,7 +2,7 @@ SHELL := /bin/bash
 PYTHONPATH := .
 export PYTHONPATH
 
-.PHONY: help tree validate-registry smoke test test-unit test-integration bridge bridge-raw version \
+.PHONY: help tree validate-registry smoke test test-unit test-integration ci-local bridge bridge-raw version \
         aios-context aios-status aios-authority aios-verify
 
 help:
@@ -15,6 +15,8 @@ help:
 	@printf '  test               Run all tests (unit + integration)\n'
 	@printf '  test-unit          Run unit tests only\n'
 	@printf '  test-integration   Run integration tests only\n'
+	@printf '  ci-local           Run the tests like CI does: clean clone of HEAD, clean environment, every Python of the CI matrix (run before pushing)\n'
+	@printf '                     options: CI_LOCAL_ARGS="--ref <ref> | --python 3.12 | --strict | --keep | --self-check"\n'
 	@printf '  bridge             Start ATP bridge server (loads API keys from macOS Keychain)\n'
 	@printf '  bridge-raw         Start ATP bridge server without keychain lookup (env-only)\n'
 	@printf '  aios-context       Print ATP-side AI_OS bridge context\n'
@@ -41,6 +43,10 @@ test-unit:
 
 test-integration:
 	@python3 -m pytest -q -p no:cacheprovider tests/integration
+
+# `make test` runs in this working copy with this machine's environment; this runs what CI runs. See scripts/ci_local.sh.
+ci-local:
+	@./scripts/ci_local.sh $(CI_LOCAL_ARGS)
 
 bridge:
 	@./scripts/bridge_with_keychain.sh
