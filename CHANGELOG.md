@@ -2,7 +2,7 @@
 
 All notable changes to ATP are documented here.
 
-## [Unreleased]
+## [2.7.0] — 2026-10-14
 
 ### Added — the aios-flow adapter authenticates as `svc:atp` (aios-flow 1.2.0 enforces `Authorization: Bearer <aios-identity access token>`)
 
