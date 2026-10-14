@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T162346Z
+GeneratedAtUTC: 20261014T164649Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 76d44dda493c2d08053000a739ca9bf380f93c25308cb65dc665a348bfc8606e
+SHA256: b1f8565d29bb551319341a6a88239e6fcf4e832bfc00bd64cab04ac44f61ec8c
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.6.6
-- **Released:** 2026-10-14T22:42:17+07:00
+- **Version:** v2.7.0
+- **Released:** 2026-10-14T23:45:28+07:00
 - **Last synced:** 2026-10-14 (via aios sync reverse)
 
 ## Status
@@ -251,34 +251,107 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 58feb574de0fd2bc2e061ad6f25b678e4ad05aaebe2a4ff05aaa742e52bf7886
+SHA256: 921222be515ba1345ebc758dec9913b56603d29343edc85d76ed2da1f2df1bfd
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.6.6 — reverse sync from source repo
+## Handoff: v2.7.0 — reverse sync from source repo
 **Date**: 2026-10-14
-**Release report (G-RELREPORT-1)**: ledger `~/AI_OS/20_PROJECTS/ATP/AI_ISSUE_LEDGER.yaml` · user report `~/AI_Shared_Outputs/AIOS_Ecosystem/ATP/bao-cao-phat-hanh/Bao_Cao_Phat_Hanh_ATP_2.6.6.{md,html,pdf,docx,pptx}`
-**Open items**: read the ledger `carry_over` blocks — they are updated after release and are authoritative. Deployed: aios-server runs 2.6.6 (verified 2026-10-14 15:49Z).
 
-### What changed in v2.6.6
-## [2.6.6] — 2026-10-14
+### What changed in v2.7.0
+## [2.7.0] — 2026-10-14
 
-### Fixed — `with_retry` dropped every retried `HTTPError` without closing it (KD-ATP-013)
+### Added — the aios-flow adapter authenticates as `svc:atp` (aios-flow 1.2.0 enforces `Authorization: Bearer <aios-identity access token>`)
 
-KD-ATP-012 closed the response of an `HTTPError` in the 14 handlers that name a network exception, and said it had NOT audited broad handlers. Audited 14/10/2026 with `ast`: of the 15 `urlopen` call sites, 13 sit in a `try`
-whose handlers 2.6.5 already closes; the other two (`_do_request` in `execute_anthropic` / `execute_openai`) run through `core/retry.with_retry`, which has `except Exception` around a caller-supplied function. It received
-every retryable error (429, 502, 503, 504 — exactly what a rate limit produces) and dropped it on the way to the next attempt without closing it. A name-based scan did not see it: `with_retry` reaches the network through a
-callable PARAMETER, not by name. It is the only broad handler in the code base that can receive an `HTTPError` and does not re-raise it; there is no network path other than `urlopen` (no `http.client`, `requests`, `httpx`,
-`aiohttp`, `socket`).
+aios-flow 1.2.0 (tag `v1.2.0`, not yet deployed to aios-server, which runs 1.1.2) answers 401 to any caller without a token; contract and rollout order: aios-flow `docs/RUNS_API.md` §1–§3. ATP must be released BEFORE enforcement is switched on, and an extra
+header is harmless against today's unauthenticated aios-flow. New `adapters/aios_flow/identity_token.py` + changes in `aios_flow_adapter.py`: when `AIOS_FLOW_IDENTITY_URL` is set (https, or a loopback address), every request to aios-flow carries the access token of the
+service account `svc:atp` (role `service-account`: may start and read runs, never resolve an approval). The token comes from `POST {identity}/service-account/token {username, secret, consumer: "ATP"}`; the secret is `AIOS_FLOW_IDENTITY_SECRET` (macOS: the login
+Keychain through `scripts/bridge_with_keychain.sh`, service name = variable name, now in its list; aios-server: a root-owned EnvironmentFile) and is read from nowhere else — not from the repo, never logged, never in a result, an error text, `repr()` or the G9 trace file
+(identity's own error message is scrubbed of the secret before use). `AIOS_FLOW_IDENTITY_USER` overrides the default `svc:atp`. With `AIOS_FLOW_IDENTITY_URL` unset nothing changes: no token is requested or sent. URL set and secret empty is an error at the first call,
+never a silent downgrade to unauthenticated.
 
-`with_retry` now calls `close_http_error(exc)` just before it sleeps for the next attempt. The LAST error is deliberately left open: it is re-raised, and the adapters read its body (`exc.read()`) to build the error message;
-closing it too would have made every exhausted-retry message lose the provider's explanation. `Retry-After` is read before the close (headers stay valid after it).
-`tests/unit/test_http_errors_closed.py` (+7 tests): `with_retry` closes dropped attempts and returns the success; with exhausted retries it closes all but the last and the last body is still readable; a non-retryable
-error and a wait-budget break are raised untouched; end to end through `execute_anthropic` with 429 on every attempt all three errors end up closed and the message carries the provider's text; and a static guard that
-fails when a broad handler (`except Exception` / bare) in a module that deals with `HTTPError` can receive one — it calls `urlopen`, a function of the module that does, or a callable parameter — and does not close it.
-Seeded defects, all caught: `with_retry` not closing; `with_retry` closing the last error too (6 tests red, two of them older tests about the error body); a new broad handler around a parameter in a network module;
-and one in an unrelated module is correctly NOT flagged. Reverting `core/retry.py` turns 4 tests red. Probe over the whole suite: 45 `HTTPError` created, 45 closed, 0 never closed. Suite with `ResourceWarning` and
-`RuntimeWarning` as errors: 0 warnings. Not covered: a broad handler in a module that neither calls `urlopen` nor imports `urllib.error` (none can receive an `HTTPError` today).
+Lifetime — measured, not assumed. Against the real aios-identity 1.2.4 the answer advertises `expires_in` = 31536000 (a year) while the JWT lives 3600 s (`exp - iat`) and the server enforces the JWT; identity 1.2.5 (`main`, `d3dbcc8`) now really issues 365 days.
+The provider therefore ignores `expires_in` and reads `exp - iat` from the token itself (iat, not the local clock, so a skewed Mac clock changes nothing), assumes 3600 s when the token cannot be read, and renews `min(300 s, lifetime / 2)` before the end: 3300 s against 1.2.4,
+31 535 700 s against 1.2.5 — verified against both real servers (below). Time is the WALL clock: `time.monotonic` stops while a Mac sleeps and the JWT's `exp` does not (after a night asleep a monotonic provider thought its token fresh and, for 30 s of awake time, refused to replace
+it once aios-flow rejected it). Every mint leaves a year-long session row at identity, so minting is rationed: one token shared by all threads with one mint at a time; a token aios-flow rejected is replaced at most once per 30 s (and at most once per request); a refusal of the
+credentials (wrong secret, wrong URL) is remembered for 60 s; an identity that cannot be reached is remembered for 1 s, so callers queued behind a black-holed identity fail at once instead of each waiting out its own 10 s timeout (measured by the review: the 8th of 8 waited 8 x);
+and when a renewal fails but the cached token has not yet expired, the old token is served again (stale-while-error; a refusal of the CREDENTIALS is deliberately not masked). The mint is itself a G9 cross-module call (`aios-identity`, `/service-account/token`, outcome only).
+
+Where the token may go. To aios-flow and nowhere else. It is attached with `add_unredirected_header`: urllib copies `request.headers` onto a redirected request whatever the new host, so a token in `request.headers` would follow a 302 to another machine (the wire test shows the
+difference). It is only sent over https or to a loopback host (`AIOS_FLOW_URL=http://10.x.x.x:7700` with authentication configured is refused before any token is requested); a loopback `http://` URL is refused too while an http proxy would receive it (urllib hands `http://localhost` to
+`HTTP_PROXY` unless `NO_PROXY` lists it: the secret or token would leave the machine in clear text); an unparseable URL is reported as such. `core.trace.trace_headers` — shared by every adapter — carries no Authorization header, and a test fails if any module other than the aios-flow
+adapter imports the token module. The run id of `status` / `wait` goes into the URL path with the bearer attached, so only `[A-Za-z0-9][A-Za-z0-9_.-]{0,127}` is accepted (`../approvals`, `a/b`, a space, CR/LF are refused before anything is sent). New `core/child_env.py`:
+the three adapters that run an LLM agent (`claude -p`, `codex exec`, `cursor-agent`) used to hand it the WHOLE environment; they now use `agent_environ()`, which leaves `AIOS_FLOW_IDENTITY_SECRET` out (defence in depth, not a boundary: the agent runs as the same OS user and could read the
+Keychain; it removes the free `printenv`).
+
+### Fixed — an authentication failure no longer looks like an outage, and `wait` no longer gives up on a healthy run at the first transient 503
+
+Measured 14/10/2026 against the real aios-flow and the real aios-identity: (1) an enforcing aios-flow answered an unauthenticated ATP with 401 and the adapter reported `aios-flow unreachable: HTTP Error 401` — the body (which carries the reason) was never read, and a 404 `flow_not_found`
+or a 400 `invalid_pipeline` were reported as "unreachable" the same way; (2) `_wait_for_run` ended on any poll whose envelope said `error`, so one `503 identity_unavailable` + `Retry-After: 5` — what aios-flow answers when identity is briefly unreachable at the expiry of its 30 s verdict cache — aborted
+the wait on a run that was fine. Now every failure keeps `status == "error"` and `error` (text; "aios-flow unreachable: …" is kept for a real network failure) and adds `error_code` (`auth_failed` | `unavailable` | `unreachable` | `http_error` | `bad_response` | `bad_request`), `retryable`, `http_status`,
+`reason_code` (the server's own code, e.g. `invalid_token`, `forbidden`, `identity_unavailable`, `flow_not_found`, or ours: `missing_secret`, `insecure_transport`, `proxy_in_the_way`, `tls_verification_failed`), `auth_source` (`aios-flow` | `aios-identity` | `config`) and `retry_after_s` (only when the header is
+a finite non-negative number: `inf`, `nan` and `-5` used to reach the JSON). 401/403 are explained from the body's code and never retried in a loop: a 401 for a token the adapter holds gets ONE fresh token and the request is repeated once (a second 401 is final); a 403 is final at once; a TLS
+certificate that is not accepted is a setting (`auth_failed`/`config`), not an outage, and is not retried either. `wait` retries `unavailable` (429/502/503/504, identity unable to issue a token) and `unreachable` within each poll through the existing `core.retry.with_retry` — exponential backoff,
+`Retry-After` honoured, at most 4 attempts and 60 s of SLEEPING per poll, never beyond the wait's remaining `timeout_s` (the attempts in flight are not bounded by it: a wait can end up to one 10 s request timeout per attempt after `timeout_s`); errors that waiting cannot fix (401/403, 404, non-JSON) still
+end the wait at once. A dispatch is a POST: `dispatch` is never retried by itself and its `retryable` is true ONLY when the failure proves no run was created — identity token unavailable (nothing was sent), connection refused / DNS (never connected), 429 or 503 from aios-flow's own
+layers; a reset or timeout after sending, a 502/504, or an unreadable answer give `retryable: false`, `outcome_unknown: true` and a text saying a run may exist (the review's scenario: a consumer that honoured `retryable` would have started a duplicate flow). A read timeout, a reset, a bad status line or a body
+cut short — which `urlopen` lets escape as bare `TimeoutError` / `http.client` exceptions — are now converted so `core.retry` sees a network error. Each attempt leaves its own G9 trace record. Every error path closes the `HTTPError` response it holds (KD-ATP-012/013): `core.http_errors.read_error_body` /
+`error_code_and_message` read the body first and never raise (a chunked body cut short gave `IncompleteRead` and, on Python 3.11, ~1000 nested brackets gave `RecursionError`); `tests/unit/test_http_errors_closed.py` lists the new module in its guard.
+
+### Fixed (tests) — a test run wrote 2,200 fake records into the real G9 trace file
+
+`core.trace.record_trace` appends to `~/.aios/state/cross_module_trace.jsonl`, the ecosystem's real cross-module trace. The identity-token tests of this change called it unmocked, so every run added fake `atp → aios-identity /service-account/token` records: 2,200 by 14/10/2026 23:20
+(found by the independent review; confirmed by counting). `tests/conftest.py` now points `core.trace._TRACE_FILE` at a temporary file for EVERY test (tests that inspect the trace set it themselves), and the 2,200 records — and only those: source `atp`, target `aios-identity`, that route, POST; a feature that had never run for real — were removed from the real file (backup kept; 1,569
+records of other origin untouched; a full run afterwards leaves the file byte-identical). The same fixture sets the identity variables to unset for every test, so a developer's shell cannot make an unrelated test mint a real token.
+
+Bridge exposure — measured, decision taken (Owner, 14/10/2026: no code change). Found by the independent review: `bridge/bridge_server.py` listens on `0.0.0.0:8765` with no authentication and `bridge/openclaw_bridge.py` routes `{"provider": "aios-flow", ...}` straight to this adapter, so a client that reaches the
+port can start (and read) aios-flow runs as `svc:atp` once the credential is configured. Measured the same day on aios-server (`ufw status verbose`, read only): default `deny (incoming)`, and port 8765 is allowed from ONE source, the Mac `10.88.0.10` over WireGuard (rule 14); the VPS `10.88.0.1` and both LANs have no rule for it. AIOS-OC's server build reaches it at `10.88.0.30:8765`. So on aios-server the
+reachable population is the Mac, not "anyone"; no consumer of the bridge's aios-flow provider was found in AIOS-OC, ATCC_HCM, AOKP or aios-flow (grep), so nothing needs it from outside. Therefore: no bind change (loopback would cut AIOS-OC off) and no new authentication layer without evidence it is needed. Consequence to keep: configure `AIOS_FLOW_IDENTITY_*` ONLY for the ATP on aios-server; on the Mac the bridge listens on `0.0.0.0:8765`
+too, and the Mac's own aios-flow is a loopback one that does not enforce, so the credential has no business there. If the bridge is ever opened to more hosts, authenticate it first.
+
+Verification (G-AUTOVERIFY-1), 14/10/2026. `tests/unit` + `tests/integration`: 944 passed, 7 skipped on Python 3.11, 3.12 and 3.14 (+230 tests over 2.6.6: provider 81, adapter auth / retry / close 114, error-body helpers 25, child environment 6, and 4 over REAL sockets — header on the wire, no forward across a 302, a real
+`Retry-After` header object, a server that never answers retried like any network failure), with `ResourceWarning` and `RuntimeWarning` promoted to errors: 0 warnings; bare `pytest` and `make test` too. 39 seeded defects, every one caught by the suite (token sent via `add_header` → the redirect test; `wait` without retry; 403 handled as retryable; a 401/403 or mint response left open; a POST
+failure treated as provably not started; run id not validated; `Retry-After` taken raw; TLS failure looking like an outage; a proxy ignored; stale-while-error removed; monotonic clock; a request without a timeout; the whole environment handed to an agent; `expires_in` trusted; no re-mint cooldown; no single-flight lock; secret in `repr`; …).
+Two of them first showed as MISSED and were real lessons: a second 401 re-minting again was masked by the cooldown (a test with a clock that jumps past the cooldown now pins it), and the review proved that `assert_all_closed` was vacuous because CPython closes an `HTTPError`'s response itself when the object is freed (the fake network now keeps its errors alive; the "left open"
+mutants are caught by behaviour tests, not only by the static guard); one more was an equivalent mutant (a close that could never see an `HTTPError`; removed as dead code) and one (`RecursionError`) can only be caught on Python 3.11 and was run there. REAL STACK (scripts outside the repo: real aios-identity on a throwaway DB, once at 1.2.4 and once at 1.2.5, + real aios-flow
+uvicorn with `AIOS_FLOW_AUTH=enforce` + THIS adapter unmodified): 18/18 checks each — unconfigured adapter → `auth_failed` `missing_token` with the setting to configure (was "unreachable: HTTP Error 401"); dispatch + wait with the `svc:atp` token → `succeeded`, `requested_by` = `svc:atp`, one mint for dispatch + status + all polls, no token or secret in the trace file or any
+result; wrong secret → `auth_failed` `invalid_service_credentials` and aios-flow's own access log shows no request; a revoked session → aios-flow answers one 401, one replacement token is minted, the request repeated; identity paused (SIGSTOP, by PID) at the verdict-cache expiry → 503 `identity_unavailable` + `Retry-After: 5`, the wait retried and ended `succeeded`; identity paused for good → the
+wait gave up after 4 attempts (35 s) with `unavailable`/503/`identity_unavailable`/`retry_after_s` 5.0. aios-flow's own `tests/test_atp_adapter_contract.py` (4) and `scripts/e2e/verify_real_stack.py` (48 checks, including the "auth off, unmodified adapter" scenarios) pass with this adapter. An independent read-only review (12 findings, 11 fixed above, 1 for the Owner) preceded the final run.
+NOT verified: renewal after the real 3600 s (never waited out; tests with a manual clock and the measured `exp - iat`); TLS to a real https identity (the sandbox is plain loopback http; the https/loopback rule, the certificate classification and the proxy guard are unit-tested with fakes); a Mac that actually sleeps; the Keychain wrapper end to end; anything on aios-server.
+
+To switch it on (operator, nothing is active until then): set `AIOS_FLOW_IDENTITY_URL` and `AIOS_FLOW_IDENTITY_SECRET` in the environment of the process that runs the bridge — macOS: add the secret to the login Keychain (`security add-generic-password -U -s AIOS_FLOW_IDENTITY_SECRET -a "$USER" -T /usr/bin/security -w`,
+which prompts for the value) and add `_maybe_export AIOS_FLOW_IDENTITY_SECRET` plus the URL to the launchd wrapper `atp-bridge-start.sh` (it lives in AI_OS `30_RUNTIME/agents/launchd/`, outside this repo); aios-server: the ATP unit's EnvironmentFile.
+### Fixed — an unknown provider on the local node answered `deferred` instead of an error (KD-ATP-015)
+
+`core/execution/executor.invoke_executor` sent every provider without a handler to the SSH stub, which answers `status=deferred` with an empty `stdout` ("Remote SSH execution is deferred in ATP M6"). That fallback was designed
+for remote nodes (`adapters/ssh_remote/README.md`), but the only registered node is `local_mac` (`locality: local`) and `bridge_request` always selects it, so a typo in the model prefix — or a provider that was removed, such as
+`ollama` — came back as HTTP 200 with a result that looked like a pending job. It is exactly how KD-ATP-010 (the generators defaulting to `ollama/qwen3:8b`) stayed hidden from 2.6.0 to 14/10/2026.
+
+Now: a provider with no handler on a node the registry marks local raises `UnsupportedProviderError` (a subclass of `ExecutionError`, so existing `except ExecutionError` callers keep working), whose message names the provider, the node and
+the providers that ARE registered. `bridge_request` turns it into `BridgeError` (it echoes the caller's model spec), so `POST /run` answers HTTP 400 `{"status": "failed", "error": "Unsupported provider 'ollama' on local node 'local_mac' ...
+Model spec was 'ollama/qwen3:8b'."}` and the generators surface an `LlmError` with the same text. Unchanged: known providers; a provider with no handler on a node the registry does NOT know as local still gets the `deferred`
+remote stub (pinned by the existing `test_unknown_provider_with_node_falls_back_to_remote`); `adapter` requests (`claude-code`, `codex`, `cursor`, `openai-batch`) are dispatched before any provider check.
+
+Who could be affected was measured, not assumed (read-only survey of the 9 ecosystem repos that mention the bridge, one agent per repo): 8 never call ATP; AIOS-OC is the only consumer, and its survey was re-checked by a second, independent agent (the other 8 had nothing to re-check), through `POST /run`, and nothing in it checks for
+`deferred`. Its callers test `status === "failed" || error`, so the new 400 is shown as a failure where the old 200 was shown as "done" with an empty result. Every `model` value it sends (bare `claude-*` names, `anthropic/`, `openai/`) still
+resolves to a provider with an executor. Not changed here, found by the survey: AIOS-OC `flow-generate` drops the error text of a non-2xx answer (shows only `ATP HTTP 400`), and its `toCompliantModel` only rewrites the `ollama/` prefix.
+
+`tests/unit/test_unsupported_provider.py` (9 tests, 11 subtests; the bridge is started in a thread on an ephemeral port for the HTTP ones) and 4 new tests in `test_registry_driven_dispatch.py`. Seeded defects, all caught: the old fallback restored (7 tests red);
+`_is_local_node` always true / never true; the error not mapped to `BridgeError` (a 500 instead); the message losing the model spec or the list of supported providers; the new error no longer an `ExecutionError`; a bare `claude-*` resolving to a provider
+with no handler; the CORS header missing on the 400 (an AIOS-OC page calls the bridge straight from the browser); adapter requests no longer dispatched first; bare names no longer defaulting to anthropic.
+
+### Changed — the four placeholder adapter directories are kept, and their status is now a contract (KD-ATP-009)
+
+`adapters/api`, `desktop_bridge`, `local_service` and `ui_bridge` were an open question ("delete or keep?"). Measured 14/10/2026: they come from the v0 skeleton (`2403d9d`, 14/3/2026), each holds a README and an
+`__init__.py` that says "Architectural slot ... not scheduled for implementation", nothing imports them, no test or registry file mentions them. `adapters/README.md` calls them "placeholders có chủ đích" and `AGENTS.md`
+makes the adapter shape part of the frozen doctrine, so deleting them is an architectural decision with no functional gain. Decision (Owner, 14/10/2026): keep them.
+
+What changed: `adapters/README.md` has a status table (reviewed 14/10/2026: no use case or owner assigned) and the rule for promoting a placeholder; `adapters/local_service/README.md` says there is no use case yet and that the
+slot must not bring a local LLM back on macOS (`Global_Mac_No_Ollama_Rule`) — the `ollama HTTP endpoint` example suggested by the 2/4/2026 design audit (item N-4) is no longer valid, and the audit carries a labelled addendum
+saying so. `tests/unit/test_placeholder_adapters.py` (5 tests) makes the status checkable: a placeholder holds no code beyond a docstring-only `__init__.py`; its README still says "placeholder"; nothing imports it; the README
+table lists exactly these four; and a NEW adapter directory with no code must be declared. Seeded defects, all caught by the intended test: real code added to a placeholder, a statement in an `__init__.py`, a README that
+stops saying "placeholder", an import from `core/` and from `bridge/` (both import forms), a row dropped from the table, an undeclared new code-less directory; adding code to a REAL adapter is correctly not flagged.
+No runtime code changed.
 
 Đầy đủ / full history: `/Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP/CHANGELOG.md`
 
