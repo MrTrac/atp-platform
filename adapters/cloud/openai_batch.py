@@ -27,6 +27,8 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from core.http_errors import close_http_error
+
 
 OPENAI_API_BASE = "https://api.openai.com/v1"
 DEFAULT_TIMEOUT_SECONDS = 30
@@ -114,6 +116,8 @@ def _request_json(
             body_text = exc.read().decode("utf-8", errors="replace")
         except Exception:
             pass
+        finally:
+            close_http_error(exc)
         try:
             return exc.code, json.loads(body_text) if body_text else {"error": {"message": exc.reason}}
         except json.JSONDecodeError:

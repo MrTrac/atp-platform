@@ -95,17 +95,23 @@ class TestPricingTable(unittest.TestCase):
 class TestRetryLogic(unittest.TestCase):
     """Retry + exponential backoff for transient errors."""
 
+    def _http_error(self, code: int, msg: str, hdrs: object = None) -> HTTPError:
+        """An HTTPError the test owns: it holds an open response, so close it when the test ends (KD-ATP-012)."""
+        exc = HTTPError("http://x", code, msg, {} if hdrs is None else hdrs, BytesIO(b""))
+        self.addCleanup(exc.close)
+        return exc
+
     def test_is_retryable_429(self) -> None:
-        exc = HTTPError("http://x", 429, "Too Many", {}, BytesIO(b""))
+        exc = self._http_error(429, "Too Many")
         self.assertTrue(_is_retryable(exc))
 
     def test_is_retryable_502_503_504(self) -> None:
         for code in (502, 503, 504):
-            exc = HTTPError("http://x", code, "msg", {}, BytesIO(b""))
+            exc = self._http_error(code, "msg")
             self.assertTrue(_is_retryable(exc), f"{code} should be retryable")
 
     def test_is_retryable_400_not_retried(self) -> None:
-        exc = HTTPError("http://x", 400, "Bad Request", {}, BytesIO(b""))
+        exc = self._http_error(400, "Bad Request")
         self.assertFalse(_is_retryable(exc))
 
     def test_is_retryable_network_error(self) -> None:
@@ -118,7 +124,7 @@ class TestRetryLogic(unittest.TestCase):
         class MockHeaders:
             def get(self, k, default=None):
                 return "5" if k == "Retry-After" else default
-        exc = HTTPError("http://x", 429, "Too Many", MockHeaders(), BytesIO(b""))
+        exc = self._http_error(429, "Too Many", MockHeaders())
         self.assertEqual(_retry_after_seconds(exc), 5.0)
 
     def test_calculate_delay_uses_retry_after(self) -> None:

@@ -35,6 +35,7 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from core.http_errors import close_http_error
 from core.trace import generate_request_id, record_trace, trace_headers
 
 AIOS_FLOW_URL = os.environ.get("AIOS_FLOW_URL", "http://localhost:7700")
@@ -88,6 +89,7 @@ def _submit(incoming: dict[str, Any]) -> dict[str, Any]:
             "aios_flow_url": AIOS_FLOW_URL,
         }
     except (HTTPError, URLError, OSError) as exc:
+        close_http_error(exc)
         trace_status = "error"
         result = {
             "status": "error",
@@ -150,6 +152,7 @@ def _get_run_status(
             "request_id": req_id,
         }
     except (HTTPError, URLError, OSError) as exc:
+        close_http_error(exc)
         trace_status = "error"
         result = {
             "status": "error",

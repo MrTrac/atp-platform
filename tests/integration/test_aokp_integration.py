@@ -7,6 +7,7 @@ from urllib.error import URLError
 from urllib.request import urlopen
 
 from adapters.aokp.aokp_adapter import check_health, query_graph, query_knowledge
+from core.http_errors import close_http_error
 
 
 def _aokp_available() -> bool:
@@ -14,7 +15,8 @@ def _aokp_available() -> bool:
     try:
         with urlopen("http://localhost:3002/api/phase1/status", timeout=3):
             return True
-    except (URLError, OSError):
+    except (URLError, OSError) as exc:
+        close_http_error(exc)  # a reachable AOKP that answers 401/404 raises an HTTPError that still holds the open response (KD-ATP-012)
         return False
 
 

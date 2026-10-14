@@ -4,6 +4,22 @@ All notable changes to ATP are documented here.
 
 ## [Unreleased]
 
+### Fixed — `HTTPError` responses were never closed by the code that caught them (KD-ATP-012)
+
+`urlopen` raises `HTTPError` for every non-2xx answer, and that exception object IS the response: it owns the open socket until `close()` or garbage collection. `with urlopen(...)` closes
+successful responses, but 14 handlers across 7 modules (`anthropic_adapter` ×2, `openai_adapter` ×2, `openai_batch`, `tdf_run`, `evaluator`, `aios_flow_adapter` ×2, `aokp_adapter` ×6 — the AOKP ones
+catch `URLError`, of which `HTTPError` is a subclass) caught the error, read or ignored the body and left the close to the garbage collector. Measured 14/10/2026 with a probe over the whole suite:
+15 `HTTPError` created, 0 closed by anyone; with `ResourceWarning` enabled, `Implicitly cleaning up <HTTPError ...>` ×8. CPython frees the object at once, so nothing ever failed: this is a
+hidden dependency on refcounting, not a crash.
+
+New `core/http_errors.close_http_error(exc)` (closes an `HTTPError`, no-op for anything else, never raises) is called by each of the 14 handlers once it has read what it needs (`code`, `reason`,
+`str(exc)` stay valid after the close). Where the body is read, the close is in a `finally`. The suite's own `HTTPError` objects (retry tests, the AOKP integration helper) are closed too.
+`tests/unit/test_http_errors_closed.py` (15 tests + 6 subtests): the helper; a static `ast` guard that fails when any handler in a module that calls `urlopen` can receive an `HTTPError` and does not close
+it (so a new handler cannot forget); and a behaviour test per call site that raises a tracked `HTTPError` through the real code path. Seeded defects, all caught: the close removed at 9 different sites (one per
+module, both ends of `aokp` and `aios_flow`), and a new handler that forgets to close (only the static guard can see that one). Reverting the 7 production files to the old code turns all 14 site tests red.
+Probe after the fix: 33 `HTTPError` created, 33 closed, 0 never closed. Suite with `ResourceWarning` and `RuntimeWarning` promoted to errors: 0 warnings (was 8). NOT audited: handlers that catch only
+`Exception` (or are bare) around a network call; the static guard and this fix cover handlers that name `HTTPError`, `URLError` or `OSError`.
+
 ### Fixed — `test_execute_timeout` did not test the timeout and left a coroutine un-awaited (KD-ATP-008)
 
 The test patched `asyncio.wait_for` to raise `TimeoutError` at once. That (1) left the `communicate()` coroutine it had just created un-awaited — the `RuntimeWarning` that showed in every run —

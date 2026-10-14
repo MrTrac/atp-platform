@@ -25,6 +25,8 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
+from core.http_errors import close_http_error
+
 
 def _run_http_probe(spec: dict[str, Any]) -> dict[str, Any]:
     url = spec.get("url", "")
@@ -42,6 +44,7 @@ def _run_http_probe(spec: dict[str, Any]) -> dict[str, Any]:
             body = resp.read().decode("utf-8", errors="replace")
     except HTTPError as exc:
         code, body = exc.code, ""
+        close_http_error(exc)
     except (URLError, OSError) as exc:
         return {"passed": False, "error": str(exc),
                 "duration_ms": int((time.monotonic() - t0) * 1000)}

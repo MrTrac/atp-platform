@@ -24,6 +24,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Any
 
+from core.http_errors import close_http_error
 from core.trace import record_trace, trace_headers
 
 _TDF_CONTRACT = "TDF_ATP_v1"
@@ -111,6 +112,7 @@ def dispatch(incoming: dict[str, Any]) -> dict[str, Any]:
                      duration_ms=int((time.monotonic() - t0) * 1000),
                      contract_version=_TDF_CONTRACT)
     except urllib.error.HTTPError as exc:
+        close_http_error(exc)
         record_trace(request_id=request_id, target_module="tdf",
                      route="/api/exec/execute", method="POST", status="error",
                      duration_ms=int((time.monotonic() - t0) * 1000),

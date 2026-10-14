@@ -20,6 +20,7 @@ from typing import Any
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
+from core.http_errors import close_http_error
 from core.trace import generate_request_id, record_trace, trace_headers
 
 _AOKP_CONTRACT = "AOKP_ATP_v2.3"
@@ -68,7 +69,8 @@ def check_health(
             "aokp_checks": body.get("checks", {}),
             "timestamp": timestamp,
         }
-    except (URLError, OSError, json.JSONDecodeError, ValueError):
+    except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        close_http_error(exc)
         record_trace(request_id=req_id, target_module="aokp", route="/api/health",
                      method="GET", status="error",
                      duration_ms=int((time.monotonic() - t0) * 1000),
@@ -130,6 +132,7 @@ def query_knowledge(
                      duration_ms=int((time.monotonic() - start_time) * 1000),
                      contract_version=_AOKP_CONTRACT)
     except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        close_http_error(exc)
         record_trace(request_id=req_id, target_module="aokp", route="/api/search",
                      method="POST", status="error",
                      duration_ms=int((time.monotonic() - start_time) * 1000),
@@ -207,6 +210,7 @@ def query_graph(
                      duration_ms=int((time.monotonic() - start_time) * 1000),
                      contract_version=_AOKP_CONTRACT)
     except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        close_http_error(exc)
         record_trace(request_id=req_id, target_module="aokp", route="/api/graph",
                      method="POST", status="error",
                      duration_ms=int((time.monotonic() - start_time) * 1000),
@@ -276,6 +280,7 @@ def query_chat(
         with urlopen(http_req, timeout=timeout) as resp:
             body = json.loads(resp.read().decode("utf-8"))
     except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        close_http_error(exc)
         return _chat_error_result(f"AOKP chat request failed: {exc}", timestamp, start_time)
 
     elapsed_ms = int((time.monotonic() - start_time) * 1000)
@@ -337,6 +342,7 @@ def query_graph_rag(
         with urlopen(http_req, timeout=timeout) as resp:
             body = json.loads(resp.read().decode("utf-8"))
     except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        close_http_error(exc)
         return _error_result(f"AOKP graph-rag request failed: {exc}", timestamp, start_time)
 
     elapsed_ms = int((time.monotonic() - start_time) * 1000)
@@ -391,6 +397,7 @@ def query_temporal(
         with urlopen(http_req, timeout=timeout) as resp:
             body = json.loads(resp.read().decode("utf-8"))
     except (URLError, OSError, json.JSONDecodeError, ValueError) as exc:
+        close_http_error(exc)
         return _error_result(f"AOKP temporal-graph request failed: {exc}", timestamp, start_time)
 
     elapsed_ms = int((time.monotonic() - start_time) * 1000)

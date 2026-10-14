@@ -20,6 +20,7 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from core.http_errors import close_http_error
 from core.pricing import calculate_cost
 from core.retry import with_retry
 
@@ -217,6 +218,8 @@ def execute_anthropic(
             error_detail = json.loads(error_body).get("error", {}).get("message", "")
         except Exception:
             error_detail = error_body[:500] if error_body else ""
+        finally:
+            close_http_error(exc)
         detail_suffix = f" — {error_detail}" if error_detail else ""
         return _error_result(
             f"Anthropic API error {exc.code}: {exc.reason}{detail_suffix}",
@@ -447,6 +450,8 @@ def execute_anthropic_stream(
             error_detail = json.loads(error_body).get("error", {}).get("message", "")
         except Exception:
             error_detail = error_body[:500] if error_body else ""
+        finally:
+            close_http_error(exc)
         from core.error_codes import classify_error
         msg = f"Anthropic API error {exc.code}: {exc.reason}"
         if error_detail:
