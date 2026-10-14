@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=FUTURE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T152216Z
+GeneratedAtUTC: 20261014T153635Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -111,7 +111,7 @@ SHA256: 139d1b029dc6d2b3130ad98db128ad3d38f92ef64a454459f583dd61aeaf0110
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 733814e382c4069a467768463ffc8fa081da5139d755853d8de7f7ddcf65a9e9
+SHA256: ebbc7e8816f4e44ee95635e27cb9a4f526e7ae3b8ed71304617c4174680c4a86
 ----
 # AI Next Step — ATP
 
@@ -156,6 +156,8 @@ Previous release `2.6.4` is kept on the server as the `--rollback` target; the r
 them from `bridge/bridge_server.py` with `ast`), KD-ATP-008 (`test_execute_timeout` uses the real `asyncio.wait_for` and asserts the kill). **Runtime code:** KD-ATP-012 — 14 `except` handlers in 7 modules now close the response an
 `HTTPError` holds open, through `core/http_errors.close_http_error` (error-path only; low risk). Deployed with 2.6.5; no real HTTP error has been pushed through the adapters on the server (needs an outbound call), only the import and the helper were exercised there.
 
+**After 2.6.5, on `main`, not in any release:** KD-ATP-013 — `core/retry.with_retry` (the only broad `except Exception` that can receive an `HTTPError` without re-raising it) now closes each retried error; the LAST one is left open on purpose (re-raised; adapters read its body). Runtime code in `core/retry.py`: needs a release + `aios-deploy atp` to run on the server, which still runs 2.6.5.
+
 **Execution stack** (read from `registry/providers/*.yaml`, `EXECUTOR_MAP`, `bridge/bridge_server.py`):
 - LLM providers: **Anthropic** (default; bridge default model `claude-haiku-4-5-20251001`) and **OpenAI**. `non_llm_execution` for shell/git/build/test/lint. Bridge-level dispatchers: `tdf-run` (:4180), `aios-flow` (:7700). AOKP adapter opt-in (6 queries).
 - **No local LLM.** The Ollama adapter was removed in v2.6.0; macOS hosts must not run Ollama or any local model (`Global_Mac_No_Ollama_Rule`). A provider with no handler (e.g. `ollama/...`) falls through to the deferred SSH stub and returns `status=deferred`.
@@ -183,16 +185,14 @@ Per CHANGELOG, **not re-verified today**: vision (image inputs), per-model timeo
 Known gaps / stubs (measured 2026-10-14):
 - **4 placeholder adapter dirs**: `adapters/api`, `desktop_bridge`, `local_service`, `ui_bridge` — only a README and `__init__.py`, imported by nothing. Plus `adapters/contracts/` (4 files, 138 lines) which no non-test code imports (not examined further).
 - **SSH remote execution** (`adapters/ssh_remote/ssh_exec_adapter.py`, 49 lines): a stub that never executes anything and returns `status=deferred`. It is also where requests for an unknown provider end up.
-- ~~Resource leak~~ **fixed on `main` (KD-ATP-012, unreleased):** `HTTPError` responses are now closed by every handler that can receive one; guarded by a static `ast` check + a behaviour test per call site (`tests/unit/test_http_errors_closed.py`). Not audited: handlers that catch only `Exception` / bare around a network call.
+- ~~Resource leak~~ **fixed on `main` (KD-ATP-012, unreleased):** `HTTPError` responses are now closed by every handler that can receive one; guarded by a static `ast` check + a behaviour test per call site (`tests/unit/test_http_errors_closed.py`). Broad handlers audited with `ast` (KD-ATP-013): the only one that could receive an open `HTTPError` was `core/retry.with_retry`, now closed too.
 
 ---
 
 ## 3. Possible next steps (all require human approval)
 
 1. **v6.1 synthesis cutover** (KD-ATP-006) — see the backlog above; needs a dedicated 6-10h session and Owner scheduling.
-2. **Audit broad handlers** (KD-ATP-013) — `except Exception` / bare handlers around network calls can swallow an open `HTTPError`; the static guard only sees handlers that name `HTTPError` / `URLError` / `OSError`.
-3. **Placeholder adapters** (KD-ATP-009) — decide: delete the 4 empty dirs and `adapters/contracts`, or give them an owner and a use case. Evidence above.
-4. **Real-mode synthesis against the Anthropic API** (KD-ATP-010 caveat) — one outward call with a key; confirms "empty default model -> bridge picks anthropic" end to end. Not done.
+2. **Release the retry fix** (KD-ATP-013) — runtime change in `core/retry.py`; cut the next version (README/AGENTS version lines + the 7-file rule §5), `/ship`, then `aios-deploy atp <ver>`; or leave it until another runtime change needs a release.
 
 ## Cross-Session Context (CTX-P0)
 Workspace ID: `f557573632b576e4` (SHA-256 first-16-hex of canonical repo path)
