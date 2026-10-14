@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T135917Z
+GeneratedAtUTC: 20261014T140627Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 8bcf3d44abb879d1edaa629146fc201dd3618f6678d9d8bddb1e5fbe73488a7c
+SHA256: 82600697cb86ac2518a15308faecf0d14dd4d6c3f0425e94d3343e9491e03ad4
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.6.3
-- **Released:** 2026-10-14T20:43:55+07:00
+- **Version:** v2.6.4
+- **Released:** 2026-10-14T21:05:12+07:00
 - **Last synced:** 2026-10-14 (via aios sync reverse)
 
 ## Status
@@ -251,23 +251,28 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: ca0640961fd1db903319108ad3820a2634f7b79cde9a25be81efda5d3902c11d
+SHA256: 4d1ab8ebadb2b66e56040e469e0c5fe21a5644a5069e357c715d6dd7fde37dc9
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.6.3 — reverse sync from source repo
+## Handoff: v2.6.4 — reverse sync from source repo
 **Date**: 2026-10-14
-**Release report (G-RELREPORT-1)**: ledger `~/AI_OS/20_PROJECTS/ATP/AI_ISSUE_LEDGER.yaml` · user report `~/AI_Shared_Outputs/AIOS_Ecosystem/ATP/bao-cao-phat-hanh/Bao_Cao_Phat_Hanh_ATP_2.6.3.{md,html,pdf,docx,pptx}`
-**Open at release**: KD-ATP-007 (2.6.3 NOT deployed; aios-server runs 2.6.2) · KD-ATP-004 (pack AI_PROJECT_CONTEXT stale: v2.0.0/Ollama) · KD-ATP-003/005/006/008/009
 
-### What changed in v2.6.3
-## [2.6.3] — 2026-10-14
+### What changed in v2.6.4
+## [2.6.4] — 2026-10-14
 
-### Fixed — `write_exchange_bundle()` wrote to the pre-2.0.4 exchange layout
+### Fixed — `generators/llm.py` defaulted to the removed Ollama provider, so every real-mode call without an explicit model failed
 
-`adapters/filesystem/exchange_adapter.py` still wrote bundles to `<workspace>/exchange/current-task/<run_id>/`, while the run writer (`workspace_writer.resolve_exchange_current_task_root`)
-has used `<workspace>/_shared/exchange/current-task/<run_id>/` since 2.0.4 — so the two writers disagreed, and `./atp inspect` only found the adapter's output through its legacy fallback.
-The adapter now calls the same resolver. It has no caller outside its tests today, so no running path changes. Covered by `test_writes_under_shared_exchange_layout`.
+`DEFAULT_MODEL` was `ollama/qwen3:8b`. `bridge_request` parsed it as provider `ollama`; the executor has had no handler for that provider since 2.6.0 removed the Ollama adapter, so the call
+fell through to the deferred SSH stub (`status=deferred`, empty `stdout`) and `generators.llm` raised `LlmError`. Measured 2026-10-14 by calling `invoke_executor` directly: no network,
+nothing launched. The default is now empty, so `bridge_request` applies the bridge's own default (anthropic, `claude-haiku-4-5-20251001`) — one source instead of a copy that can drift
+(the sonnet-4 id that went 404 in 2.6.0 is the precedent). `ATP_GENERATORS_DEFAULT_MODEL` still overrides. The `report` generator's `model` parameter example no longer suggests an Ollama model.
+
+macOS hosts must not run Ollama or any local LLM (`Global_Mac_No_Ollama_Rule`). Nothing in ATP can start one since 2.6.0; a read-only probe of the Mac on 2026-10-14 found no Ollama process,
+no listener on 11434, no `ollama` binary or app. Guarded by `tests/unit/test_generators_llm_default.py` (3 tests; all 3 fail against the old default). Not exercised against the real Anthropic
+API in this release: that needs a key and an outward call.
+
+### Changed — `README.md` and `AGENTS.md` baseline lines now say v2.6.4
 
 Đầy đủ / full history: `/Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP/CHANGELOG.md`
 
