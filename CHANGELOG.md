@@ -15,7 +15,7 @@ the providers that ARE registered. `bridge_request` turns it into `BridgeError` 
 Model spec was 'ollama/qwen3:8b'."}` and the generators surface an `LlmError` with the same text. Unchanged: known providers; a provider with no handler on a node the registry does NOT know as local still gets the `deferred`
 remote stub (pinned by the existing `test_unknown_provider_with_node_falls_back_to_remote`); `adapter` requests (`claude-code`, `codex`, `cursor`, `openai-batch`) are dispatched before any provider check.
 
-Who could be affected was measured, not assumed (read-only survey of the 9 ecosystem repos that mention the bridge, each independently re-checked): 8 never call ATP; AIOS-OC is the only consumer, through `POST /run`, and nothing in it checks for
+Who could be affected was measured, not assumed (read-only survey of the 9 ecosystem repos that mention the bridge, one agent per repo): 8 never call ATP; AIOS-OC is the only consumer, and its survey was re-checked by a second, independent agent (the other 8 had nothing to re-check), through `POST /run`, and nothing in it checks for
 `deferred`. Its callers test `status === "failed" || error`, so the new 400 is shown as a failure where the old 200 was shown as "done" with an empty result. Every `model` value it sends (bare `claude-*` names, `anthropic/`, `openai/`) still
 resolves to a provider with an executor. Not changed here, found by the survey: AIOS-OC `flow-generate` drops the error text of a non-2xx answer (shows only `ATP HTTP 400`), and its `toCompliantModel` only rewrites the `ollama/` prefix.
 
