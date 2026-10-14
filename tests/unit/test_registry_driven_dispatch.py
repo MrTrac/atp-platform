@@ -10,6 +10,7 @@ from unittest.mock import patch
 from core.execution.executor import (
     EXECUTOR_MAP,
     ExecutionError,
+    UnsupportedProviderError,
     invoke_executor,
     register_executor,
 )
@@ -35,11 +36,38 @@ class TestExecutorDispatchMap(unittest.TestCase):
             self.assertTrue(callable(handler), f"Handler for {provider} is not callable")
 
     def test_unknown_provider_with_node_falls_back_to_remote(self) -> None:
+        """A provider with no handler on a node the registry does NOT know as local is assumed remote: the SSH stub answers `deferred` (adapters/ssh_remote/README.md)."""
         result = invoke_executor(
             {"payload": {}},
             {"selected_provider": "unknown_provider", "selected_node": "some_node"},
         )
         self.assertEqual(result["status"], "deferred")
+
+    def test_unknown_provider_on_a_local_node_is_an_error_not_deferred(self) -> None:
+        """KD-ATP-015: on `local_mac` (registry: locality local) there is no remote to defer to. `deferred` there hid the removed `ollama` default for months."""
+        with self.assertRaises(UnsupportedProviderError) as cm:
+            invoke_executor({"payload": {}}, {"selected_provider": "unknown_provider", "selected_node": "local_mac"})
+        msg = str(cm.exception)
+        self.assertIn("'unknown_provider'", msg)
+        self.assertIn("'local_mac'", msg)
+        for registered in sorted(EXECUTOR_MAP):
+            self.assertIn(registered, msg, "the message must tell the caller what IS supported")
+
+    def test_the_removed_ollama_provider_is_rejected_on_the_local_node(self) -> None:
+        with self.assertRaises(UnsupportedProviderError):
+            invoke_executor({"payload": {}}, {"selected_provider": "ollama", "selected_node": "local_mac"})
+
+    def test_unsupported_provider_is_still_an_execution_error(self) -> None:
+        """Existing `except ExecutionError` callers (orchestrator, CLI) keep working."""
+        self.assertTrue(issubclass(UnsupportedProviderError, ExecutionError))
+        with self.assertRaises(ExecutionError):
+            invoke_executor({"payload": {}}, {"selected_provider": "typo", "selected_node": "local_mac"})
+
+    def test_a_node_the_registry_does_not_know_is_not_assumed_local(self) -> None:
+        from core.execution.executor import _is_local_node
+        self.assertTrue(_is_local_node("local_mac"))
+        self.assertFalse(_is_local_node("some_node"))
+        self.assertFalse(_is_local_node(""))
 
     def test_empty_provider_and_node_raises_execution_error(self) -> None:
         with self.assertRaisesRegex(ExecutionError, "Unsupported execution route"):
