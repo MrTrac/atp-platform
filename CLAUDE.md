@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261011T101156Z
+GeneratedAtUTC: 20261014T134120Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,13 +90,13 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: cbdc5be287ddc083f1b8f2578086194b42d7fdff97007b8e0d703f4d1dd5c4c3
+SHA256: ff5d07a607cedad3b50983979af915971c0f2e082b8b27427deee47254ce9e6d
 ----
 # AI_CURRENT_BASELINE — ATP
 
 - **Version:** v2.6.2
-- **Released:** 2026-10-11T17:09:57+07:00
-- **Last synced:** 2026-10-11 (via aios sync reverse)
+- **Released:** 2026-10-11T17:45:47+07:00
+- **Last synced:** 2026-10-14 (via aios sync reverse)
 
 ## Status
 
@@ -251,12 +251,12 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 8acf12697a0c9e39634784bb63599e9148d16bd286c4c6ea7d258ec10a8ec97f
+SHA256: 18d08ceafd596bfd516bcad6e88a9a03fb30acd329635fd53505255b3dab534e
 ----
 # AI_HANDOFF_LATEST — ATP
 
 ## Handoff: v2.6.2 — reverse sync from source repo
-**Date**: 2026-10-11
+**Date**: 2026-10-14
 
 ### What changed in v2.6.2
 ## [2.6.2] — 2026-10-11
@@ -283,10 +283,16 @@ It now looks at the current layout first and the pre-2.0.4 layout second, and th
 
 ### Included — SIGTERM fix (`aee4f7f`), merged after 2.6.1 and not released until now
 
-### Not changed (needs an owner decision, see Global_Build_Deploy_Topology_Rule §8 item 15)
+### Added — `jinja2` declared as the optional extra `adapters`
 
-`adapters/claude_code.py`, `codex.py` and `cursor.py` import `jinja2` in `_render_template`, but `pyproject.toml` declares no dependency (`dependencies = []`), and the server's venv
-has none, so those three adapters would raise `ModuleNotFoundError` the first time they render a prompt. `adapters/exchange_adapter.py` still writes bundles to `<ws>/exchange/current-task/`.
+`adapters/claude_code.py`, `codex.py` and `cursor.py` import `jinja2` in `_render_template`, but `pyproject.toml` declared no dependency (`dependencies = []`) and the server's venv has none, so those three
+adapters would raise `ModuleNotFoundError` the first time they render a prompt (nothing noticed: the tests ran on a machine that had jinja2). Now `pip install -e ".[adapters]"` brings it in (`jinja2>=3,<4`).
+The core stays dependency-free (ADR-0001) and `aios-server` does **not** install the extra: its journal since 7/10 shows only `/health` requests, no adapter run. `tests/unit/test_declared_dependencies.py`
+fails if any shipped module imports a third-party package that `pyproject.toml` does not declare.
+
+### Known, not changed
+
+`adapters/filesystem/exchange_adapter.py:40` still writes exchange bundles to `<ws>/exchange/current-task/` (the writer uses `_shared/exchange/...` since 2.0.4); no observed use, left alone.
 
 Đầy đủ / full history: `/Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP/CHANGELOG.md`
 
