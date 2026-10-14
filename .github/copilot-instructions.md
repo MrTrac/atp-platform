@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=COPILOT -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T145006Z
+GeneratedAtUTC: 20261014T150451Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -111,7 +111,7 @@ SHA256: 82600697cb86ac2518a15308faecf0d14dd4d6c3f0425e94d3343e9491e03ad4
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 95d6dff70cb5bd4d72307ef6159e1509717f71edede2a06094378055567bd0b7
+SHA256: 3cf0a536d78384643fcf7910208873bc5761fa8346315e50eabf42325b7fc507
 ----
 # AI Next Step — ATP
 
@@ -152,8 +152,9 @@ ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above 
 **Release.** v2.6.4 (tag `v2.6.4` -> `1e8d0c5`). Running on `aios-server` from `/opt/aios/atp/current -> releases/2.6.4` (checked: `/health` reports `2.6.4` + `released`, service active, 0 restarts).
 Previous release `2.6.2` is kept on the server as the `--rollback` target; the rollback itself has **not** been exercised on the live service. `2.6.3` was never installed (2.6.2 -> 2.6.4).
 
-**After the tag, on `main`, not in any release** (tests + docs only, nothing to deploy): KD-ATP-003 (`cli/` launch test only runs real entry points), KD-ATP-011 (README/AGENTS list the bridge routes; guard test reads
-them from `bridge/bridge_server.py` with `ast`), KD-ATP-008 (`test_execute_timeout` uses the real `asyncio.wait_for` and asserts the kill). Fold them into the next release that changes runtime code.
+**After the tag, on `main`, not in any release.** Tests + docs only: KD-ATP-003 (`cli/` launch test only runs real entry points), KD-ATP-011 (README/AGENTS list the bridge routes; guard test reads
+them from `bridge/bridge_server.py` with `ast`), KD-ATP-008 (`test_execute_timeout` uses the real `asyncio.wait_for` and asserts the kill). **Runtime code:** KD-ATP-012 — 14 `except` handlers in 7 modules now close the response an
+`HTTPError` holds open, through `core/http_errors.close_http_error` (error-path only; low risk). This one changes what runs on the server, so it needs a release + `aios-deploy atp` to take effect there; the server still runs 2.6.4 without it.
 
 **Execution stack** (read from `registry/providers/*.yaml`, `EXECUTOR_MAP`, `bridge/bridge_server.py`):
 - LLM providers: **Anthropic** (default; bridge default model `claude-haiku-4-5-20251001`) and **OpenAI**. `non_llm_execution` for shell/git/build/test/lint. Bridge-level dispatchers: `tdf-run` (:4180), `aios-flow` (:7700). AOKP adapter opt-in (6 queries).
@@ -164,7 +165,7 @@ them from `bridge/bridge_server.py` with `ast`), KD-ATP-008 (`test_execute_timeo
 **Deploy path.** Tag on GitHub -> a watcher publishes it to the VPS release store (it never deploys) -> `aios-deploy atp <version>` (Mac -> `sudo aios-deploy-local atp`): installs into a new `releases/<ver>` directory, swaps `current`, restarts,
 requires HTTP 200 **and** the exact version in `/health`, rolls back by itself on failure. See `Global_Build_Deploy_Topology_Rule.md` §5.2c and §8.
 
-**Tests.** `make test`: 665 unit + 22 integration passed (7 skipped). Bare `python3 -m pytest` (no `PYTHONPATH`): 687 passed, 0 failed. Default run emits 0 warnings.
+**Tests.** `make test`: 680 unit + 22 integration passed (7 skipped). Bare `python3 -m pytest` (no `PYTHONPATH`): 702 passed, 0 failed. 0 warnings, including with `ResourceWarning` and `RuntimeWarning` promoted to errors.
 
 ---
 
@@ -182,17 +183,16 @@ Per CHANGELOG, **not re-verified today**: vision (image inputs), per-model timeo
 Known gaps / stubs (measured 2026-10-14):
 - **4 placeholder adapter dirs**: `adapters/api`, `desktop_bridge`, `local_service`, `ui_bridge` — only a README and `__init__.py`, imported by nothing. Plus `adapters/contracts/` (4 files, 138 lines) which no non-test code imports (not examined further).
 - **SSH remote execution** (`adapters/ssh_remote/ssh_exec_adapter.py`, 49 lines): a stub that never executes anything and returns `status=deferred`. It is also where requests for an unknown provider end up.
-- **Resource leak (suspected)**: with `ResourceWarning` enabled, 8 `HTTPError` objects are garbage-collected without being closed (pytest attributes them to the retry tests and the AOKP integration test, but it attributes by garbage-collection time, so where they are created is not established). Not yet known whether adapter code leaks them too (KD-ATP-012).
+- ~~Resource leak~~ **fixed on `main` (KD-ATP-012, unreleased):** `HTTPError` responses are now closed by every handler that can receive one; guarded by a static `ast` check + a behaviour test per call site (`tests/unit/test_http_errors_closed.py`). Not audited: handlers that catch only `Exception` / bare around a network call.
 
 ---
 
 ## 3. Possible next steps (all require human approval)
 
 1. **v6.1 synthesis cutover** (KD-ATP-006) — see the backlog above; needs a dedicated 6-10h session and Owner scheduling.
-2. **`HTTPError` not closed** (KD-ATP-012) — find out whether `adapters/` close error responses; if so fix there, otherwise close them in the tests.
+2. **Release the runtime fix** (KD-ATP-012) — cut the next version (README/AGENTS version lines + the 7-file rule §5), `/ship`, then `aios-deploy atp <ver>`; or leave it until another runtime change needs a release.
 3. **Placeholder adapters** (KD-ATP-009) — decide: delete the 4 empty dirs and `adapters/contracts`, or give them an owner and a use case. Evidence above.
 4. **Real-mode synthesis against the Anthropic API** (KD-ATP-010 caveat) — one outward call with a key; confirms "empty default model -> bridge picks anthropic" end to end. Not done.
-5. **Rehearse `aios-deploy atp --rollback`** on the live service (KD-ATP-007 caveat) — never exercised; the rehearsal harness exists in AI_OS (`deploy_local_rehearsal`).
 
 ## Cross-Session Context (CTX-P0)
 Workspace ID: `f557573632b576e4` (SHA-256 first-16-hex of canonical repo path)
