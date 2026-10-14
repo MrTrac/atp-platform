@@ -2,6 +2,25 @@
 
 All notable changes to ATP are documented here.
 
+## [Unreleased]
+
+### Fixed — `with_retry` dropped every retried `HTTPError` without closing it (KD-ATP-013)
+
+KD-ATP-012 closed the response of an `HTTPError` in the 14 handlers that name a network exception, and said it had NOT audited broad handlers. Audited 14/10/2026 with `ast`: of the 15 `urlopen` call sites, 13 sit in a `try`
+whose handlers 2.6.5 already closes; the other two (`_do_request` in `execute_anthropic` / `execute_openai`) run through `core/retry.with_retry`, which has `except Exception` around a caller-supplied function. It received
+every retryable error (429, 502, 503, 504 — exactly what a rate limit produces) and dropped it on the way to the next attempt without closing it. A name-based scan did not see it: `with_retry` reaches the network through a
+callable PARAMETER, not by name. It is the only broad handler in the code base that can receive an `HTTPError` and does not re-raise it; there is no network path other than `urlopen` (no `http.client`, `requests`, `httpx`,
+`aiohttp`, `socket`).
+
+`with_retry` now calls `close_http_error(exc)` just before it sleeps for the next attempt. The LAST error is deliberately left open: it is re-raised, and the adapters read its body (`exc.read()`) to build the error message;
+closing it too would have made every exhausted-retry message lose the provider's explanation. `Retry-After` is read before the close (headers stay valid after it).
+`tests/unit/test_http_errors_closed.py` (+7 tests): `with_retry` closes dropped attempts and returns the success; with exhausted retries it closes all but the last and the last body is still readable; a non-retryable
+error and a wait-budget break are raised untouched; end to end through `execute_anthropic` with 429 on every attempt all three errors end up closed and the message carries the provider's text; and a static guard that
+fails when a broad handler (`except Exception` / bare) in a module that deals with `HTTPError` can receive one — it calls `urlopen`, a function of the module that does, or a callable parameter — and does not close it.
+Seeded defects, all caught: `with_retry` not closing; `with_retry` closing the last error too (6 tests red, two of them older tests about the error body); a new broad handler around a parameter in a network module;
+and one in an unrelated module is correctly NOT flagged. Reverting `core/retry.py` turns 4 tests red. Probe over the whole suite: 45 `HTTPError` created, 45 closed, 0 never closed. Suite with `ResourceWarning` and
+`RuntimeWarning` as errors: 0 warnings. Not covered: a broad handler in a module that neither calls `urlopen` nor imports `urllib.error` (none can receive an `HTTPError` today).
+
 ## [2.6.5] — 2026-10-14
 
 ### Fixed — `HTTPError` responses were never closed by the code that caught them (KD-ATP-012)

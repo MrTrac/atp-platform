@@ -5,6 +5,9 @@
 with a probe over the whole suite: 15 HTTPError objects created, 0 closed by anyone; with `ResourceWarning` enabled that shows as `Implicitly cleaning up <HTTPError ...>` ×8. CPython frees
 the object at once, so nothing ever failed — it is a hidden dependency on refcounting, not a crash.
 
+A fourth place leaked the same way (KD-ATP-013): `core/retry.with_retry` has `except Exception` around a caller-supplied function, so it received every retryable HTTPError (429, 502,
+503, 504) and dropped it on the way to the next attempt. It now closes each error it drops and leaves the LAST one open: that one is re-raised and the caller reads its body.
+
 Three layers, because each catches what the others cannot:
   * the helper itself (`core/http_errors.close_http_error`);
   * a static guard: every handler in a module that calls `urlopen` and can receive an HTTPError must call the helper on the exception it bound (new handlers cannot forget);
@@ -140,6 +143,142 @@ class TestEveryHandlerClosesTheError(unittest.TestCase):
                 if not _closes_its_exception(h):
                     missing.append(f"{rel}:{h.lineno} except {sorted(_caught(h))} as {h.name}")
         self.assertEqual(missing, [], "handlers that can receive an open HTTPError but never close it (call core.http_errors.close_http_error(<exc>))")
+
+
+def _calls(nodes) -> list[ast.Call]:
+    return [c for s in nodes for c in ast.walk(s) if isinstance(c, ast.Call)]
+
+
+def _callee(c: ast.Call) -> str | None:
+    f = c.func
+    return f.id if isinstance(f, ast.Name) else (f.attr if isinstance(f, ast.Attribute) else None)
+
+
+def _handles_http_errors(tree: ast.AST) -> bool:
+    """A module that calls urlopen or imports HTTPError/URLError deals with them; broad handlers elsewhere are out of scope."""
+    if _calls_urlopen(tree):
+        return True
+    return any(isinstance(n, ast.ImportFrom) and n.module == "urllib.error" for n in ast.walk(tree))
+
+
+def _broad_handlers_that_can_receive_an_http_error(tree: ast.AST) -> list[ast.ExceptHandler]:
+    """`except Exception` / `BaseException` / bare handlers whose try-body can raise an HTTPError: it calls urlopen, a function of the same module that
+    (transitively) does, or a callable PARAMETER of the enclosing function (that is how `with_retry(fn)` reaches the network, and a name-based scan cannot see it)."""
+    funcs = {n.name: n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    reach = {n for n, fn in funcs.items() if "urlopen" in {_callee(c) for c in _calls(fn.body)}}
+    grew = True
+    while grew:
+        grew = False
+        for n, fn in funcs.items():
+            if n not in reach and {_callee(c) for c in _calls(fn.body)} & reach:
+                reach.add(n)
+                grew = True
+    out = []
+    for fn in funcs.values():
+        params = {a.arg for a in fn.args.args + fn.args.kwonlyargs}
+        for t in (n for n in ast.walk(fn) if isinstance(n, ast.Try)):
+            called = {_callee(c) for c in _calls(t.body)} - {None}
+            if not ({"urlopen"} & called or called & reach or called & params):
+                continue
+            out.extend(h for h in t.handlers if _caught(h) & {"Exception", "BaseException", "<bare>"})
+    return out
+
+
+class TestBroadHandlersCloseToo(unittest.TestCase):
+    """KD-ATP-013: a handler that names no network exception can still receive an HTTPError and drop it."""
+
+    def _scoped_modules(self) -> dict[str, ast.AST]:
+        mods = {}
+        for d in _SCAN_DIRS:
+            for p in sorted((_ROOT / d).rglob("*.py")):
+                if p.name.startswith("test_") or "__pycache__" in p.parts:
+                    continue
+                tree = ast.parse(p.read_text(encoding="utf-8"))
+                if _handles_http_errors(tree):
+                    mods[str(p.relative_to(_ROOT))] = tree
+        return mods
+
+    def test_the_scan_finds_with_retry(self) -> None:
+        """Guards the guard: with_retry is the known case; if the scan stops seeing it, the check below would pass vacuously."""
+        found = [(rel, h.lineno) for rel, t in self._scoped_modules().items() for h in _broad_handlers_that_can_receive_an_http_error(t)]
+        self.assertIn("core/retry.py", {rel for rel, _ in found}, found)
+
+    def test_every_broad_handler_that_can_receive_an_http_error_closes_it(self) -> None:
+        missing = []
+        for rel, tree in self._scoped_modules().items():
+            for h in _broad_handlers_that_can_receive_an_http_error(tree):
+                if not _closes_its_exception(h):
+                    missing.append(f"{rel}:{h.lineno} except {sorted(_caught(h))} as {h.name}")
+        self.assertEqual(missing, [], "broad handlers that can receive an open HTTPError (retry loops, wrappers) and never close it")
+
+
+class TestWithRetryClosesWhatItDrops(unittest.TestCase):
+    """The behaviour behind KD-ATP-013, through the real `with_retry`."""
+
+    def _flaky(self, codes: list[int]):
+        """A function that raises one tracked HTTPError per call, in order, then returns "ok"; returns (fn, [(exc, fp), ...])."""
+        errors = [_error(c) for c in codes]
+        for exc, _fp in errors:
+            self.addCleanup(exc.close)  # the test owns every error it creates, including the ones the code under test never reaches
+        it = iter(errors)
+
+        def fn() -> str:
+            try:
+                raise next(it)[0]
+            except StopIteration:
+                return "ok"
+
+        return fn, errors
+
+    def test_dropped_attempts_are_closed_and_the_success_is_returned(self) -> None:
+        from core.retry import with_retry
+        fn, errors = self._flaky([503, 429])
+        self.assertEqual(with_retry(fn, sleep_fn=lambda _s: None), "ok")
+        self.assertEqual([fp.closed for _e, fp in errors], [True, True])
+
+    def test_exhausted_retries_close_every_attempt_but_the_last(self) -> None:
+        """The last error is re-raised: it MUST stay open, the caller reads its body (anthropic/openai handlers do `exc.read()`)."""
+        from core.retry import with_retry
+        fn, errors = self._flaky([429, 429, 429, 429])
+        with self.assertRaises(HTTPError) as cm:
+            with_retry(fn, max_attempts=3, sleep_fn=lambda _s: None)
+        last = cm.exception
+        self.addCleanup(last.close)
+        self.assertIs(last, errors[2][0], "the third attempt's error is the one re-raised")
+        self.assertEqual([fp.closed for _e, fp in errors[:3]], [True, True, False])
+        self.assertIn(b"boom", last.read(), "the re-raised error's body must still be readable")
+
+    def test_a_non_retryable_error_is_raised_untouched(self) -> None:
+        from core.retry import with_retry
+        fn, errors = self._flaky([400])
+        with self.assertRaises(HTTPError) as cm:
+            with_retry(fn, sleep_fn=lambda _s: None)
+        self.addCleanup(cm.exception.close)
+        self.assertIs(cm.exception, errors[0][0])
+        self.assertFalse(errors[0][1].closed)
+
+    def test_running_out_of_wait_budget_does_not_close_the_error_it_re_raises(self) -> None:
+        from core.retry import with_retry
+        fn, errors = self._flaky([503, 503])
+        with self.assertRaises(HTTPError) as cm:
+            with_retry(fn, base_delay=10.0, max_total_wait=0.001, sleep_fn=lambda _s: None)
+        self.addCleanup(cm.exception.close)
+        self.assertFalse(errors[0][1].closed, "break on budget: nothing was retried, so nothing was dropped")
+
+    def test_through_the_adapter_every_attempt_is_closed_and_the_final_body_reaches_the_error_message(self) -> None:
+        """End to end on the retried path: 429 on every attempt. The first two are closed by with_retry, the third by the adapter AFTER it read the body."""
+        from adapters.cloud.anthropic_adapter import execute_anthropic
+        errors = []
+        for _ in range(3):
+            fp = BytesIO(b'{"error": {"message": "rate limited, slow down"}}')
+            errors.append((HTTPError("http://x", 429, "Too Many", {}, fp), fp))
+        with patch("adapters.cloud.anthropic_adapter.urlopen", side_effect=[e for e, _fp in errors]), \
+                patch("core.retry._calculate_delay", return_value=0.0), \
+                patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test"}):
+            result = execute_anthropic({"model": "m", "prompt": "p"})
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("rate limited, slow down", result["error"], "the final error's body must still have been readable")
+        self.assertEqual([fp.closed for _e, fp in errors], [True, True, True])
 
 
 class TestEachCallSiteClosesTheResponse(unittest.TestCase):

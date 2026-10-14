@@ -12,6 +12,8 @@ import time
 from typing import Callable, TypeVar
 from urllib.error import HTTPError, URLError
 
+from core.http_errors import close_http_error
+
 
 T = TypeVar("T")
 
@@ -112,6 +114,9 @@ def with_retry(
                 # Would exceed total budget
                 break
 
+            # Retrying: this attempt's error is dropped here, so close the response an HTTPError holds open (KD-ATP-013). Headers were read above and stay valid.
+            # Only an error that is going to be retried is closed: the LAST one is re-raised below and must stay open, because the caller reads its body.
+            close_http_error(exc)
             sleep_fn(delay)
             total_waited += delay
 
