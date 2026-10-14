@@ -32,12 +32,15 @@ def write_exchange_bundle(
 
     from adapters.filesystem.workspace_writer import (
         _write_json,
-        resolve_workspace_root,
+        resolve_exchange_current_task_root,
     )
     from pathlib import Path
 
-    ws = Path(workspace_root) if workspace_root else resolve_workspace_root()
-    exchange_dir = ws / "exchange" / "current-task" / run_id
+    # Same resolver the run writer uses, so both land under <ws>/_shared/exchange/current-task/<run_id> (the layout since 2.0.4).
+    exchange_dir = resolve_exchange_current_task_root(
+        run_id,
+        workspace_root=Path(workspace_root) if workspace_root else None,
+    )
     exchange_dir.mkdir(parents=True, exist_ok=True)
     bundle_path = _write_json(exchange_dir / "exchange-bundle.json", bundle)
 

@@ -2,6 +2,14 @@
 
 All notable changes to ATP are documented here.
 
+## [Unreleased]
+
+### Fixed — `write_exchange_bundle()` wrote to the pre-2.0.4 exchange layout
+
+`adapters/filesystem/exchange_adapter.py` still wrote bundles to `<workspace>/exchange/current-task/<run_id>/`, while the run writer (`workspace_writer.resolve_exchange_current_task_root`)
+has used `<workspace>/_shared/exchange/current-task/<run_id>/` since 2.0.4 — so the two writers disagreed, and `./atp inspect` only found the adapter's output through its legacy fallback.
+The adapter now calls the same resolver. It has no caller outside its tests today, so no running path changes. Covered by `test_writes_under_shared_exchange_layout`.
+
 ## [2.6.2] — 2026-10-11
 
 ### Fixed — every `python cli/*.py` crashed on Python ≥ 3.12 (the server runs 3.12.3)

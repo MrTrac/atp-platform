@@ -57,6 +57,20 @@ class TestWriteExchangeBundle(unittest.TestCase):
             written = json.loads(Path(result["path"]).read_text(encoding="utf-8"))
             self.assertEqual(written["bundle_id"], "b-test-1")
 
+    def test_writes_under_shared_exchange_layout(self) -> None:
+        """Bundles go where the run writer puts current-task exchanges (<ws>/_shared/exchange/current-task/<run_id>), never the pre-2.0.4 <ws>/exchange/."""
+        from adapters.filesystem.workspace_writer import resolve_exchange_current_task_root
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ws = Path(tmpdir)
+            result = write_exchange_bundle({"bundle_id": "b-layout", "request_id": "run-layout"}, workspace_root=ws)
+
+            expected = resolve_exchange_current_task_root("run-layout", workspace_root=ws) / "exchange-bundle.json"
+            self.assertEqual(Path(result["path"]), expected)
+            self.assertTrue(expected.is_file())
+            self.assertEqual(expected.relative_to(ws.resolve()).parts[:3], ("_shared", "exchange", "current-task"))
+            self.assertFalse((ws / "exchange").exists(), "legacy pre-2.0.4 exchange/ directory must not be created")
+
 
 class TestRunPersistence(unittest.TestCase):
 
