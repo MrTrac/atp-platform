@@ -109,7 +109,7 @@ Preserve boundaries strictly. Follow the source of truth in order. Make the smal
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=AGENTS -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T150451Z
+GeneratedAtUTC: 20261014T151151Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -198,12 +198,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 82600697cb86ac2518a15308faecf0d14dd4d6c3f0425e94d3343e9491e03ad4
+SHA256: 139d1b029dc6d2b3130ad98db128ad3d38f92ef64a454459f583dd61aeaf0110
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.6.4
-- **Released:** 2026-10-14T21:05:12+07:00
+- **Version:** v2.6.5
+- **Released:** 2026-10-14T22:10:10+07:00
 - **Last synced:** 2026-10-14 (via aios sync reverse)
 
 ## Status

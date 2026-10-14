@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261014T150451Z
+GeneratedAtUTC: 20261014T151150Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 82600697cb86ac2518a15308faecf0d14dd4d6c3f0425e94d3343e9491e03ad4
+SHA256: 139d1b029dc6d2b3130ad98db128ad3d38f92ef64a454459f583dd61aeaf0110
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.6.4
-- **Released:** 2026-10-14T21:05:12+07:00
+- **Version:** v2.6.5
+- **Released:** 2026-10-14T22:10:10+07:00
 - **Last synced:** 2026-10-14 (via aios sync reverse)
 
 ## Status
@@ -251,30 +251,54 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 3bf66ce8dea2acf9908b73849545c7f00c99e7850b9bdaec4b6bd098ce5c89c8
+SHA256: f1de422b50b3e6aedd27d88d2e36bb11340655ec1ad7a7b3c4d97a918420cda3
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.6.4 — reverse sync from source repo
+## Handoff: v2.6.5 — reverse sync from source repo
 **Date**: 2026-10-14
-**Release report (G-RELREPORT-1)**: ledger `~/AI_OS/20_PROJECTS/ATP/AI_ISSUE_LEDGER.yaml` · user report `~/AI_Shared_Outputs/AIOS_Ecosystem/ATP/bao-cao-phat-hanh/Bao_Cao_Phat_Hanh_ATP_2.6.4.{md,html,pdf,docx,pptx}`
-**Open items**: read the ledger `carry_over` blocks — they are updated after release and are authoritative (a handoff line here goes stale: at 2.6.4 release KD-ATP-007 was 'not deployed'; it was deployed 2026-10-14 14:26Z). Still open after 2.6.4: KD-ATP-005/006/008/009.
 
-### What changed in v2.6.4
-## [2.6.4] — 2026-10-14
+### What changed in v2.6.5
+## [2.6.5] — 2026-10-14
 
-### Fixed — `generators/llm.py` defaulted to the removed Ollama provider, so every real-mode call without an explicit model failed
+### Fixed — `HTTPError` responses were never closed by the code that caught them (KD-ATP-012)
 
-`DEFAULT_MODEL` was `ollama/qwen3:8b`. `bridge_request` parsed it as provider `ollama`; the executor has had no handler for that provider since 2.6.0 removed the Ollama adapter, so the call
-fell through to the deferred SSH stub (`status=deferred`, empty `stdout`) and `generators.llm` raised `LlmError`. Measured 2026-10-14 by calling `invoke_executor` directly: no network,
-nothing launched. The default is now empty, so `bridge_request` applies the bridge's own default (anthropic, `claude-haiku-4-5-20251001`) — one source instead of a copy that can drift
-(the sonnet-4 id that went 404 in 2.6.0 is the precedent). `ATP_GENERATORS_DEFAULT_MODEL` still overrides. The `report` generator's `model` parameter example no longer suggests an Ollama model.
+`urlopen` raises `HTTPError` for every non-2xx answer, and that exception object IS the response: it owns the open socket until `close()` or garbage collection. `with urlopen(...)` closes
+successful responses, but 14 handlers across 7 modules (`anthropic_adapter` ×2, `openai_adapter` ×2, `openai_batch`, `tdf_run`, `evaluator`, `aios_flow_adapter` ×2, `aokp_adapter` ×6 — the AOKP ones
+catch `URLError`, of which `HTTPError` is a subclass) caught the error, read or ignored the body and left the close to the garbage collector. Measured 14/10/2026 with a probe over the whole suite:
+15 `HTTPError` created, 0 closed by anyone; with `ResourceWarning` enabled, `Implicitly cleaning up <HTTPError ...>` ×8. CPython frees the object at once, so nothing ever failed: this is a
+hidden dependency on refcounting, not a crash.
 
-macOS hosts must not run Ollama or any local LLM (`Global_Mac_No_Ollama_Rule`). Nothing in ATP can start one since 2.6.0; a read-only probe of the Mac on 2026-10-14 found no Ollama process,
-no listener on 11434, no `ollama` binary or app. Guarded by `tests/unit/test_generators_llm_default.py` (3 tests; all 3 fail against the old default). Not exercised against the real Anthropic
-API in this release: that needs a key and an outward call.
+New `core/http_errors.close_http_error(exc)` (closes an `HTTPError`, no-op for anything else, never raises) is called by each of the 14 handlers once it has read what it needs (`code`, `reason`,
+`str(exc)` stay valid after the close). Where the body is read, the close is in a `finally`. The suite's own `HTTPError` objects (retry tests, the AOKP integration helper) are closed too.
+`tests/unit/test_http_errors_closed.py` (15 tests + 6 subtests): the helper; a static `ast` guard that fails when any handler in a module that calls `urlopen` can receive an `HTTPError` and does not close
+it (so a new handler cannot forget); and a behaviour test per call site that raises a tracked `HTTPError` through the real code path. Seeded defects, all caught: the close removed at 9 different sites (one per
+module, both ends of `aokp` and `aios_flow`), and a new handler that forgets to close (only the static guard can see that one). Reverting the 7 production files to the old code turns all 14 site tests red.
+Probe after the fix: 33 `HTTPError` created, 33 closed, 0 never closed. Suite with `ResourceWarning` and `RuntimeWarning` promoted to errors: 0 warnings (was 8). NOT audited: handlers that catch only
+`Exception` (or are bare) around a network call; the static guard and this fix cover handlers that name `HTTPError`, `URLError` or `OSError`.
 
-### Changed — `README.md` and `AGENTS.md` baseline lines now say v2.6.4
+### Fixed — `test_execute_timeout` did not test the timeout and left a coroutine un-awaited (KD-ATP-008)
+
+The test patched `asyncio.wait_for` to raise `TimeoutError` at once. That (1) left the `communicate()` coroutine it had just created un-awaited — the `RuntimeWarning` that showed in every run —
+and (2) skipped the timeout mechanism entirely: it never checked that `timeout_seconds` reaches `wait_for`, and it never asserted that the hung `claude` process is killed. Measured 14/10/2026:
+removing `self._process.kill()` from `ClaudeCodeAdapter.execute`, or making it ignore `timeout_seconds`, left the old test green. With the default `timeout_seconds` of 7200 a missing kill would
+leave an orphaned `claude` running for hours. The test now uses the real `asyncio.wait_for` with a 0.05 s timeout and a hung `communicate()`, and asserts the error text, `exit_code == -1`, that
+`communicate()` was awaited, that `kill()` was called once, and that it returned in under 5 s. Seeded defects (all caught): no `kill()`; `timeout_seconds * 200`; a different error message.
+Default test run: 1 warning -> 0.
+
+### Fixed — bare `python3 -m pytest` failed on a library that was never meant to be launched (KD-ATP-003)
+
+`tests/unit/test_cli_module_names.py::test_cli_scripts_start_on_this_interpreter` ran `python cli/<x>.py -h` for EVERY module in `cli/`, including `cli/output_contract.py`: a 745-line
+library (no `__main__`, no argparse) that eight scripts `import` and `./atp` never runs. Launched bare it died with `No module named 'core'`; `make test` hid it because the Makefile exports
+`PYTHONPATH=.`. The defect was in the test, not in the code. The test now launches only entry points (modules with an `if __name__ == "__main__"` guard, read with `ast`), and a second test
+requires every script `./atp` launches to be one of them, so a script that loses its guard cannot silently drop out of the launch check. Bare `python3 -m pytest`: 1 failed -> 687 passed, 0 failed.
+Seeded-defect checks (all caught): shim removed from `cli/validate.py`; guard string renamed in `cli/run.py`; guard replaced by `if True`.
+
+### Changed — README.md / AGENTS.md list the bridge routes instead of "12 endpoints" (KD-ATP-011)
+
+"12 endpoints" is ambiguous (12 distinct paths, 13 method+path pairs: `/runs/<id>` serves GET and DELETE) and nothing kept it true. Both files now list the routes, and
+`tests/unit/test_bridge_routes_documented.py` reads the real routes from `bridge/bridge_server.py` with `ast` and requires the documented list to match them exactly, with no hand-counted
+number. Seeded-defect checks (all caught): route renamed in the server; non-existent route documented; "12 endpoints" re-added; documented route dropped.
 
 Đầy đủ / full history: `/Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP/CHANGELOG.md`
 
