@@ -10,7 +10,10 @@ What is pinned, and why (measured 14/10/2026 against the real aios-identity 1.2.
 from __future__ import annotations
 
 import ast
+import http.client
 import json
+import socket
+import ssl
 from pathlib import Path
 from urllib.error import URLError
 
@@ -280,7 +283,8 @@ def test_identity_being_down_when_a_token_is_needed_is_unavailable_and_says_it_i
         result = adapter.dispatch({"pipeline": "flows/a"})
         assert (result["status"], result["error_code"], result["retryable"]) == ("error", "unavailable", True)
         assert result["error"].startswith("cannot get an identity token for aios-flow: aios-identity ")
-    assert net.flow_calls == []
+        clock.advance(1.0)  # past the one-second memory of an unreachable identity
+    assert net.flow_calls == [] and len(net.mint_calls) == 2
     net.assert_all_closed()
 
 
@@ -338,17 +342,35 @@ def test_a_persistent_network_failure_ends_the_wait_as_unreachable(net, traces, 
 
 
 def test_a_transient_failure_to_obtain_a_token_is_retried_inside_wait(net, traces, clock):
-    """Identity down exactly when the token has to be renewed: the poll waits and tries again instead of failing the wait."""
+    """Identity down exactly when an EXPIRED token has to be replaced: the poll waits and tries again instead of failing the wait."""
     net.on("POST", TOKEN_PATH, mint_answer(make_jwt(serial=1)))
     identity_token.get_provider().get_token()
-    clock.advance(3301)  # past the renewal point
+    clock.advance(3700)  # past the end of the 3600 s token, so there is nothing to fall back on
     net.on("POST", TOKEN_PATH, identity_error(503, "busy", "identity restarting"), mint_answer(make_jwt(serial=2)))
     net.on("GET", "/api/runs/run-1", DONE)
     sleeps: list[float] = []
-    result = adapter._wait_for_run("run-1", timeout_s=60, poll_interval_s=1, sleep_fn=sleeps.append)
+
+    def sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        clock.advance(seconds)
+
+    result = adapter._wait_for_run("run-1", timeout_s=60, poll_interval_s=1, sleep_fn=sleep)
     assert result["flow_status"] == "succeeded" and len(sleeps) == 1
     assert flow_header(net.flow_calls[0]).endswith(make_jwt(serial=2).split(".")[-1])  # the renewed token was used
     net.assert_all_closed()
+
+
+def test_a_token_that_is_due_for_renewal_but_still_valid_is_used_when_identity_is_down(net, traces, clock):
+    """Stale-while-error: 55 minutes into a 60-minute token, identity blinks; the poll must not fail for something the old token can still do."""
+    old = make_jwt(serial=1)
+    net.on("POST", TOKEN_PATH, mint_answer(old))
+    identity_token.get_provider().get_token()
+    clock.advance(3400)  # past the renewal point (3300 s), before the end (3585 s)
+    net.on("POST", TOKEN_PATH, URLError("connection refused"))
+    net.on("GET", "/api/runs/run-1", DONE)
+    result = adapter._wait_for_run("run-1", timeout_s=60, poll_interval_s=1, sleep_fn=lambda _s: None)
+    assert result["flow_status"] == "succeeded"
+    assert flow_header(net.flow_calls[0]) == f"Bearer {old}" and len(net.mint_calls) == 2
 
 
 def test_retries_never_run_past_the_waits_own_timeout(net, traces, clock):
@@ -476,7 +498,8 @@ def test_plain_http_to_another_machine_is_unchanged_when_authentication_is_not_c
 
 
 def test_each_kind_of_failure_has_its_own_code_and_the_old_text_survives_for_a_real_outage(net, traces):
-    net.on("POST", "/api/runs", URLError("connection refused"), flow_error(400, "invalid_pipeline", "inline YAML is refused"), b"not json")
+    refused = URLError(ConnectionRefusedError(61, "Connection refused"))
+    net.on("POST", "/api/runs", refused, flow_error(400, "invalid_pipeline", "inline YAML is refused"), b"not json")
     down = adapter.dispatch({"pipeline": "flows/a"})
     assert down["error"].startswith("aios-flow unreachable:") and (down["error_code"], down["retryable"]) == ("unreachable", True)
     bad = adapter.dispatch({"pipeline": "flows/a"})
@@ -489,7 +512,166 @@ def test_each_kind_of_failure_has_its_own_code_and_the_old_text_survives_for_a_r
     net.assert_all_closed()
 
 
+# -- a dispatch is a POST: "retryable" only when the run provably does not exist ----------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        URLError(ConnectionRefusedError(61, "Connection refused")),  # never connected
+        URLError(socket.gaierror(8, "nodename nor servname provided")),  # DNS: never connected
+        flow_error(503, "identity_unavailable", "identity unreachable", {"Retry-After": "5"}),  # refused by the auth layer
+        flow_error(429, "too_many_runs", "", {"Retry-After": "30"}),  # no row is written
+    ],
+)
+def test_a_dispatch_failure_that_proves_no_run_exists_is_retryable(net, traces, failure):
+    net.on("POST", "/api/runs", failure)
+    result = adapter.dispatch({"pipeline": "flows/a"})
+    assert result["retryable"] is True and "outcome_unknown" not in result
+    net.assert_all_closed()
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        TimeoutError("timed out"),  # sent, never answered
+        ConnectionResetError("reset by peer"),  # sent, connection dropped
+        URLError("something else"),
+        flow_error(502, "bad_gateway", "upstream closed the connection"),  # a proxy may have forwarded it
+        flow_error(504, "gateway_timeout", "upstream timed out"),
+        b"not json",  # answered, unreadably
+    ],
+)
+def test_a_dispatch_whose_outcome_is_unknown_is_not_retryable_and_says_a_run_may_exist(net, traces, failure):
+    """The reviewer's scenario: a consumer that honours `retryable` must not re-POST and start a duplicate flow."""
+    net.on("POST", "/api/runs", failure)
+    result = adapter.dispatch({"pipeline": "flows/a"})
+    assert result["status"] == "error" and result["retryable"] is False and result["outcome_unknown"] is True
+    net.assert_all_closed()
+
+
+def test_the_same_failures_stay_retryable_for_a_read(net, traces):
+    """A GET repeats safely: the flag only changes for the POST."""
+    for failure in (TimeoutError("timed out"), ConnectionResetError("reset"), flow_error(502, "bad_gateway"), flow_error(504, "gateway_timeout")):
+        net.on("GET", "/api/runs/run-1", failure)
+        result = adapter.dispatch({"action": "status", "flow_run_id": "run-1"})
+        assert result["retryable"] is True and "outcome_unknown" not in result
+    net.assert_all_closed()
+
+
 def test_a_status_failure_names_the_run(net, traces):
     net.on("GET", "/api/runs/run-9", flow_error(404, "run_not_found", "no such run"))
     result = adapter.dispatch({"action": "status", "flow_run_id": "run-9"})
     assert result["flow_run_id"] == "run-9" and result["http_status"] == 404
+
+
+# -- a run id goes into the URL path with the bearer attached ----------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "run_id",
+    ["../approvals", "../../metrics", "a/b", "a b", "a?x=1", "a#f", "-leading-dash", "..", "a\r\nX-Evil: 1", "x" * 129, "%2e%2e", "ru\u00ean"],
+)
+@pytest.mark.parametrize("action", ["status", "wait"])
+def test_a_run_id_that_could_change_the_path_is_refused_before_anything_is_sent(net, traces, clock, run_id, action):
+    """The bridge is open on 0.0.0.0:8765 and passes `flow_run_id` through: without this a caller could aim the credential at any GET route svc:atp may read."""
+    result = adapter.dispatch({"action": action, "flow_run_id": run_id, "timeout_s": 5})
+    assert (result["status"], result["error_code"], result["retryable"]) == ("error", "bad_request", False)
+    assert net.calls == []
+
+
+@pytest.mark.parametrize("run_id", ["run-1", "7f9c2c1e-3b5a-4c0e-9a55-0d1f6a1d2b3c", "r1.x_y-z", "A", "x" * 128])
+def test_ordinary_run_ids_are_accepted(net, traces, clock, run_id):
+    net.on("POST", TOKEN_PATH, mint_answer(make_jwt(serial=1)))
+    net.on("GET", f"/api/runs/{run_id}", {"id": run_id, "status": "running"})
+    assert adapter.dispatch({"action": "status", "flow_run_id": run_id})["status"] == "ok"
+
+
+# -- other failures of the connection ----------------------------------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [http.client.BadStatusLine("''"), http.client.IncompleteRead(b"abc", 10), http.client.LineTooLong("header line"), http.client.RemoteDisconnected("closed")],
+)
+def test_http_client_failures_are_network_failures_not_raw_exceptions(net, traces, failure):
+    """`http://` pointed at an https port gives BadStatusLine, a body cut short gives IncompleteRead: neither is an OSError and neither used to reach the envelope."""
+    net.on("GET", "/api/runs/run-1", failure)
+    result = adapter.dispatch({"action": "status", "flow_run_id": "run-1"})
+    assert (result["status"], result["error_code"], result["retryable"]) == ("error", "unreachable", True)
+
+
+def test_wait_retries_a_body_that_was_cut_short(net, traces, clock):
+    net.on("POST", TOKEN_PATH, mint_answer(make_jwt(serial=1)))
+    net.on("GET", "/api/runs/run-1", http.client.IncompleteRead(b"abc", 10), DONE)
+    result = adapter._wait_for_run("run-1", timeout_s=60, poll_interval_s=1, sleep_fn=lambda _s: None)
+    assert result["flow_status"] == "succeeded"
+
+
+@pytest.mark.parametrize("kind", ["wrapped", "bare"])
+def test_an_unaccepted_https_certificate_of_aios_flow_is_a_setting_and_is_not_retried(net, traces, kind):
+    cert = ssl.SSLCertVerificationError(1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate")
+    cert.reason = "CERTIFICATE_VERIFY_FAILED"  # a real one has this string attribute, set by the ssl module
+    net.on("GET", "/api/runs/run-1", *[URLError(cert) if kind == "wrapped" else cert] * 4)
+    sleeps: list[float] = []
+    result = adapter._wait_for_run("run-1", timeout_s=60, poll_interval_s=1, sleep_fn=sleeps.append)
+    assert (result["status"], result["error_code"], result["retryable"]) == ("error", "auth_failed", False)
+    assert (result["auth_source"], result["reason_code"]) == ("config", "tls_verification_failed") and "certificate" in result["error"]
+    assert len(net.flow_calls) == 1 and sleeps == []  # not a network error: no retry
+
+
+# -- what the server puts in headers and bodies ------------------------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("header", ["inf", "-inf", "nan", "-5", "abc", ""])
+def test_a_nonsensical_retry_after_never_reaches_the_envelope(net, traces, header):
+    net.on("GET", "/api/runs/run-1", flow_error(503, "identity_unavailable", "", {"Retry-After": header}))
+    result = adapter.dispatch({"action": "status", "flow_run_id": "run-1"})
+    assert "retry_after_s" not in result and "retry after" not in result["error"]
+    json.dumps(result, allow_nan=False)  # a strict JSON consumer (Infinity / NaN are not JSON) must be able to read it
+
+
+def test_a_sane_retry_after_is_kept(net, traces):
+    net.on("GET", "/api/runs/run-1", flow_error(503, "identity_unavailable", "", {"Retry-After": "7"}))
+    result = adapter.dispatch({"action": "status", "flow_run_id": "run-1"})
+    assert result["retry_after_s"] == 7.0 and "(retry after 7 s)" in result["error"]
+
+
+def test_the_set_these_variables_hint_is_only_for_a_missing_token_not_for_any_403(net, traces):
+    """aios-flow with authentication off answers 403 host_not_allowed to a foreign Host header; telling the operator to configure a token would mislead."""
+    net.on("GET", "/api/runs/run-1", flow_error(403, "host_not_allowed", "Host header not allowed"))
+    result = adapter.dispatch({"action": "status", "flow_run_id": "run-1"})
+    assert result["error_code"] == "auth_failed" and "host_not_allowed" in result["error"]
+    assert "AIOS_FLOW_IDENTITY" not in result["error"] and "no token was sent" not in result["error"]
+
+
+# -- time limits that were never exercised -----------------------------------------------------------------------------------------------------------------
+
+
+def test_every_request_has_a_timeout(net, traces, configured):
+    """Removing a timeout would let a hung server hold the caller (and, for the mint, the provider's lock and with it every caller) forever."""
+    net.on("POST", TOKEN_PATH, mint_answer(make_jwt(serial=1)))
+    net.on("POST", "/api/runs", RUN)
+    net.on("GET", "/api/runs/run-1", DONE)
+    adapter.dispatch({"pipeline": "flows/a"})
+    adapter.dispatch({"action": "status", "flow_run_id": "run-1"})
+    assert [c.timeout for c in net.mint_calls] == [10.0]
+    assert [c.timeout for c in net.flow_calls] == [10, 10]
+
+
+# -- the destination can be unusable ---------------------------------------------------------------------------------------------------------------------
+
+
+def test_a_malformed_aios_flow_url_is_an_auth_setting_error_not_a_non_json_answer(net, traces, clock, monkeypatch):
+    monkeypatch.setattr(adapter, "AIOS_FLOW_URL", "https://[::1")
+    result = adapter.dispatch({"pipeline": "flows/a"})
+    assert result["error_code"] == "auth_failed" and result["reason_code"] == "insecure_transport" and "unparseable" in result["error"]
+    assert net.calls == []
+
+
+def test_a_proxy_in_the_way_of_a_loopback_flow_url_is_refused_before_a_token_is_requested(net, traces, clock, monkeypatch):
+    monkeypatch.setattr(identity_token, "getproxies", lambda: {"http": "http://proxy.example:3128"})
+    monkeypatch.setattr(identity_token, "proxy_bypass", lambda host: False)
+    result = adapter.dispatch({"pipeline": "flows/a"})
+    assert result["error_code"] == "auth_failed" and result["reason_code"] == "proxy_in_the_way" and result["auth_source"] == "config"
+    assert net.calls == []

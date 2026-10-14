@@ -18,3 +18,12 @@ def _no_ambient_aios_flow_identity(monkeypatch):
     identity_token.reset_provider()
     yield
     identity_token.reset_provider()
+
+
+@pytest.fixture(autouse=True)
+def _never_write_the_real_g9_trace(monkeypatch, tmp_path):
+    """`core.trace.record_trace` appends to ~/.aios/state/cross_module_trace.jsonl, the ecosystem's real cross-module trace. A test that calls it unmocked would add
+    fake records there (14/10/2026: 2,200 fake `aios-identity` records from the first runs of the identity-token tests). Every test therefore writes to its own
+    temporary file; the few tests that inspect the trace set `_TRACE_FILE` themselves and override this."""
+    monkeypatch.setattr("core.trace._TRACE_FILE", tmp_path / "cross_module_trace.jsonl")
+    yield

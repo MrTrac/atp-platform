@@ -17,10 +17,11 @@ from __future__ import annotations
 import asyncio
 import dataclasses
 import json as _json
-import os
 import pathlib
 import signal
 from typing import Any, AsyncIterator
+
+from core.child_env import agent_environ
 
 
 @dataclasses.dataclass
@@ -175,7 +176,7 @@ class ClaudeCodeAdapter:
 
         # Strip CLAUDECODE so nested `claude -p` isn't blocked by the
         # nested-session guard that Claude Code sets on its own env.
-        child_env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
+        child_env = agent_environ(drop=("CLAUDECODE",))
 
         result: AdapterResult
         try:

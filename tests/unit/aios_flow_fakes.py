@@ -1,8 +1,9 @@
 """Test kit for the aios-flow adapter and its identity token provider: a scripted fake network, JWTs shaped like aios-identity's, a manual clock.
 
 `FakeNet` replaces `urlopen` in BOTH modules. Calls are routed by (method, path) and answered from a script; every request is recorded with ALL its headers
-(`req.headers` plus the unredirected ones, which is where the Authorization header lives), and every HTTPError it raises has a tracked response buffer, so a test can
-assert that nothing was left open (`net.assert_all_closed()`).
+(`req.headers` plus the unredirected ones, which is where the Authorization header lives) and the timeout it asked for, and every HTTPError it raises has a tracked
+response buffer, so a test can assert that nothing was left open (`net.assert_all_closed()`). The raised HTTPError objects are KEPT ALIVE by the net: CPython closes an
+HTTPError's response itself when the object is freed, which would make a missing `close_http_error` invisible (found by an independent review, 14/10/2026).
 """
 
 from __future__ import annotations
@@ -63,6 +64,7 @@ class Call:
     path: str
     headers: dict[str, str]  # lower-cased names; request headers AND unredirected headers
     body: Any
+    timeout: float | None = None
 
 
 class _Response:
@@ -87,6 +89,7 @@ class FakeNet:
         self._script: dict[tuple[str, str], deque[Any]] = defaultdict(deque)
         self.calls: list[Call] = []
         self._buffers: list[BytesIO] = []
+        self._errors: list[HTTPError] = []  # keep-alive, see the module docstring
 
     def on(self, method: str, path: str, *answers: Any) -> "FakeNet":
         self._script[(method, path)].extend(answers)
@@ -97,7 +100,7 @@ class FakeNet:
         headers = {k.lower(): v for k, v in {**req.headers, **req.unredirected_hdrs}.items()}
         raw = req.data
         body = json.loads(raw) if raw else None
-        self.calls.append(Call(req.get_method(), req.full_url, parts.path, headers, body))
+        self.calls.append(Call(req.get_method(), req.full_url, parts.path, headers, body, timeout))
         queue = self._script[(req.get_method(), parts.path)]
         if not queue:
             raise AssertionError(f"unscripted request: {req.get_method()} {req.full_url}")
@@ -106,7 +109,9 @@ class FakeNet:
             raw_body = answer.body if isinstance(answer.body, bytes) else (b"" if answer.body is None else json.dumps(answer.body).encode())
             buf = BytesIO(raw_body)
             self._buffers.append(buf)
-            raise HTTPError(req.full_url, answer.code, "scripted", answer.headers, buf)
+            error = HTTPError(req.full_url, answer.code, "scripted", answer.headers, buf)
+            self._errors.append(error)
+            raise error
         if isinstance(answer, BaseException):
             raise answer
         return _Response(answer)

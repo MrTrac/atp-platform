@@ -36,7 +36,8 @@ fresh token and repeat the request once.
 
 Failures keep ``status == "error"`` and ``error`` (text) and add, so a caller need not parse text:
     error_code  "auth_failed"  aios-flow answered 401/403, aios-identity refused the credentials,
-                               or the authentication settings cannot work: no retry helps
+                               or the settings cannot work (including a TLS certificate that was
+                               not accepted): no retry helps
                 "unavailable"  aios-flow answered 429/502/503/504 (503 identity_unavailable is how
                                aios-flow says identity is briefly unreachable), or identity could
                                not issue a token: try again later
@@ -44,7 +45,13 @@ Failures keep ``status == "error"`` and ``error`` (text) and add, so a caller ne
                 "http_error"   any other HTTP status from aios-flow (404 unknown run or flow,
                                400 invalid input, ...)
                 "bad_response" the answer was not JSON
-    retryable   bool: True for "unavailable" and "unreachable"
+                "bad_request"  the request was refused before it was sent (a flow_run_id that is not an id)
+    retryable   bool: repeating the SAME call is safe and may succeed. True for "unavailable" and
+                "unreachable", except for a dispatch (POST) whose outcome is unknown: only a
+                failure that proves no run was created (identity token unavailable, connection
+                refused, 429/503 from aios-flow) is retryable
+    outcome_unknown True on a failed dispatch that may have reached aios-flow (reset or timeout
+                after sending, 502/504): a run may exist, look before dispatching again
     http_status (int) when there was an HTTP answer; retry_after_s (float) when the server named a delay
     reason_code the specific code: the server's own (invalid_token, forbidden, identity_unavailable,
                 flow_not_found, invalid_service_credentials, ...) or ours for a settings problem
@@ -53,14 +60,21 @@ Failures keep ``status == "error"`` and ``error`` (text) and add, so a caller ne
 
 ``wait`` retries "unavailable" and "unreachable" within each poll (``core.retry``: exponential
 backoff, ``Retry-After`` honoured, at most 4 attempts and 60 s per poll, never beyond the wait's
-own ``timeout_s``) because a poll only reads. ``dispatch`` never retries by itself (a transport
-failure of a POST may have started the run) and ``status`` is a single shot.
+remaining ``timeout_s``: the sleeps are bounded, the attempts in flight are not, so a wait can end
+up to one request timeout (10 s) per attempt after ``timeout_s``) because a poll only reads.
+``dispatch`` never retries by itself (a transport failure of a POST may have started the run) and
+``status`` is a single shot.
 """
 
 from __future__ import annotations
 
+import http.client
 import json
+import math
 import os
+import re
+import socket
+import ssl
 import time
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -68,7 +82,7 @@ from urllib.request import Request, urlopen
 
 from adapters.aios_flow import identity_token
 from adapters.aios_flow.identity_token import AuthError, IdentityUnavailable
-from core.http_errors import close_http_error, error_code_and_message, read_error_body
+from core.http_errors import close_http_error, error_code_and_message, network_reason, read_error_body
 from core.retry import _retry_after_seconds, with_retry
 from core.trace import generate_request_id, record_trace, trace_headers
 
@@ -82,6 +96,8 @@ _POLL_RETRY_ATTEMPTS = 4  # per poll, the first try included
 _POLL_RETRY_BASE_DELAY_S = 1.0
 _POLL_RETRY_MAX_DELAY_S = 30.0
 _POLL_RETRY_BUDGET_S = 60.0  # most time one poll may spend sleeping between attempts
+# a run id goes into the URL path with the bearer attached: nothing that could change the path
+_RUN_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}")
 
 
 # -- transport ------------------------------------------------------------
@@ -110,9 +126,10 @@ def _send(
     try:
         with urlopen(request, timeout=timeout_s) as resp:
             return json.loads(resp.read().decode("utf-8"))
-    except (TimeoutError, ConnectionError) as exc:
-        # getresponse() raises these outside urlopen's own wrapping, so core.retry would not see
-        # a network error; never an HTTPError
+    except (TimeoutError, ConnectionError, http.client.HTTPException) as exc:
+        # getresponse() and read() raise these outside urlopen's own wrapping (a read timeout, a
+        # reset, a bad status line, a body cut short), so core.retry would not see a network
+        # error; never an HTTPError (it is neither an HTTPException nor a ConnectionError)
         raise URLError(exc) from exc
 
 
@@ -122,7 +139,7 @@ def _flow_refusal(status: int, code: str | None, message: str | None, *, sent_to
     else:
         what = "denied the request"
     text = f"aios-flow {what}: HTTP {status}" + (f" {code}" if code else "") + (f" - {message}" if message else "")
-    if not sent_token:
+    if not sent_token and status == 401:
         text += (
             " - no token was sent: set AIOS_FLOW_IDENTITY_URL and AIOS_FLOW_IDENTITY_SECRET"
             " (service account svc:atp)"
@@ -164,6 +181,17 @@ def _open_json(
             status = exc.code
             code, message = error_code_and_message(read_error_body(exc))
             close_http_error(exc)
+        # an HTTPError never gets here: the handler above takes it
+        except (URLError, ssl.SSLCertVerificationError) as exc:
+            reason = network_reason(exc)
+            if not isinstance(reason, ssl.SSLCertVerificationError):
+                raise
+            # a setting, not an outage: it must not look like a URLError to core.retry
+            raise AuthError(
+                f"aios-flow TLS certificate was not accepted: {reason}",
+                code="tls_verification_failed",
+                source="config",
+            ) from None
         if status == 401 and attempt == 1 and provider is not None and token is not None:
             token = provider.refresh_after_rejection(token)
             if token is not None:
@@ -176,10 +204,33 @@ def _open_json(
 # -- failures → envelopes --------------------------------------------------
 
 
-def _failure_envelope(exc: BaseException, *, req_id: str, flow_run_id: str | None = None) -> dict[str, Any]:
+def _provably_not_started(exc: BaseException) -> bool:
+    """True when the failure proves that aios-flow created no run, so a POST may be repeated
+    without risk of a duplicate: the identity token could not be obtained (nothing was sent), the
+    connection was never made, or aios-flow's auth / capacity layer refused it (429, 503:
+    RUNS_API §1-§2, no row written)."""
+    if isinstance(exc, IdentityUnavailable):
+        return True
+    if isinstance(exc, HTTPError):
+        return exc.code in (429, 503)
+    return isinstance(network_reason(exc), ConnectionRefusedError | socket.gaierror)
+
+
+def _retry_after(exc: BaseException) -> float | None:
+    value = _retry_after_seconds(exc)
+    if value is not None and math.isfinite(value) and value >= 0:  # a header can say "inf", "nan" or "-5"
+        return value
+    return None
+
+
+def _failure_envelope(
+    exc: BaseException, *, req_id: str, flow_run_id: str | None = None, post: bool = False,
+) -> dict[str, Any]:
     """The ATP-shaped error envelope for a failure of `_open_json`.
 
-    Reads the body of an HTTPError, so call it BEFORE `close_http_error(exc)`."""
+    Reads the body of an HTTPError, so call it BEFORE `close_http_error(exc)`. `post` marks a
+    dispatch: a failure that does not prove the run was not created is then not retryable and
+    says so (`outcome_unknown`)."""
     out: dict[str, Any] = {"status": "error", "selected_provider": "aios-flow", "request_id": req_id}
     if flow_run_id:
         out["flow_run_id"] = flow_run_id
@@ -189,14 +240,16 @@ def _failure_envelope(exc: BaseException, *, req_id: str, flow_run_id: str | Non
         )
         if exc.http_status is not None:
             out["http_status"] = exc.http_status
-    elif isinstance(exc, IdentityUnavailable):
+        return out
+    if isinstance(exc, IdentityUnavailable):
         out.update(error=f"cannot get an identity token for aios-flow: {exc}", error_code="unavailable", retryable=True)
         if exc.http_status is not None:
             out["http_status"] = exc.http_status
-    elif isinstance(exc, HTTPError):
+        return out
+    if isinstance(exc, HTTPError):
         status = exc.code
         code, message = error_code_and_message(read_error_body(exc))
-        retry_after = _retry_after_seconds(exc)
+        retry_after = _retry_after(exc)
         transient = status in (429, 502, 503, 504)
         text = f"aios-flow {'unavailable' if transient else 'answered'}: HTTP {status}"
         text += f" {code}" if code else (f" {exc.reason}" if exc.reason else "")
@@ -214,6 +267,10 @@ def _failure_envelope(exc: BaseException, *, req_id: str, flow_run_id: str | Non
             out["reason_code"] = code
     else:
         out.update(error=f"aios-flow unreachable: {exc}", error_code="unreachable", retryable=True)
+    if post and out["retryable"] and not _provably_not_started(exc):
+        out["retryable"] = False
+        out["outcome_unknown"] = True
+        out["error"] += " - the run may have been started: look for it before dispatching again"
     return out
 
 
@@ -271,11 +328,12 @@ def _submit(incoming: dict[str, Any]) -> dict[str, Any]:
         }
     except (AuthError, HTTPError, URLError, OSError) as exc:
         trace_status = "error"
-        result = _failure_envelope(exc, req_id=req_id)
+        result = _failure_envelope(exc, req_id=req_id, post=True)
         close_http_error(exc)
     except ValueError as exc:
         trace_status = "error"
         result = _non_json_envelope(exc, req_id=req_id)
+        result["outcome_unknown"] = True  # the server answered, with something unreadable: a run may exist
 
     record_trace(
         request_id=req_id,
@@ -310,6 +368,18 @@ def _get_run_status(
             "selected_provider": "aios-flow",
         }
 
+    flow_run_id = str(flow_run_id)
+    if not _RUN_ID.fullmatch(flow_run_id):
+        return {
+            "status": "error",
+            "error": (
+                "aios-flow status: 'flow_run_id' must be a run id "
+                "(letters, digits, '.', '_' or '-', at most 128 characters)"
+            ),
+            "error_code": "bad_request",
+            "retryable": False,
+            "selected_provider": "aios-flow",
+        }
     path = f"/api/runs/{flow_run_id}"
     last = {"req_id": ""}
 

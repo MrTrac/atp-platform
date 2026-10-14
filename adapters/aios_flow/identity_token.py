@@ -21,8 +21,9 @@ server verifies it; `iat` rather than the local clock so that a skewed clock can
 renewed `min(300 s, lifetime / 2)` before it ends (55 minutes for today's 3600 s) and survives a later identity fix that makes the lifetime longer.
 
 Every mint creates a session row at identity that lives for a year, so minting is rationed: one token is shared by all threads (one mint at a time, the others wait for
-its result), a token that aios-flow rejected is replaced at most once per 30 s, and a refusal of the credentials themselves (wrong secret, wrong URL) is remembered
-for 60 s instead of asking identity again on every request.
+its result), a token that aios-flow rejected is replaced at most once per 30 s, a refusal of the credentials themselves (wrong secret, wrong URL) is remembered for 60 s
+and an identity that cannot be reached for 1 s, instead of every queued caller waiting out its own timeout. When the renewal fails but the cached token has not yet
+expired it is served again (stale-while-error). Time is the wall clock: `time.monotonic` stops while a Mac sleeps, and the JWT's `exp` does not.
 
 The secret and the token are never logged, never put in an error text (identity's own message is scrubbed of the secret before it is used), never in `repr()`, and
 the G9 trace record of the mint carries only the route and the outcome.
@@ -35,14 +36,15 @@ import ipaddress
 import json
 import os
 import re
+import ssl
 import threading
 import time
 from typing import Callable, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
-from urllib.request import Request, urlopen
+from urllib.request import Request, getproxies, proxy_bypass, urlopen
 
-from core.http_errors import close_http_error, error_code_and_message, read_error_body
+from core.http_errors import close_http_error, error_code_and_message, network_reason, read_error_body
 from core.trace import generate_request_id, record_trace, trace_headers
 
 ENV_URL = "AIOS_FLOW_IDENTITY_URL"
@@ -57,6 +59,8 @@ _ASSUMED_LIFETIME_S = 3600.0  # what identity 1.2.4 really issues, used only whe
 _REFRESH_MARGIN_S = 300.0
 _REMINT_COOLDOWN_S = 30.0
 _DENIAL_TTL_S = 60.0
+_UNAVAILABLE_TTL_S = 1.0  # how long "identity cannot be reached" is remembered, so queued callers fail at once instead of each waiting out a timeout; must stay below core.retry's 1 s base delay or a retry would only meet the memory
+_EXPIRY_SAFETY_S = 15.0
 _TOKEN_SHAPE = re.compile(r"[A-Za-z0-9\-._~+/]+=*")  # the RFC 6750 alphabet aios-flow accepts; also keeps a CR/LF out of a header
 
 
@@ -94,14 +98,32 @@ def _is_loopback(host: str | None) -> bool:
         return False
 
 
+def _proxy_in_the_way(scheme: str, host: str) -> bool:
+    """urllib sends an http:// request through the proxy of HTTP_PROXY / the macOS system settings unless NO_PROXY (or the exceptions list) names the host."""
+    return bool(getproxies().get(scheme)) and not proxy_bypass(host)
+
+
 def check_transport(url: str, *, what: str) -> None:
     """A secret or a token may only travel over https, or to this machine. Raises AuthError otherwise. Only scheme://host is ever put in the message
-    (a URL may carry credentials in its userinfo)."""
-    parts = urlsplit(url)
-    host = parts.hostname
-    if host and (parts.scheme == "https" or (parts.scheme == "http" and _is_loopback(host))):
+    (a URL may carry credentials in its userinfo).
+
+    "To this machine" must stay true: with an http proxy configured for the host, an http://localhost request would be handed to the proxy, in clear text."""
+    try:
+        parts = urlsplit(url)
+        host = parts.hostname
+    except ValueError:  # e.g. an unterminated IPv6 literal
+        parts, host = None, None
+    if host and parts.scheme == "https":
         return
-    shown = f"{parts.scheme}://{host}" if parts.scheme and host else "an unparseable URL"
+    if host and parts.scheme == "http" and _is_loopback(host):
+        if not _proxy_in_the_way("http", host):
+            return
+        raise AuthError(
+            f"{what} is http://{host}, but an http proxy is configured and would receive the secret or token in clear text: add {host} to NO_PROXY",
+            code="proxy_in_the_way",
+            source="config",
+        )
+    shown = f"{parts.scheme}://{host}" if parts is not None and parts.scheme and host else "an unparseable URL"
     raise AuthError(
         f"{what} is {shown}: an identity secret or token is only sent over https, or to a loopback address",
         code="insecure_transport",
@@ -137,7 +159,7 @@ class IdentityTokenProvider:
         username: str = DEFAULT_USERNAME,
         consumer: str = CONSUMER,
         timeout_s: float = _MINT_TIMEOUT_S,
-        clock: Callable[[], float] = time.monotonic,
+        clock: Callable[[], float] | None = None,
     ) -> None:
         check_transport(identity_url, what=ENV_URL)
         self._base = identity_url.rstrip("/")
@@ -145,11 +167,14 @@ class IdentityTokenProvider:
         self.username = username
         self._consumer = consumer
         self._timeout_s = timeout_s
-        self._clock = clock
+        self._clock = clock if clock is not None else time.time  # wall clock: monotonic time stops while a laptop sleeps
         self._lock = threading.Lock()
         self._token: str | None = None
         self._minted_at: float | None = None
         self._refresh_at = 0.0
+        self._expires_at = 0.0
+        self._unavailable: tuple[str, int | None] | None = None
+        self._unavailable_until = 0.0
         self._denial: tuple[str, str, str, int | None] | None = None
         self._denied_until = 0.0
 
@@ -165,9 +190,15 @@ class IdentityTokenProvider:
     def get_token(self) -> str:
         """The cached token while it is fresh, else a new one. Raises AuthError (credentials refused, unusable configuration) or IdentityUnavailable (transient)."""
         with self._lock:
-            if self._token is not None and self._clock() < self._refresh_at:
+            now = self._clock()
+            if self._token is not None and now < self._refresh_at:
                 return self._token
-            return self._mint_locked()
+            try:
+                return self._mint_locked()
+            except IdentityUnavailable:
+                if self._token is not None and now < self._expires_at:
+                    return self._token  # the renewal failed but the token still has time: keep using it
+                raise
 
     def refresh_after_rejection(self, rejected: str) -> str | None:
         """aios-flow answered 401 to `rejected`. Returns a different token to retry with, or None when asking identity again cannot help right now.
@@ -191,6 +222,11 @@ class IdentityTokenProvider:
                 message, code, source, status = self._denial
                 raise AuthError(message, code=code, source=source, http_status=status)
             self._denial = None
+        if self._unavailable is not None:
+            if now < self._unavailable_until:
+                message, status = self._unavailable
+                raise IdentityUnavailable(message, http_status=status)
+            self._unavailable = None
         req_id = generate_request_id()
         request = Request(
             f"{self._base}/service-account/token",
@@ -207,6 +243,10 @@ class IdentityTokenProvider:
             self._denial = (str(err), err.code, err.source, err.http_status)
             self._denied_until = now + _DENIAL_TTL_S
             raise
+        except IdentityUnavailable as err:
+            self._unavailable = (str(err), err.http_status)
+            self._unavailable_until = self._clock() + _UNAVAILABLE_TTL_S  # measured after the attempt: callers queued behind it fail at once
+            raise
         finally:
             record_trace(
                 request_id=req_id,
@@ -221,6 +261,7 @@ class IdentityTokenProvider:
         self._token = token
         self._minted_at = now  # taken before the call: a slow mint only makes the renewal earlier
         self._refresh_at = now + lifetime - min(_REFRESH_MARGIN_S, lifetime / 2)
+        self._expires_at = now + lifetime - min(_EXPIRY_SAFETY_S, lifetime / 2)
         return token
 
     def _exchange(self, request: Request) -> str:
@@ -233,7 +274,14 @@ class IdentityTokenProvider:
             close_http_error(exc)
             raise self._refusal(status, code, message) from None
         except (URLError, OSError) as exc:  # an HTTPError never gets here: the handler above takes it
-            raise IdentityUnavailable(f"aios-identity unreachable: {_scrub(str(getattr(exc, 'reason', exc)), self._secret)}") from None
+            reason = network_reason(exc)
+            if isinstance(reason, ssl.SSLCertVerificationError):
+                raise AuthError(
+                    f"aios-identity's TLS certificate was not accepted: {_scrub(str(reason), self._secret)}",
+                    code="tls_verification_failed",
+                    source="config",
+                ) from None
+            raise IdentityUnavailable(f"aios-identity unreachable: {_scrub(str(reason), self._secret)}") from None
         except ValueError:
             raise IdentityUnavailable("aios-identity answered with something that is not JSON") from None
         token = answer.get("access_token") if isinstance(answer, dict) else None
@@ -247,7 +295,7 @@ class IdentityTokenProvider:
 
     def _refusal(self, status: int, code: str | None, message: str | None) -> Exception:
         detail = f"HTTP {status}" + (f" {code}" if code else "") + (f" - {_scrub(message, self._secret)}" if message else "")
-        if status == 429 or status >= 500:
+        if status in (408, 425, 429) or status >= 500:
             return IdentityUnavailable(f"aios-identity cannot issue a token right now: {detail}", http_status=status)
         hint = " - check AIOS_FLOW_IDENTITY_URL (is the /identity prefix missing?)" if status == 404 else ""
         return AuthError(

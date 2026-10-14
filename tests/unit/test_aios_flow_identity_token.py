@@ -7,7 +7,9 @@ server enforces the JWT; errors are {"error": <code>, "message": <text>}; 401 in
 
 from __future__ import annotations
 
+import ssl
 import threading
+import time
 from urllib.error import URLError
 
 import pytest
@@ -258,15 +260,20 @@ def test_a_wrong_url_prefix_gets_a_hint(net, clock):
         make_provider(clock).get_token()
 
 
-@pytest.mark.parametrize("status", [429, 500, 502, 503, 504])
-def test_transient_http_answers_are_unavailable_and_are_not_remembered(net, clock, status):
+@pytest.mark.parametrize("status", [408, 425, 429, 500, 502, 503, 504])
+def test_transient_http_answers_are_unavailable_and_are_remembered_for_one_second_only(net, clock, status):
     net.on("POST", TOKEN_PATH, identity_error(status, "busy", "try later"), mint_answer(make_jwt(serial=1)))
     p = make_provider(clock)
     with pytest.raises(IdentityUnavailable) as err:
         p.get_token()
     assert err.value.http_status == status
     assert isinstance(err.value, URLError)  # core.retry.with_retry retries URLError
-    assert p.get_token()  # the very next call goes back to identity
+    with pytest.raises(IdentityUnavailable):  # the very next call fails at once, without asking identity again
+        p.get_token()
+    assert len(net.mint_calls) == 1
+    clock.advance(1.0)
+    assert p.get_token()  # a second later (core.retry's smallest backoff) it asks again, and this time it works
+    assert len(net.mint_calls) == 2
     net.assert_all_closed()
 
 
@@ -416,3 +423,121 @@ def test_a_trailing_newline_from_the_keychain_is_not_part_of_the_secret():
 def test_an_insecure_url_in_the_environment_is_an_error_at_the_first_call():
     with pytest.raises(AuthError, match="https"):
         identity_token.get_provider({"AIOS_FLOW_IDENTITY_URL": "http://identity.example", "AIOS_FLOW_IDENTITY_SECRET": SECRET})
+
+
+# -- identity unreachable: the caller that tries waits, the callers queued behind it fail at once ---------------------------------------------------------------
+
+
+def test_callers_queued_behind_an_unreachable_identity_do_not_each_wait_out_their_own_timeout(net, monkeypatch, clock):
+    """Measured by the independent review: 8 callers, a black-holed identity, one lock -> the last waited 8 x the timeout (80 s with the real 10 s)."""
+    started, gate = threading.Event(), threading.Event()
+
+    def slow(req, timeout=None):
+        started.set()
+        gate.wait(5)
+        return net(req, timeout)
+
+    monkeypatch.setattr(identity_token, "urlopen", slow)
+    net.on("POST", TOKEN_PATH, URLError("connection refused"))  # ONE scripted failure: any second request would be an "unscripted request" assertion
+    p = make_provider(clock)
+    outcomes: list[str] = []
+
+    def call() -> None:
+        try:
+            p.get_token()
+            outcomes.append("token")
+        except IdentityUnavailable:
+            outcomes.append("unavailable")
+        except AssertionError:
+            outcomes.append("asked identity again")
+
+    threads = [threading.Thread(target=call) for _ in range(8)]
+    for t in threads:
+        t.start()
+    assert started.wait(5)
+    threading.Event().wait(0.2)
+    gate.set()
+    for t in threads:
+        t.join(5)
+    assert outcomes.count("unavailable") == 8 and len(net.mint_calls) == 1
+
+
+# -- the renewal fails while the old token is still good --------------------------------------------------------------------------------------------------
+
+
+def test_a_failed_renewal_keeps_serving_the_old_token_until_it_really_expires(net, clock):
+    old = make_jwt(serial=1)
+    net.on("POST", TOKEN_PATH, mint_answer(old))
+    p = make_provider(clock)
+    assert p.get_token() == old
+    clock.advance(3400)  # past the renewal point (3300 s), before the end (3585 s: 3600 s minus a 15 s safety margin)
+    net.on("POST", TOKEN_PATH, URLError("connection refused"), URLError("connection refused"), URLError("connection refused"))
+    assert p.get_token() == old
+    assert p.get_token() == old  # remembered for a second: no second attempt
+    assert len(net.mint_calls) == 2
+    clock.advance(1.0)
+    assert p.get_token() == old  # asks again, fails again, still served
+    clock.advance(190)  # 3591 s: the token is no longer safe to use
+    with pytest.raises(IdentityUnavailable):
+        p.get_token()
+
+
+def test_a_refusal_of_the_credentials_during_renewal_is_not_masked_by_the_old_token(net, clock):
+    """Identity says the secret is wrong (rotated?): the operator must hear about it now, not when the old token finally dies."""
+    net.on("POST", TOKEN_PATH, mint_answer(make_jwt(serial=1)), identity_error(401, "invalid_service_credentials", "invalid credentials"))
+    p = make_provider(clock)
+    p.get_token()
+    clock.advance(3400)
+    with pytest.raises(AuthError):
+        p.get_token()
+
+
+def test_time_is_the_wall_clock_because_monotonic_time_stops_while_a_mac_sleeps():
+    """On macOS time.monotonic() does not advance during sleep but the JWT's exp does: after a night asleep a monotonic provider would think its token fresh and
+    refuse, for 30 s of awake time, to replace it once aios-flow rejects it."""
+    assert IdentityTokenProvider(IDENTITY_URL, SECRET)._clock is time.time
+
+
+# -- TLS ---------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [
+        URLError(ssl.SSLCertVerificationError(1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired")),
+        ssl.SSLCertVerificationError(1, "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed"),  # raised bare, with a string `.reason` of its own
+    ],
+)
+def test_an_unaccepted_certificate_is_a_configuration_problem_not_an_outage(net, clock, failure):
+    net.on("POST", TOKEN_PATH, failure)
+    with pytest.raises(AuthError) as err:
+        make_provider(clock).get_token()
+    assert (err.value.code, err.value.source) == ("tls_verification_failed", "config") and "certificate" in str(err.value)
+
+
+# -- the destination ---------------------------------------------------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("url", ["https://[::1", "http://[::1", "https://", "http://", "://x"])
+def test_an_unparseable_url_is_refused_as_such_not_with_a_raw_value_error(url):
+    with pytest.raises(AuthError) as err:
+        identity_token.check_transport(url, what="X")
+    assert err.value.code == "insecure_transport" and "unparseable" in str(err.value)
+
+
+def test_a_proxy_that_would_receive_a_loopback_http_request_is_refused(monkeypatch):
+    """urllib hands an http:// request to HTTP_PROXY even for localhost unless NO_PROXY lists it: the secret or token would leave this machine in clear text."""
+    monkeypatch.setattr(identity_token, "getproxies", lambda: {"http": "http://user:pw@proxy.example:3128"})
+    monkeypatch.setattr(identity_token, "proxy_bypass", lambda host: False)
+    with pytest.raises(AuthError) as err:
+        identity_token.check_transport("http://localhost:7700", what="AIOS_FLOW_URL")
+    assert err.value.code == "proxy_in_the_way" and "NO_PROXY" in str(err.value)
+    assert "pw" not in str(err.value) and "proxy.example" not in str(err.value)  # the proxy's own credentials are not echoed
+
+
+def test_a_proxy_is_no_obstacle_when_the_host_is_exempt_or_the_scheme_is_https(monkeypatch):
+    monkeypatch.setattr(identity_token, "getproxies", lambda: {"http": "http://proxy.example:3128", "https": "http://proxy.example:3128"})
+    monkeypatch.setattr(identity_token, "proxy_bypass", lambda host: True)
+    identity_token.check_transport("http://127.0.0.1:7700", what="X")  # NO_PROXY names it
+    monkeypatch.setattr(identity_token, "proxy_bypass", lambda host: False)
+    identity_token.check_transport("https://identity.example/identity", what="X")  # https goes through a CONNECT tunnel: TLS is end to end

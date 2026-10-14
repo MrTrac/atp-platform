@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import http.client
+import socket
+import ssl
 from io import BytesIO
 from urllib.error import HTTPError, URLError
 
 import pytest
 
-from core.http_errors import close_http_error, error_code_and_message, read_error_body
-
+from core.http_errors import close_http_error, error_code_and_message, network_reason, read_error_body
 
 _created: list[HTTPError] = []
 
@@ -81,3 +83,31 @@ def test_a_message_is_flattened_and_cut():
     assert (code, message) == ("e", "line one line two line three")
     _code, long = error_code_and_message(('{"error": "e", "message": "' + "w" * 5000 + '"}').encode())
     assert long == "w" * 200
+
+
+# -- the helpers run on an error path: they must not raise ------------------------------------------------------------------------------------------------
+
+
+def test_a_body_cut_off_mid_chunk_reads_as_empty_instead_of_raising_incomplete_read():
+    """Measured on 3.11, 3.12 and 3.14: a chunked error body that ends early raised http.client.IncompleteRead out of the helper, past the close."""
+    exc = _error(b"x")
+    exc.read = lambda *_a: (_ for _ in ()).throw(http.client.IncompleteRead(b"par", 10))  # type: ignore[method-assign]
+    assert read_error_body(exc) == b""
+
+
+def test_a_body_of_deeply_nested_brackets_is_not_a_crash():
+    """Python 3.11 raises RecursionError for ~1000 nested brackets, which fit in the 4 KiB the adapter reads."""
+    assert error_code_and_message(b"[" * 4000) == (None, None)
+    assert error_code_and_message(b'{"a":' * 2000 + b"1" + b"}" * 2000) == (None, None)
+
+
+def test_network_reason_unwraps_a_url_error_and_returns_an_ssl_error_whole():
+    refused = ConnectionRefusedError(61, "Connection refused")
+    assert network_reason(URLError(refused)) is refused
+    assert network_reason(refused) is refused
+    gai = socket.gaierror(8, "no such host")
+    assert network_reason(URLError(gai)) is gai
+    cert = ssl.SSLCertVerificationError(1, "certificate verify failed")
+    cert.reason = "CERTIFICATE_VERIFY_FAILED"  # real ones carry this code string (set by the ssl module); it is why the error is returned whole
+    assert network_reason(cert) is cert
+    assert network_reason(URLError(cert)) is cert

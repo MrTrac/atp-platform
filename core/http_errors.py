@@ -12,8 +12,10 @@ HTTPError calls this once it has read what it needs from the error (the attribut
 
 from __future__ import annotations
 
+import http.client
 import json
 import re
+import ssl
 from typing import Any
 from urllib.error import HTTPError
 
@@ -39,7 +41,7 @@ def read_error_body(exc: BaseException | None, limit: int = 4096) -> bytes:
         return b""
     try:
         return exc.read(limit) or b""
-    except (OSError, ValueError, AttributeError):
+    except (OSError, ValueError, AttributeError, http.client.HTTPException):  # HTTPException: IncompleteRead on a body cut off mid-chunk
         return b""
 
 
@@ -59,7 +61,7 @@ def error_code_and_message(body: bytes) -> tuple[str | None, str | None]:
     """
     try:
         data = json.loads(body.decode("utf-8"))
-    except ValueError:
+    except (ValueError, RecursionError):  # RecursionError: deeply nested brackets inside the 4 KiB cap, Python 3.11
         return None, None
     if not isinstance(data, dict):
         return None, None
@@ -73,3 +75,12 @@ def error_code_and_message(body: bytes) -> tuple[str | None, str | None]:
         return None, None
     code = detail.get("error")
     return (code if isinstance(code, str) and _CODE.fullmatch(code) else None), _flatten(detail.get("message"))
+
+
+def network_reason(exc: BaseException) -> Any:
+    """What went wrong underneath a network failure: the `reason` of a URLError (an exception or a string), the error itself for a bare OSError or an ssl error.
+
+    An `ssl.SSLError` has a `reason` attribute that is only a code string ("CERTIFICATE_VERIFY_FAILED"), so it is returned whole: callers test it with isinstance."""
+    if isinstance(exc, ssl.SSLError):
+        return exc
+    return getattr(exc, "reason", exc)

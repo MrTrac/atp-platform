@@ -25,6 +25,8 @@ import pathlib
 import signal
 from typing import Any
 
+from core.child_env import agent_environ
+
 from .claude_code import AdapterResult  # shared dataclass
 
 
@@ -144,7 +146,7 @@ class CodexAdapter:
         cmd = [self.CLI_BIN, "exec", "--model", self.config.model_id, prompt]
 
         self._stdout_lines = []
-        child_env = dict(os.environ)  # inherit OPENAI_API_KEY + PATH
+        child_env = agent_environ()  # inherit OPENAI_API_KEY + PATH, minus ATP-only secrets
 
         try:
             self._process = await asyncio.create_subprocess_exec(
