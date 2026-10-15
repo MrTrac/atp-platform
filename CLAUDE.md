@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261015T044846Z
+GeneratedAtUTC: 20261015T045900Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -111,13 +111,13 @@ SHA256: 3a517fd9e0cbc9f8e83a39f8b286cfc9d365f5fda3546443e93b4479f417748e
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: bcf4235595522576d90935d5707b778455b01f45765bd22339eb2cf189334b88
+SHA256: d19909079a964a305599edf2bcaa725d4a58f811b781f3fec0819939dbb6b864
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-10-15
 - **Phase:** v2.7.2 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
-- **Current state:** v2.7.2 (RELEASED 2026-10-15T11:31:58+07:00) = v2.7.1 + generator `report_v2` (KD-ATP-006 phases 2a/2b, `partial`; nothing calls it yet) + a size guard for the AI-context files. Running on `aios-server` with the aios-flow authentication ON (KD-ATP-021). Nothing on `main` is unreleased. Details: §1.
+- **Current state:** v2.7.2 (RELEASED 2026-10-15T11:31:58+07:00) = v2.7.1 + generator `report_v2` (KD-ATP-006 phases 2a/2b, `partial`; nothing calls it yet) + a size guard for the AI-context files. Running on `aios-server` with the aios-flow authentication ON (KD-ATP-021). `main` is 2 commits ahead of the tag with tests only (KD-ATP-024 guard, `d79614e`), no runtime change. Details: §1.
 ---
 
 ## D6.2 closure rationale (M4 scope-cut, 2026-05-04)
@@ -161,7 +161,7 @@ ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above 
 - **KD-ATP-020 / 018 / 015 / 009** (`fixed_verified` / `fixed_verified` / `fixed_verified` / `wontfix`) — the agent env keeps the secret out of `claude -p`/`codex exec`/`cursor-agent`; tests no longer write into the real `~/.aios/state/cross_module_trace.jsonl`; an unknown provider on the local node answers HTTP 400 (was 200 `deferred`; only AIOS-OC calls the bridge); the 4 placeholder adapter dirs stay.
 - **KD-ATP-019 (`mitigated`, Owner: no code change)** — the bridge listens on `0.0.0.0:8765` unauthenticated; on `aios-server` ufw allows port 8765 only from the Mac `10.88.0.10` (read only, 14/10). Authenticate the bridge before opening it to more hosts.
 
-**2.7.2 content** (ledger block `2.7.2`): (a) **`report_v2`** (KD-ATP-006 phases 2a/2b, `partial`) — a Python port of AOKP's `src/runtime/synthesis` (sections, domain suggestions, quality guard + retry, Jaccard grounding, KB gap), equal to AOKP on 1,054 golden cases generated from AOKP's TypeScript (commit `51b1139b`); default mode `skeleton` = no model; `real` mode has only run against scripted models, so answer quality from a real model is unmeasured. Nothing calls it yet: the AOKP client (phase 2c/2d) was handed to an AOKP session on 15/10; phase 3 (24 h soak) and 4 (promotion) are not started. (b) `tests/unit/test_context_files_size.py`: the AI-context files must stay under 49,000 bytes (the bridge copies the first 80 lines of this file). (c) **KD-ATP-024 (`new_open`, low):** the hand-written version lines in README.md/AGENTS.md have no guard test (2.7.1 left AGENTS.md at v2.7.0 and `test_version_consistency` stayed green); fixed by hand in 2.7.2. `make ci-local` (released in 2.7.1): **run it before every push**.
+**2.7.2 content** (ledger block `2.7.2`): (a) **`report_v2`** (KD-ATP-006 phases 2a/2b, `partial`) — a Python port of AOKP's `src/runtime/synthesis` (sections, domain suggestions, quality guard + retry, Jaccard grounding, KB gap), equal to AOKP on 1,054 golden cases generated from AOKP's TypeScript (commit `51b1139b`); default mode `skeleton` = no model; `real` mode has only run against scripted models, so answer quality from a real model is unmeasured. Nothing calls it yet: the AOKP client (phase 2c/2d) was handed to an AOKP session on 15/10; phase 3 (24 h soak) and 4 (promotion) are not started. (b) `tests/unit/test_context_files_size.py`: the AI-context files must stay under 49,000 bytes (the bridge copies the first 80 lines of this file). (c) **KD-ATP-024 (`fixed_verified`, on `main` after the tag):** `TestHandWrittenVersionLines` guards 5 hand-written version lines of README.md/AGENTS.md (2.7.1 left AGENTS.md at v2.7.0 and nothing failed); proven on the `v2.7.1` tree and by 8 seeded defects. **KD-ATP-025 (`new_open`, low):** `~/AI_OS/20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md` is hand-written and still says v2.6.4 (stale since 2.7.0), and every bridge file repeats it. `make ci-local` (released in 2.7.1): **run it before every push**.
 
 **Execution stack** (read from `registry/providers/*.yaml`, `EXECUTOR_MAP`, `bridge/bridge_server.py`):
 - LLM providers: **Anthropic** (default; bridge default model `claude-haiku-4-5-20251001`) and **OpenAI**. `non_llm_execution` for shell/git/build/test/lint. Bridge-level dispatchers: `tdf-run` (:4180), `aios-flow` (:7700; authenticated as `svc:atp` when configured, ON on `aios-server`). AOKP adapter opt-in (6 queries).
