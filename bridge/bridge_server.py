@@ -765,6 +765,12 @@ def main() -> None:
         sys.exit(1)
     finally:
         server.server_close()
+        try:  # end the svc:atp session at identity: a restart must not leave a live one behind (best effort, 3 s at most)
+            from adapters.aios_flow import aios_flow_adapter
+
+            aios_flow_adapter.close_identity_session()
+        except Exception:  # noqa: BLE001 - shutdown must never fail on this
+            pass
 
 
 if __name__ == "__main__":

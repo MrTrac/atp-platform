@@ -8,9 +8,15 @@ from __future__ import annotations
 
 import base64
 import json
+import os
+import signal
 import socket
+import subprocess
+import sys
 import threading
 import time
+import urllib.request
+from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
@@ -18,6 +24,7 @@ import pytest
 from adapters.aios_flow import aios_flow_adapter as adapter
 
 SECRET = "wire-test-secret-0123456789"
+SESSION_ID = "5f3c9a10-7d2e-4b8a-9c41-0e6b2d7a1f34"  # the shape identity issues (a UUID); the adapter only ever puts such a value into a URL path
 
 
 def _jwt(serial: int) -> str:
@@ -44,7 +51,7 @@ class _Site:
                 site.requests.append({"method": self.command, "path": self.path, "headers": {k.lower(): v for k, v in self.headers.items()}, "body": body})
                 behave(site, self, body)
 
-            do_GET = do_POST = _serve
+            do_GET = do_POST = do_DELETE = _serve
 
         self.requests: list[dict] = []
         self.state: dict = {}
@@ -70,6 +77,13 @@ class _Site:
 
 
 def _identity_behaviour(site: _Site, h: BaseHTTPRequestHandler, body: dict | None) -> None:
+    if h.command == "DELETE" and h.path.startswith("/identity/sessions/"):
+        # like identity: a session's owner may end it, with the session's own token; anything else is refused
+        bearer = (h.headers.get("Authorization") or "").removeprefix("Bearer ")
+        if bearer not in site.state.get("issued", set()):
+            return site.reply(h, 401, {"error": "invalid_token", "message": "unknown token"})
+        site.state.setdefault("revoked", []).append(h.path.rsplit("/", 1)[1])
+        return site.reply(h, 200, {"status": "revoked"})
     if h.path != "/identity/service-account/token" or h.command != "POST":
         return site.reply(h, 404, {"error": "not_found", "message": "no such route"})
     if not body or body.get("secret") != SECRET or body.get("username") != "svc:atp" or body.get("consumer") != "ATP":
@@ -77,7 +91,7 @@ def _identity_behaviour(site: _Site, h: BaseHTTPRequestHandler, body: dict | Non
     token = _jwt(len(site.requests))
     site.state.setdefault("issued", set()).add(token)
     # like identity 1.2.4: advertises a year, the JWT itself lives 3600 s
-    return site.reply(h, 200, {"access_token": token, "expires_in": 31_536_000, "token_type": "Bearer", "session_id": "s"})
+    return site.reply(h, 200, {"access_token": token, "expires_in": 31_536_000, "token_type": "Bearer", "session_id": SESSION_ID})
 
 
 @pytest.fixture
@@ -129,6 +143,73 @@ def wired(monkeypatch, flow, identity):
     return flow
 
 
+def test_closing_the_adapter_ends_the_svc_atp_session_at_identity_over_real_sockets(wired, identity):
+    """KD-ATP-016 follow-up: a restart used to leave one live svc:atp session at identity per start. The shutdown hook must send
+    DELETE /sessions/{id} with the session's own token, once, and a second close must not send another."""
+    adapter.dispatch({"pipeline": "ok-flow"})  # mints the one token the process holds
+    (token,) = identity.state["issued"]
+    assert [r["method"] for r in identity.requests] == ["POST"]  # nothing is revoked while the token is still in use
+
+    adapter.close_identity_session()
+    deletes = [r for r in identity.requests if r["method"] == "DELETE"]
+    assert len(deletes) == 1
+    assert deletes[0]["path"] == f"/identity/sessions/{SESSION_ID}"
+    assert deletes[0]["headers"].get("authorization") == f"Bearer {token}"  # the session's own token, not a secret
+    assert deletes[0]["body"] is None and SECRET not in json.dumps(deletes)
+    assert identity.state["revoked"] == [SESSION_ID]
+
+    adapter.close_identity_session()  # idempotent: the session is already gone
+    assert len([r for r in identity.requests if r["method"] == "DELETE"]) == 1
+
+
+@pytest.mark.skipif(os.name != "posix", reason="SIGTERM semantics are POSIX")
+def test_a_bridge_stopped_by_sigterm_leaves_no_svc_atp_session_behind(flow, identity, tmp_path):
+    """The case this whole change exists for: every ATP restart (a deploy, a rollback, `systemctl restart`) used to leave one live svc:atp session at
+    identity. A real bridge process, a real SIGTERM, a real DELETE on the wire: the one session it minted must be ended before the process exits."""
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+    root = Path(__file__).resolve().parents[2]
+    env = {**os.environ, "HOME": str(tmp_path), "ATP_BRIDGE_PORT": str(port), "AIOS_FLOW_URL": flow.url,
+           "AIOS_FLOW_IDENTITY_URL": f"{identity.url}/identity", "AIOS_FLOW_IDENTITY_SECRET": SECRET}
+    proc = subprocess.Popen([sys.executable, str(root / "bridge" / "bridge_server.py")], cwd=root, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline and proc.poll() is None:
+            try:
+                with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=1):
+                    break
+            except OSError:
+                time.sleep(0.2)
+        assert proc.poll() is None, "bridge did not come up"
+
+        # any aios-flow call makes the bridge mint its token; an unknown run id answers quickly (404) after the token was accepted
+        body = json.dumps({"provider": "aios-flow", "action": "status", "flow_run_id": "no-such-run"}).encode()
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/run", data=body, headers={"Content-Type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=30):
+            pass
+        (token,) = identity.state["issued"]
+        assert [r["method"] for r in identity.requests] == ["POST"]  # minted once, nothing revoked while the bridge runs
+
+        proc.send_signal(signal.SIGTERM)
+        assert proc.wait(timeout=10) == 0
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait()
+
+    deletes = [r for r in identity.requests if r["method"] == "DELETE"]
+    assert len(deletes) == 1, "the session must be revoked exactly once, before the process is gone"
+    assert deletes[0]["path"] == f"/identity/sessions/{SESSION_ID}"
+    assert deletes[0]["headers"].get("authorization") == f"Bearer {token}"
+    assert identity.state["revoked"] == [SESSION_ID]
+
+
+def test_closing_without_ever_minting_sends_nothing(wired, identity):
+    adapter.close_identity_session()
+    assert identity.requests == []
+
+
 def test_dispatch_and_a_wait_that_survives_a_503_work_end_to_end_with_the_token_on_the_wire(wired, identity):
     sent = adapter.dispatch({"pipeline": "ok-flow"})
     assert sent["status"] == "dispatched" and sent["flow_run_id"] == "run-1"
@@ -139,7 +220,7 @@ def test_dispatch_and_a_wait_that_survives_a_503_work_end_to_end_with_the_token_
     assert sleeps == [5.0, 1]  # the real Retry-After: 5 header was honoured, then one ordinary poll interval
 
     (mint,) = [r for r in identity.requests]
-    assert mint["body"] == {"username": "svc:atp", "secret": SECRET, "consumer": "ATP"} and "authorization" not in mint["headers"]
+    assert mint["body"] == {"username": "svc:atp", "secret": SECRET, "consumer": "ATP", "ttl_days": 1} and "authorization" not in mint["headers"]
     token = next(iter(identity.state["issued"]))
     assert len(identity.state["issued"]) == 1  # one token served the dispatch and every poll, retries included
     assert [r["headers"].get("authorization") for r in wired.requests] == [f"Bearer {token}"] * len(wired.requests) and len(wired.requests) == 4

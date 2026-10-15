@@ -60,7 +60,7 @@ def test_the_exchange_request_has_the_shape_identity_expects(net, clock):
     assert make_provider(clock).get_token() == token
     (call,) = net.mint_calls
     assert call.url == "https://identity.example/identity/service-account/token"
-    assert call.body == {"username": "svc:atp", "secret": SECRET, "consumer": "ATP"}
+    assert call.body == {"username": "svc:atp", "secret": SECRET, "consumer": "ATP", "ttl_days": 1}  # 1 day, asked for explicitly (identity >= 1.2.9 caps at 90)
     assert call.headers["content-type"] == "application/json"
     assert "authorization" not in call.headers  # the secret travels in the body; there is no token yet
     assert "x-request-id" in call.headers and "traceparent" in call.headers  # G9: this is a cross-module call
@@ -541,3 +541,122 @@ def test_a_proxy_is_no_obstacle_when_the_host_is_exempt_or_the_scheme_is_https(m
     identity_token.check_transport("http://127.0.0.1:7700", what="X")  # NO_PROXY names it
     monkeypatch.setattr(identity_token, "proxy_bypass", lambda host: False)
     identity_token.check_transport("https://identity.example/identity", what="X")  # https goes through a CONNECT tunnel: TLS is end to end
+
+
+# -- revocation: a replaced or closed token must not stay alive at identity (KD-AIOS-IDENTITY-016) -----------------------------------------------------------
+
+
+def answer(token: str, sid: str) -> dict:
+    return {**mint_answer(token), "session_id": sid}
+
+
+SESSION_A = "11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+SESSION_B = "22222222-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+DELETE_A = f"/identity/sessions/{SESSION_A}"
+DELETE_B = f"/identity/sessions/{SESSION_B}"
+
+
+def test_a_renewal_revokes_the_token_it_replaces_with_that_token_and_not_the_new_one(net, clock):
+    t1, t2 = make_jwt(serial=1), make_jwt(serial=2)
+    net.on("POST", TOKEN_PATH, answer(t1, SESSION_A), answer(t2, SESSION_B)).on("DELETE", DELETE_A, {})
+    p = make_provider(clock)
+    assert p.get_token() == t1
+    assert net.calls_to("DELETE", DELETE_A) == []  # nothing to revoke before a replacement exists
+    clock.advance(3300)
+    assert p.get_token() == t2
+    (call,) = net.calls_to("DELETE", DELETE_A)
+    assert call.headers["authorization"] == f"Bearer {t1}"  # the owner of a session may end it: the old token itself is the credential
+    assert net.calls_to("DELETE", DELETE_B) == []
+    assert call.timeout is not None and call.timeout <= 3.0
+
+
+def test_a_failed_revoke_never_breaks_the_renewal(net, clock):
+    t1, t2 = make_jwt(serial=1), make_jwt(serial=2)
+    for failure in (URLError("boom"), identity_error(503, "x"), identity_error(401, "session_revoked"), identity_error(404, "not_found"), TimeoutError()):
+        net.calls.clear()
+        net.on("POST", TOKEN_PATH, answer(t1, SESSION_A), answer(t2, SESSION_B)).on("DELETE", DELETE_A, failure)
+        p = make_provider(Clock())
+        p.get_token()
+        p._clock.advance(3300)
+        assert p.get_token() == t2  # the new token is delivered whatever happened to the old session
+        assert len(net.calls_to("DELETE", DELETE_A)) == 1
+
+
+def test_a_rejected_token_is_revoked_when_it_is_replaced(net, clock):
+    t1, t2 = make_jwt(serial=1), make_jwt(serial=2)
+    net.on("POST", TOKEN_PATH, answer(t1, SESSION_A), answer(t2, SESSION_B)).on("DELETE", DELETE_A, {})
+    p = make_provider(clock)
+    p.get_token()
+    clock.advance(31)  # past the 30 s cooldown
+    assert p.refresh_after_rejection(t1) == t2
+    (call,) = net.calls_to("DELETE", DELETE_A)
+    assert call.headers["authorization"] == f"Bearer {t1}"
+
+
+def test_close_revokes_the_current_session_once_and_the_provider_mints_again_afterwards(net, clock):
+    t1, t2 = make_jwt(serial=1), make_jwt(serial=2)
+    net.on("POST", TOKEN_PATH, answer(t1, SESSION_A), answer(t2, SESSION_B)).on("DELETE", DELETE_A, {})
+    p = make_provider(clock)
+    p.get_token()
+    p.close()
+    p.close()  # idempotent: no second request
+    assert len(net.calls_to("DELETE", DELETE_A)) == 1
+    assert p.get_token() == t2  # still usable
+
+
+def test_close_with_nothing_minted_does_nothing(net, clock):
+    make_provider(clock).close()
+    assert net.calls == []
+
+
+def test_close_swallows_every_failure(net, clock):
+    net.on("POST", TOKEN_PATH, answer(make_jwt(serial=1), SESSION_A)).on("DELETE", DELETE_A, URLError("down"))
+    p = make_provider(clock)
+    p.get_token()
+    p.close()  # must not raise: it runs in the shutdown path
+
+
+def test_a_session_id_that_is_not_what_identity_issues_is_never_put_into_a_url(net, clock):
+    for hostile in ("../../admin/users", "a b", "x" * 200, "", None, 7):
+        net.calls.clear()
+        net.on("POST", TOKEN_PATH, {**mint_answer(make_jwt(serial=1)), "session_id": hostile})
+        p = make_provider(Clock())
+        p.get_token()
+        p.close()
+        assert [c for c in net.calls if c.method == "DELETE"] == [], hostile
+
+
+def test_no_revoke_when_the_answer_has_no_session_id(net, clock):
+    answer_without = mint_answer(make_jwt(serial=1))
+    del answer_without["session_id"]
+    net.on("POST", TOKEN_PATH, answer_without)
+    p = make_provider(clock)
+    p.get_token()
+    p.close()
+    assert [c for c in net.calls if c.method == "DELETE"] == []
+
+
+def test_the_revocation_traces_carry_no_token_and_no_secret(net, traces, clock):
+    t1, t2 = make_jwt(serial=1), make_jwt(serial=2)
+    net.on("POST", TOKEN_PATH, answer(t1, SESSION_A), answer(t2, SESSION_B)).on("DELETE", DELETE_A, {})
+    p = make_provider(clock)
+    p.get_token()
+    clock.advance(3300)
+    p.get_token()
+    dumped = repr(traces)
+    assert t1 not in dumped and t2 not in dumped and SECRET not in dumped
+    assert any(t["method"] == "DELETE" and t["route"] == "/sessions/{id}" for t in traces)
+
+
+def test_close_provider_ends_the_process_wide_session(net, monkeypatch):
+    monkeypatch.setenv(identity_token.ENV_URL, IDENTITY_URL)
+    monkeypatch.setenv(identity_token.ENV_SECRET, SECRET)
+    identity_token.reset_provider()
+    net.on("POST", TOKEN_PATH, answer(make_jwt(serial=1), SESSION_A)).on("DELETE", DELETE_A, {})
+    identity_token.get_provider().get_token()
+    identity_token.close_provider()
+    assert len(net.calls_to("DELETE", DELETE_A)) == 1
+    identity_token.close_provider()  # nothing left: no second request
+    assert len(net.calls_to("DELETE", DELETE_A)) == 1
+    identity_token.reset_provider()
+    identity_token.close_provider()  # no provider at all: no error
