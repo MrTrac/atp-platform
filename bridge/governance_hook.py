@@ -77,6 +77,15 @@ def run_governance_review(artifact: dict[str, Any]) -> dict[str, Any]:
             "governance_reason": "aios-gate timed out",
             "requires_human": False,
         }
+    except OSError as exc:
+        # The gate could not even be started (not installed on this host, not executable). Same class of
+        # failure as a non-zero exit, so the same verdict: the request's result must not be lost to it.
+        return {
+            "governance_class": "E",
+            "governance_status": "error",
+            "governance_reason": f"aios-gate unavailable: {exc}",
+            "requires_human": False,
+        }
     except (json.JSONDecodeError, KeyError) as exc:
         return {
             "governance_class": "E",
