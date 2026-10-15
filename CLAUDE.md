@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261015T131939Z
+GeneratedAtUTC: 20261015T133648Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Nếu AI_OS projected planning wording mâu thuẫn với accepted repo-local ex
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 94b447ebcb89732b52d891fbe8cdb1661ff7b210e31659298d96de0abdf22e2b
+SHA256: 75f20294d4486304ac30b6227d67eb55438723ddd2309e28bf1756081240fcc4
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.7.3
-- **Released:** 2026-10-15T12:23:19+07:00
+- **Version:** v2.7.4
+- **Released:** 2026-10-15T20:21:36+07:00
 - **Last synced:** 2026-10-15 (via aios sync reverse)
 
 ## Status
@@ -251,24 +251,25 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: f5381bcc594940c49f74804745e879557fa721d12ff80a6185eebc7b4d02a082
+SHA256: 9934ff5b7be3b667f9198fc9eeb457675b9ac2323e56b6ae5f569eab2aa61fae
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.7.3 — reverse sync from source repo
+## Handoff: v2.7.4 — reverse sync from source repo
 **Date**: 2026-10-15
 
-### What changed in v2.7.3
-## [2.7.3] — 2026-10-15
+### What changed in v2.7.4
+## [2.7.4] — 2026-10-15
 
-Contents: tests only. No runtime code changed since 2.7.2 (`git diff v2.7.2..` shows `tests/unit/test_version_consistency.py` and this file; the other changes are the AI-context bridge files). The version number moves so the guard below ships in a tagged release and `/health` reports the tree it was proven on.
+Contents: one runtime fix (KD-ATP-026), below. Nothing else changed since 2.7.3 (`git diff v2.7.3..` shows the 4 adapter/bridge files, 2 test files and this file; the other changes are the AI-context bridge files). Released and published, but NOT installed on `aios-server` when this entry was written: until it is installed the fix does nothing there, and the restart that installs it still ends no session of the process it replaces (that process runs the old code).
 
-### Added — a guard for the hand-written version lines in `README.md` and `AGENTS.md` (KD-ATP-024; tests only, no runtime change)
+### Fixed — every ATP start left a live `svc:atp` session at aios-identity, and ATP never ended it (KD-ATP-026)
 
-`tests/unit/test_version_consistency.py` checked `pyproject.toml`, `core/version.py`, `RELEASED`, the CHANGELOG date and `/health`, but read neither `README.md` nor `AGENTS.md`. Nothing generates the lines that name the current version there, so 2.7.1 shipped with `AGENTS.md` still saying v2.7.0 while every check stayed green; 2.7.2 fixed it by hand.
-New class `TestHandWrittenVersionLines`: 5 lines (README: the baseline sentence, the "current released baseline" bullet, the "Runtime components" heading; AGENTS: the baseline sentence, the "Current runtime components" heading), each matched by a pattern with one capture group that must equal `VERSION`. A pattern that matches zero or two lines is a failure, not a pass (a guard that matches nothing guards nothing), and the message says to update the table if the sentence was reworded on purpose. The managed block between the AI_OS markers and the history bullets are deliberately not checked.
-Measured 15/10/2026: on the tree of tag `v2.7.1` plus this test, exactly the two `AGENTS.md` lines fail ("says v2.7.0, VERSION is 2.7.1"); on the current tree it passes. 8 seeded defects, all caught (each of the 5 lines set to the previous version, the README bullet deleted, the AGENTS heading duplicated, the AGENTS sentence reworded); 2 negative controls stay green (a managed-block line naming an old version; a history bullet naming an old version). Files restored byte for byte.
-Not covered: the managed block's own lines (`Stable baseline on main: v2.6.4` and similar) come from `AI_PROJECT_CONTEXT.md` in the AI_OS pack, which is hand-maintained there and was last updated for 2.6.4; that is outside this repository (KD-ATP-025 in the ledger; fixed afterwards in the AI_OS pack by replacing the hand-copied version with a pointer to `AI_CURRENT_BASELINE.md`).
+Found by the aios-identity session on 15/10/2026 (it saw three 365-day `svc:atp` sessions on the identity host, one per ATP start/deploy: 14/10 18:09, 15/10 03:00 and 03:50 UTC; read from that session's report, not measured here). Cause, read in `adapters/aios_flow/identity_token.py`: the `POST /service-account/token` request sent no `ttl_days` (it took the server default) and `_exchange` threw the answer's `session_id` away, so nothing could be revoked. Identity 1.2.9 already softened the server side (omitted `ttl_days` = 1 day, maximum 90); ATP still never ended a session.
+The patch comes from that session (4 files, `ATP_KD-016_ttl_days_va_thu_hoi.patch`); it was applied here after review. What it does: (1) sends `"ttl_days": 1` explicitly; (2) keeps the answer's `session_id` when it has the shape identity issues (8-64 characters of `[A-Za-z0-9-]`; nothing else is ever put into a URL path); (3) when a token is replaced (renewal, or `refresh_after_rejection`) it ends the old session with `DELETE {identity}/sessions/{id}` using that session's own token, outside the lock, 3 s at most, every error swallowed (a failed revoke only means the session lives out its 1 day, which is what happened before); (4) `IdentityTokenProvider.close()`, `close_provider()` and `aios_flow_adapter.close_identity_session()`, called from the `finally` of `bridge_server.main()` after `server_close()`, so the SIGTERM path ends the current session. The rules of this repo hold: only the adapter imports `identity_token`; the broad `except` in the revoke closes the `HTTPError` it may be handed (KD-ATP-013); no token or secret is logged or traced.
+What this review added: the patch's author ran `tests/unit` only. `tests/integration/test_aios_flow_auth_wire.py` failed after the patch because it asserts the exact mint body, which now carries `ttl_days` (fixed); its fake identity had no `DELETE` route and answered a 1-character `session_id`, so the real wire could never show a revocation (now a UUID-shaped id and a `DELETE /identity/sessions/{id}` route that accepts only an issued token). Three new integration tests: closing the adapter sends exactly one `DELETE` with the session's own token (and a second close sends none), closing without a mint sends nothing, and — the case the whole change exists for — a real `bridge_server.py` process that minted a token and then got SIGTERM ends its session before it exits (one `DELETE`, rc 0). Before the last test nothing in the repo exercised the `finally` of `main()`: two seeded defects there survived.
+Measured 15/10/2026: unit + integration suites 1023 passed (997 + 26) before -> 1036 passed, 7 skipped after (+10 unit tests from the patch, +3 integration tests added here); 23 seeded defects (no `ttl_days`, 365 or 90 days, `session_id` ignored or unchecked or accepting `/`, renewal / rejection / `close()` not retiring the token, `close()` not idempotent, the retired list not emptied, `get_token` never revoking, wrong URL, `POST` instead of `DELETE`, no `Authorization`, the secret sent as the credential, broad `except` removed, `HTTPError` not closed, a 3000 s timeout, the adapter hook or `close_provider` doing nothing, the bridge not closing at shutdown): 22 caught; the one that survives removes `server.server_close()` and is not observable from outside (equivalent).
+Not measured: a revocation against the real identity service from this tree (the aios-identity session reports 6/6 against a real identity 1.2.10 and a real bridge on a temporary copy: SIGTERM revoked right away); `systemctl stop` on `aios-server` (only a direct SIGTERM was tried); renewal after a real expiry; SIGKILL or a crash still leaves the session until its `ttl_days` (now 1 day). Every ATP restart before this fix, including the three rollback/deploy restarts of 15/10 (04:41:32Z, 05:07:36Z, 05:07:52Z), may have left a session whose life depended on the identity version running at that moment; not measured.
 
 Đầy đủ / full history: `/Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP/CHANGELOG.md`
 
