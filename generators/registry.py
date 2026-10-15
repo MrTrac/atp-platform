@@ -68,6 +68,8 @@ class SynthesisResult:
     citations: list[Citation] = field(default_factory=list)
     usage: dict[str, Any] = field(default_factory=dict)
     diagnostics: list[str] = field(default_factory=list)
+    # Optional generator-specific payload (e.g. report_v2: sections, suggestions, quality score, grounding). Empty for generators that have none, and then NOT serialised.
+    structured: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

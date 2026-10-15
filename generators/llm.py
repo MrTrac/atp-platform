@@ -15,10 +15,14 @@ a deterministic stub.
 Provider contract:
     def my_provider(prompt: str, model: str | None = None) -> str:
         '''Return the LLM's text response. Raise LlmError on failure.'''
+
+A provider MAY also accept a keyword `system` (a system prompt kept separate from the user prompt, as AOKP's synthesis does). `call_llm(prompt, model, system=...)`
+passes it only to a provider that declares it (or **kwargs); for any other provider the system text is put in front of the prompt, so existing providers keep working.
 """
 
 from __future__ import annotations
 
+import inspect
 import os
 from typing import Callable, Protocol
 
@@ -37,8 +41,8 @@ class LlmCall(Protocol):
     def __call__(self, prompt: str, model: str | None = None) -> str: ...
 
 
-def _default_provider(prompt: str, model: str | None = None) -> str:
-    """Production provider — delegates to ATP `bridge_request`.
+def _default_provider(prompt: str, model: str | None = None, system: str | None = None) -> str:
+    """Production provider — delegates to ATP `bridge_request` (`system` travels as the request's `context`, which the cloud adapters send as the system prompt).
 
     Lazy-imports bridge_request so generators/__init__.py can be loaded
     inside the bridge process (which imports generators) without the
@@ -49,6 +53,8 @@ def _default_provider(prompt: str, model: str | None = None) -> str:
     from bridge.openclaw_bridge import bridge_request, BridgeError
 
     payload: dict = {"text": prompt, "model": model or DEFAULT_MODEL}
+    if system:
+        payload["context"] = system
     try:
         result = bridge_request(payload)
     except BridgeError as e:
@@ -97,6 +103,18 @@ def reset_llm_provider() -> None:
     _provider = _default_provider
 
 
-def call_llm(prompt: str, model: str | None = None) -> str:
-    """Single-shot LLM call. Raises LlmError on any failure."""
-    return _provider(prompt, model)
+def _accepts_system(provider: Callable[..., str]) -> bool:
+    try:
+        params = inspect.signature(provider).parameters
+    except (TypeError, ValueError):
+        return False
+    return "system" in params or any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values())
+
+
+def call_llm(prompt: str, model: str | None = None, system: str | None = None) -> str:
+    """Single-shot LLM call. Raises LlmError on any failure. Without `system` it behaves exactly as before."""
+    if not system:
+        return _provider(prompt, model)
+    if _accepts_system(_provider):
+        return _provider(prompt, model, system=system)  # type: ignore[call-arg]
+    return _provider(f"{system}\n\n{prompt}", model)

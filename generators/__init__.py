@@ -47,6 +47,7 @@ from .stubs import (  # noqa: F401  (import-side-effect for registration)
     graphrag_synth,
     react,
     report,
+    report_v2,
     temporal,
     tot,
     transform,
