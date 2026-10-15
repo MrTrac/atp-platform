@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=COPILOT -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261015T112031Z
+GeneratedAtUTC: 20261015T131940Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -111,13 +111,13 @@ SHA256: 94b447ebcb89732b52d891fbe8cdb1661ff7b210e31659298d96de0abdf22e2b
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 6a92b1b7c391965a6c1f2b5ff6a1afcf1c93e138028cdf507c2cd6b42dfeaab8
+SHA256: 5c0470dfb2dbfab4674531a75345ba980bd78585029551a105b72afc05a4822b
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-10-15
 - **Phase:** v2.7.3 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
-- **Current state:** v2.7.3 (RELEASED 2026-10-15T12:23:19+07:00) = v2.7.2 + a guard test only (KD-ATP-024); NO runtime code changed since 2.7.2. **Published to the VPS store but NOT installed: `aios-server` still runs 2.7.2** (Owner's decision 15/10; install later with `aios-deploy atp 2.7.3`, no behaviour change). aios-flow authentication is ON on the server (KD-ATP-021). Nothing on `main` is unreleased. Details: §1.
+- **Current state:** v2.7.3 (RELEASED 2026-10-15T12:23:19+07:00) = v2.7.2 + a guard test only (KD-ATP-024); NO runtime code changed since 2.7.2. **Published to the VPS store but NOT installed: `aios-server` still runs 2.7.2** (Owner's decision 15/10; install later with `aios-deploy atp 2.7.3`, no behaviour change). aios-flow authentication is ON on the server (KD-ATP-021). **`main` is ahead of the tag with ONE runtime fix, unreleased and not installed (KD-ATP-026, `56be89b`): ATP now ends its `svc:atp` session at aios-identity on renewal and on SIGTERM and asks for `ttl_days=1`.** Details: §1.
 ---
 
 ## D6.2 closure rationale (M4 scope-cut, 2026-05-04)
@@ -155,6 +155,7 @@ ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above 
 **History.** The 2.6.4–2.6.6 fixes (KD-ATP-003/008/011/012/013: tests, docs, `HTTPError` closing in the handlers and in `core/retry.with_retry`) are in CHANGELOG `[2.6.5]`/`[2.6.6]` and the ledger; not repeated here (context size, G-CTXBLOAT-1).
 
 **What 2.7.0 to 2.7.3 brought** — details: CHANGELOG and the ledger blocks (statuses are the ledger's):
+- **KD-ATP-026 (`fixed_unverified`, on `main` as `56be89b`, NOT released, NOT installed)** — every ATP start left a live `svc:atp` session at identity (reported by the aios-identity session, 3 sessions of 365 days seen on 14-15/10; not measured here): the mint sent no `ttl_days` and dropped `session_id`. Patch from that session, reviewed and applied: `ttl_days=1`, `DELETE /sessions/{id}` with the session's own token when a token is replaced and from the `finally` of `bridge_server.main()` (SIGTERM). Review found the integration test `test_aios_flow_auth_wire.py` red after the patch, a fake identity that could never show a revocation, and no test for the shutdown path (all fixed; +3 integration tests incl. a real bridge process + SIGTERM); 22/23 seeded defects caught; 1036 tests; `make ci-local` PASS. Still to do: release 2.7.4, install, then measure that one restart leaves no `svc:atp` session besides the running process (needs identity-side access); `systemctl stop` untried. Today's 3 restarts on `aios-server` (04:41:32Z, 05:07:36Z, 05:07:52Z) may each have left a session.
 - **aios-flow authentication (KD-ATP-016 `fixed_verified`; KD-ATP-021 `fixed_verified`: ON on `aios-server`)** — `adapters/aios_flow/identity_token.py`: with `AIOS_FLOW_IDENTITY_URL` set (https/loopback) every aios-flow request carries the `svc:atp` token (secret `AIOS_FLOW_IDENTITY_SECRET`, never logged). The Owner switched it on 14-15/10 (secret typed at a hidden prompt, never seen by an AI); aios-flow 1.2.1 enforces on the server; minting a token and an authenticated read were measured. NOT measured: renewal after a real expiry (only `exp - iat`), TLS to a real https identity. Never set the URL without the secret; never configure it on the Mac (KD-ATP-019).
 - **Errors named correctly (KD-ATP-016/017)** — aios-flow failures carry `error_code`, `retryable`, `reason_code`…; a 401 gets one fresh token; `wait` retries transient 429/502/503/504 (4 attempts max); `dispatch` is `retryable` only when no run can have been created.
 - **KD-ATP-022 (2.7.1, `fixed_verified`)** — `bridge/governance_hook.run_governance_review` turns a missing/non-executable `aios-gate` into a normal verdict (class E, status error) instead of HTTP 500; re-measured on the server after the install. **KD-ATP-023 (`wontfix`, Owner: keep)**: `aios-server` has no `aios-gate`, so every ATP result there carries `governance_class: E`; reopen if anyone starts to rely on `governance_status`.
@@ -192,7 +193,6 @@ Verified in code on 2026-10-14:
 Per CHANGELOG, **not re-verified today**: vision (image inputs), per-model timeout, per-model pricing values, OpenAI Batch API + `wait` helper (v2.3.0 / v2.5.0), evaluator wiring (v2.1.0). (aios-flow status/wait were exercised against the real aios-flow in 2.7.0.)
 
 Known gaps / stubs (measured 2026-10-14; the later ones added 2026-10-15):
-- **4 placeholder adapter dirs** (`adapters/api`, `desktop_bridge`, `local_service`, `ui_bridge`): deliberate architectural slots from the v0 skeleton; **kept by Owner decision 2026-10-14 (KD-ATP-009)**. Status table in `adapters/README.md`, guarded by `tests/unit/test_placeholder_adapters.py`. No use case or owner assigned. `adapters/contracts/` is the documented `typing.Protocol` contract layer (no non-test code imports it; not concluded dead).
 
 ## Cross-Session Context (CTX-P0)
 Workspace ID: `f557573632b576e4` (SHA-256 first-16-hex of canonical repo path)
