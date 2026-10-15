@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=COPILOT -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261015T052003Z
+GeneratedAtUTC: 20261015T052519Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Nếu AI_OS projected planning wording mâu thuẫn với accepted repo-local ex
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 3a517fd9e0cbc9f8e83a39f8b286cfc9d365f5fda3546443e93b4479f417748e
+SHA256: 94b447ebcb89732b52d891fbe8cdb1661ff7b210e31659298d96de0abdf22e2b
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.7.2
-- **Released:** 2026-10-15T11:31:58+07:00
+- **Version:** v2.7.3
+- **Released:** 2026-10-15T12:23:19+07:00
 - **Last synced:** 2026-10-15 (via aios sync reverse)
 
 ## Status

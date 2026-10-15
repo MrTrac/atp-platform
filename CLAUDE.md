@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261015T052003Z
+GeneratedAtUTC: 20261015T052519Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Nếu AI_OS projected planning wording mâu thuẫn với accepted repo-local ex
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 3a517fd9e0cbc9f8e83a39f8b286cfc9d365f5fda3546443e93b4479f417748e
+SHA256: 94b447ebcb89732b52d891fbe8cdb1661ff7b210e31659298d96de0abdf22e2b
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.7.2
-- **Released:** 2026-10-15T11:31:58+07:00
+- **Version:** v2.7.3
+- **Released:** 2026-10-15T12:23:19+07:00
 - **Last synced:** 2026-10-15 (via aios sync reverse)
 
 ## Status
@@ -251,30 +251,24 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: caa889ab96732107f982b2feac0461e39821cd3f50ad418a85faa7aab82ed89b
+SHA256: f5381bcc594940c49f74804745e879557fa721d12ff80a6185eebc7b4d02a082
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.7.2 — reverse sync from source repo
+## Handoff: v2.7.3 — reverse sync from source repo
 **Date**: 2026-10-15
 
-### What changed in v2.7.2
-## [2.7.2] — 2026-10-15
+### What changed in v2.7.3
+## [2.7.3] — 2026-10-15
 
-Contents: the new generator `report_v2` (incubating; nothing calls it yet) and a size guard for the AI-context files. Nothing that existed changes behaviour: the additions are a generator, an optional `system` argument of `call_llm`, and an optional `structured` key that only `report_v2` sets. A patch number was chosen by the Owner although a generator is added.
+Contents: tests only. No runtime code changed since 2.7.2 (`git diff v2.7.2..` shows `tests/unit/test_version_consistency.py` and this file; the other changes are the AI-context bridge files). The version number moves so the guard below ships in a tagged release and `/health` reports the tree it was proven on.
 
-### Added — `report_v2`: structured, grounded, quality-checked answers (a Python port of AOKP `src/runtime/synthesis`; KD-ATP-006 phases 2a/2b)
+### Added — a guard for the hand-written version lines in `README.md` and `AGENTS.md` (KD-ATP-024; tests only, no runtime change)
 
-New generator `report_v2` (0.1.0, `incubating`; `report` v1 is untouched) = `generators/synthesis_v2/` + `generators/prompts/synthesis_bank.py` + `generators/stubs/report_v2.py`: JSON sections (Tóm tắt / Chi tiết / ...), follow-up suggestions from the ATM domain engine (radar, FDP, safety net, network, firewall, rack, TWR), an LLM quality guard with retry, a Jaccard grounding verdict for every `[n]`, the KB-gap statement, `<think>` stripping and AOKP's chunk-based fallback. Standard library only; the model is injected as `chat(messages)`, so the logic runs unchanged against a scripted model in tests. `params.llm_mode` = `skeleton` (default: no model, deterministic) or `real` (through `generators.llm.call_llm`, system prompt kept separate as AOKP does); a failing model gives status `partial` and AOKP's fallback answer, never an exception. NOT a cutover: nothing in AOKP or AIOS-OC calls it yet.
-Interface additions, all additive: `call_llm(prompt, model, system=None)` (a provider that does not declare `system` still works: the system text is put in front of the prompt; with no `system` the call is exactly what it was), `SynthesisResult.structured` and a `structured` key in the `/api/synthesis/generate` response ONLY when a generator sets it (every other generator's response is unchanged), the generator count goes 8 -> 9. The Z2 contract `ATP_AIOS-OC_v3` does not forbid extra properties, but its owner should record the optional `structured` block.
-How it is proven equal to AOKP: golden vectors made by running AOKP's own TypeScript (commit `51b1139b12`, node, `tsx`; the model replaced by a scripted stand-in) on 1054 inputs (grounding 315, citation linker 65, suggestions 182, JSON parser 353, quality guard 78, whole-loop scenarios 45 that also compare every prompt sent and its order, prompt rendering 16); the six prompt texts are byte-identical to AOKP's (sha256) and the constants (stopwords, topic suggestions, the regex sources) were read out of the TypeScript, not retyped. The fixture is committed (`tests/fixtures/synthesis_v2/golden.json.gz`, 200 KB) so CI needs no AOKP checkout; `run_golden.sh` regenerates it.
-Where JavaScript and Python quietly disagree, and the port reproduces JavaScript (each has a golden case): `toFixed(3)` rounds an exact tie half UP (1/16 -> 0.063; Python `round` gives 0.062); `String.length` counts UTF-16 units; the tokenizer decomposes text (NFKD) and combining marks are not letters, so Vietnamese words are cut at their diacritics, and the Vietnamese stopwords (NFC) therefore never match; `\b` is ASCII-only (a topic ending in "ủ" needs a word character AFTER it) and `/i` never folds a non-ASCII letter onto an ASCII one (U+017F, U+0131); `trim()`/`\s` include U+FEFF and exclude U+001C-001F; `[]` and `{}` are truthy; `JSON.parse` refuses NaN/Infinity; `Number("0x10")` is 16; `replaceAll` treats `$&`, `$$` in the replacement (user text goes through it); `slice(0, 200)` can cut an emoji in half. One trap was found only because the golden set was widened after seeded defects survived: **from Python 3.12 `sum()` of floats is compensated (not on 3.11)**, so averaging the support scores with `sum()` gives a different last bit than JavaScript's `reduce` and flips `average < 0.08` for some inputs; the port adds one by one, so 3.11 and 3.12 agree with AOKP.
-Verification (G-AUTOVERIFY-1): 30 seeded defects in the port, every one caught by the golden test (31st, `lastIndexOf` window off by one, is an equivalent mutant: the character at that position is always `[`); `make ci-local` on the commit (clean clone, scrubbed environment): PASS on Python 3.11.15 and 3.12.14, 996 unit (+49 subtests) and 26 integration passed (7 skipped) on each (the two Pythons are why the `sum()` trap matters: it passes on 3.11 and fails on 3.12).
-NOT done / limits: AOKP-side client and the `AOKP_USE_ATP_SYNTHESIS` flag (phase 2c), the 24 h soak with a divergence log (phase 3) and the contract/lifecycle promotion (phase 4) are not done, so KD-ATP-006 stays open. The port was exercised only against scripted models: no real model was called (no local LLM on macOS; no API call was made), so answer QUALITY from a real model is not measured. The Unicode tables of Python's `unicodedata` and of Node's ICU can differ for very recently assigned code points; not covered.
-
-### Added — a guard for the size of the AI-context files
-
-`tests/unit/test_context_files_size.py`: `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `.github/copilot-instructions.md` and `AI_OS_CONTEXT.md` must stay under 49,000 BYTES (the rule, G-CTXBLOAT-1, is 50,000). On 15/10/2026 a refresh took `CLAUDE.md` from 44,708 to 50,210 bytes unnoticed: the generator copies the first 80 lines of `AI_NEXT_STEP.md` into the managed block. Counts bytes, not characters (Vietnamese is multi-byte); a seeded oversize file turns it red.
+`tests/unit/test_version_consistency.py` checked `pyproject.toml`, `core/version.py`, `RELEASED`, the CHANGELOG date and `/health`, but read neither `README.md` nor `AGENTS.md`. Nothing generates the lines that name the current version there, so 2.7.1 shipped with `AGENTS.md` still saying v2.7.0 while every check stayed green; 2.7.2 fixed it by hand.
+New class `TestHandWrittenVersionLines`: 5 lines (README: the baseline sentence, the "current released baseline" bullet, the "Runtime components" heading; AGENTS: the baseline sentence, the "Current runtime components" heading), each matched by a pattern with one capture group that must equal `VERSION`. A pattern that matches zero or two lines is a failure, not a pass (a guard that matches nothing guards nothing), and the message says to update the table if the sentence was reworded on purpose. The managed block between the AI_OS markers and the history bullets are deliberately not checked.
+Measured 15/10/2026: on the tree of tag `v2.7.1` plus this test, exactly the two `AGENTS.md` lines fail ("says v2.7.0, VERSION is 2.7.1"); on the current tree it passes. 8 seeded defects, all caught (each of the 5 lines set to the previous version, the README bullet deleted, the AGENTS heading duplicated, the AGENTS sentence reworded); 2 negative controls stay green (a managed-block line naming an old version; a history bullet naming an old version). Files restored byte for byte.
+Not covered: the managed block's own lines (`Stable baseline on main: v2.6.4` and similar) come from `AI_PROJECT_CONTEXT.md` in the AI_OS pack, which is hand-maintained there and was last updated for 2.6.4; that is outside this repository (KD-ATP-025 in the ledger; fixed afterwards in the AI_OS pack by replacing the hand-copied version with a pointer to `AI_CURRENT_BASELINE.md`).
 
 Đầy đủ / full history: `/Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP/CHANGELOG.md`
 
