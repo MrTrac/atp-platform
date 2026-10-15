@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261015T140735Z
+GeneratedAtUTC: 20261015T141613Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -111,7 +111,7 @@ SHA256: 75f20294d4486304ac30b6227d67eb55438723ddd2309e28bf1756081240fcc4
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 5ab4f410c8dd0ac7f5a7c3482c1bc0ba7c5aacb180a207b5119c9a101f8fc696
+SHA256: 5cf9cb93d641133d8bc62a03c6c670aeec5f0d35d912e07d08df4c63da65b2ed
 ----
 # AI Next Step — ATP
 
@@ -155,7 +155,7 @@ ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above 
 **History.** The 2.6.4–2.6.6 fixes (KD-ATP-003/008/011/012/013: tests, docs, `HTTPError` closing in the handlers and in `core/retry.with_retry`) are in CHANGELOG `[2.6.5]`/`[2.6.6]` and the ledger; not repeated here (context size, G-CTXBLOAT-1).
 
 **What 2.7.0 to 2.7.3 brought** — details: CHANGELOG and the ledger blocks (statuses are the ledger's):
-- **KD-ATP-026 (`fixed_unverified`, released and installed in 2.7.4)** — every ATP process that made an aios-flow call left a live `svc:atp` session at identity (the token is minted lazily at the first call, NOT at start) (reported by the aios-identity session, 3 sessions of 365 days seen on 14-15/10; not measured here): the mint sent no `ttl_days` and dropped `session_id`. Patch from that session, reviewed and applied: `ttl_days=1`, `DELETE /sessions/{id}` with the session's own token when a token is replaced and from the `finally` of `bridge_server.main()` (SIGTERM). Review found the integration test `test_aios_flow_auth_wire.py` red after the patch, a fake identity that could never show a revocation, and no test for the shutdown path (all fixed; +3 integration tests incl. a real bridge process + SIGTERM); 22/23 seeded defects caught; 1036 tests; `make ci-local` PASS. Installed; the new mint (`ttl_days=1`) works against real identity (status call 14:02:37Z: HTTP 200, run_not_found, no deny/401). Still to do: stop/restart ATP once and have the identity session count `svc:atp` sessions before/after (the 14:02:37Z session of PID 2629875 should vanish); `systemctl stop` untried. Corrected 15/10: today's 3 restarts (04:41:32Z, 05:07:36Z, 05:07:52Z) made no aios-flow call and left no session (journal: only 4 POST /run today, at 03:00:41Z, 03:50:06Z, 04:24:48Z, 14:02:37Z).
+- **KD-ATP-026 (`fixed_unverified`, released and installed in 2.7.4)** — every ATP process that made an aios-flow call left a live `svc:atp` session at identity (the token is minted lazily at the first call, NOT at start) (reported by the aios-identity session, 3 sessions of 365 days seen on 14-15/10; not measured here): the mint sent no `ttl_days` and dropped `session_id`. Patch from that session, reviewed and applied: `ttl_days=1`, `DELETE /sessions/{id}` with the session's own token when a token is replaced and from the `finally` of `bridge_server.main()` (SIGTERM). Review found the integration test `test_aios_flow_auth_wire.py` red after the patch, a fake identity that could never show a revocation, and no test for the shutdown path (all fixed; +3 integration tests incl. a real bridge process + SIGTERM); 22/23 seeded defects caught; 1036 tests; `make ci-local` PASS. Restart measured 15/10 14:11:45Z (Owner's order): clean SIGTERM stop (`server.shutdown`, 0.26 s), new PID 2764133, 4/225 Mac probes failed over 0.306 s (longest gap 0.515 s); revocation at identity NOT proven (identity is on another host, ATP swallows revoke errors and logs nothing). Ask identity whether the session minted 14:02:37Z (PID 2629875) vanished near 14:11:45Z. Installed; the new mint (`ttl_days=1`) works against real identity (status call 14:02:37Z: HTTP 200, run_not_found, no deny/401). Still to do: identity-side confirmation (above); `systemctl stop` untried (restart tried). Corrected 15/10: today's 3 restarts (04:41:32Z, 05:07:36Z, 05:07:52Z) made no aios-flow call and left no session (journal: only 4 POST /run today, at 03:00:41Z, 03:50:06Z, 04:24:48Z, 14:02:37Z).
 - **aios-flow authentication (KD-ATP-016 `fixed_verified`; KD-ATP-021 `fixed_verified`: ON on `aios-server`)** — `adapters/aios_flow/identity_token.py`: with `AIOS_FLOW_IDENTITY_URL` set (https/loopback) every aios-flow request carries the `svc:atp` token (secret `AIOS_FLOW_IDENTITY_SECRET`, never logged). The Owner switched it on 14-15/10 (secret typed at a hidden prompt, never seen by an AI); aios-flow 1.2.1 enforces on the server; minting a token and an authenticated read were measured. NOT measured: renewal after a real expiry (only `exp - iat`), TLS to a real https identity. Never set the URL without the secret; never configure it on the Mac (KD-ATP-019).
 - **Errors named correctly (KD-ATP-016/017)** — aios-flow failures carry `error_code`, `retryable`, `reason_code`…; a 401 gets one fresh token; `wait` retries transient 429/502/503/504 (4 attempts max); `dispatch` is `retryable` only when no run can have been created.
 - **KD-ATP-022 (2.7.1, `fixed_verified`)** — `bridge/governance_hook.run_governance_review` turns a missing/non-executable `aios-gate` into a normal verdict (class E, status error) instead of HTTP 500; re-measured on the server after the install. **KD-ATP-023 (`wontfix`, Owner: keep)**: `aios-server` has no `aios-gate`, so every ATP result there carries `governance_class: E`; reopen if anyone starts to rely on `governance_status`.
@@ -251,12 +251,14 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: ff3e00d6fd73afcaae96440973f475419d1a68303d20e5aa334d1d46ac801955
+SHA256: 086d24ce1442045c4579fdbbc1225dc01dc7ce7b95c3395b2a98697d59a184a9
 ----
 # AI_HANDOFF_LATEST — ATP
 
 ## Handoff: v2.7.4 — reverse sync from source repo
 **Date**: 2026-10-15
+**Release report (G-RELREPORT-1)**: ledger `~/AI_OS/20_PROJECTS/ATP/AI_ISSUE_LEDGER.yaml` · user report `~/AI_Shared_Outputs/AIOS_Ecosystem/ATP/bao-cao-phat-hanh/Bao_Cao_Phat_Hanh_ATP_2.7.4.{md,html,pdf,docx}`
+**Open items**: read the ledger `carry_over` block (authoritative). Tag `v2.7.4` -> `a5090bf` pushed, published to the VPS store and INSTALLED on aios-server (15/10 14:01:50Z; restarted once at 14:11:45Z for measurement: clean SIGTERM stop, MainPID now 2764133, rollback target 2.7.2). KD-ATP-026 fixed_unverified: revocation not proven at identity (identity is on another host); ask whether the session minted 14:02:37Z (PID 2629875) vanished near 14:11:45Z. The svc:atp token is minted lazily at the first aios-flow call, not at start. The text 'NOT installed' / 'every ATP start' in the CHANGELOG excerpt below is as released and is superseded by this line.
 
 ### What changed in v2.7.4
 ## [2.7.4] — 2026-10-15
