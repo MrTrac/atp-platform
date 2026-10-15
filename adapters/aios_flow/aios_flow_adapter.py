@@ -526,3 +526,9 @@ def dispatch(incoming: dict[str, Any]) -> dict[str, Any]:
                  "(expected: dispatch | status | wait)",
         "selected_provider": "aios-flow",
     }
+
+
+def close_identity_session() -> None:
+    """Shutdown hook for the bridge: ends the svc:atp session at aios-identity (best effort, at most a few seconds) so a restart leaves none behind.
+    Lives here because this module is the only one allowed to touch `identity_token` (tests/unit/test_aios_flow_auth.py guards that)."""
+    identity_token.close_provider()

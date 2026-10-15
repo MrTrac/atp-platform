@@ -61,6 +61,11 @@ _REMINT_COOLDOWN_S = 30.0
 _DENIAL_TTL_S = 60.0
 _UNAVAILABLE_TTL_S = 1.0  # how long "identity cannot be reached" is remembered, so queued callers fail at once instead of each waiting out a timeout; must stay below core.retry's 1 s base delay or a retry would only meet the memory
 _EXPIRY_SAFETY_S = 15.0
+# aios-identity >= 1.2.9: omitted ttl_days = 1 day, maximum 90 (it was 365 / 365). The token is held in memory only and renewed from its own exp, so a
+# short life costs one mint a day and bounds what a restart can leave behind. Ask for it explicitly: the default is the server's to change.
+_TOKEN_TTL_DAYS = 1
+_REVOKE_TIMEOUT_S = 3.0  # DELETE /sessions/{id}: best effort, never allowed to hold up a renewal or a shutdown for longer than this
+_SESSION_ID_SHAPE = re.compile(r"[A-Za-z0-9\-]{8,64}")  # what identity issues (a UUID); nothing else is ever put into a URL path
 _TOKEN_SHAPE = re.compile(r"[A-Za-z0-9\-._~+/]+=*")  # the RFC 6750 alphabet aios-flow accepts; also keeps a CR/LF out of a header
 
 
@@ -170,6 +175,8 @@ class IdentityTokenProvider:
         self._clock = clock if clock is not None else time.time  # wall clock: monotonic time stops while a laptop sleeps
         self._lock = threading.Lock()
         self._token: str | None = None
+        self._session_id: str | None = None  # identity's handle of the session behind `_token`: what DELETE /sessions/{id} needs
+        self._retired: list[tuple[str, str]] = []  # (token, session id) of tokens this provider replaced or closed, waiting to be revoked at identity
         self._minted_at: float | None = None
         self._refresh_at = 0.0
         self._expires_at = 0.0
@@ -188,7 +195,14 @@ class IdentityTokenProvider:
     # -- public ----------------------------------------------------------------------------------------------------------------------------------------
 
     def get_token(self) -> str:
-        """The cached token while it is fresh, else a new one. Raises AuthError (credentials refused, unusable configuration) or IdentityUnavailable (transient)."""
+        """The cached token while it is fresh, else a new one. Raises AuthError (credentials refused, unusable configuration) or IdentityUnavailable (transient).
+        A token replaced by the new one is revoked at identity afterwards (best effort), so a renewal or a restart leaves no live session behind."""
+        try:
+            return self._get_token_locked()
+        finally:
+            self._revoke(self._drain_retired())
+
+    def _get_token_locked(self) -> str:
         with self._lock:
             now = self._clock()
             if self._token is not None and now < self._refresh_at:
@@ -201,6 +215,12 @@ class IdentityTokenProvider:
                 raise
 
     def refresh_after_rejection(self, rejected: str) -> str | None:
+        try:
+            return self._refresh_after_rejection_locked(rejected)
+        finally:
+            self._revoke(self._drain_retired())
+
+    def _refresh_after_rejection_locked(self, rejected: str) -> str | None:
         """aios-flow answered 401 to `rejected`. Returns a different token to retry with, or None when asking identity again cannot help right now.
 
         If another thread has already replaced `rejected` that token is returned without a mint. If `rejected` is itself younger than 30 s, aios-flow turned down
@@ -210,7 +230,10 @@ class IdentityTokenProvider:
                 return self._token
             if self._minted_at is not None and self._clock() - self._minted_at < _REMINT_COOLDOWN_S:
                 return None
+            if self._token is not None and self._session_id is not None:
+                self._retired.append((self._token, self._session_id))  # aios-flow turned it down, but identity may still honour it
             self._token = None
+            self._session_id = None
             return self._mint_locked()
 
     # -- internals (the lock is held) --------------------------------------------------------------------------------------------------------------------
@@ -230,14 +253,16 @@ class IdentityTokenProvider:
         req_id = generate_request_id()
         request = Request(
             f"{self._base}/service-account/token",
-            data=json.dumps({"username": self.username, "secret": self._secret, "consumer": self._consumer}).encode("utf-8"),
+            data=json.dumps(
+                {"username": self.username, "secret": self._secret, "consumer": self._consumer, "ttl_days": _TOKEN_TTL_DAYS}
+            ).encode("utf-8"),
             headers={"Content-Type": "application/json", "Accept": "application/json", **trace_headers(req_id)},
             method="POST",
         )
         t0 = time.monotonic()
         outcome = "error"
         try:
-            token = self._exchange(request)
+            token, session_id = self._exchange(request)
             outcome = "ok"
         except AuthError as err:
             self._denial = (str(err), err.code, err.source, err.http_status)
@@ -258,13 +283,16 @@ class IdentityTokenProvider:
                 contract_version=_CONTRACT,
             )
         lifetime = _jwt_lifetime_s(token) or _ASSUMED_LIFETIME_S
+        if self._token is not None and self._session_id is not None:
+            self._retired.append((self._token, self._session_id))  # the one being replaced
         self._token = token
+        self._session_id = session_id
         self._minted_at = now  # taken before the call: a slow mint only makes the renewal earlier
         self._refresh_at = now + lifetime - min(_REFRESH_MARGIN_S, lifetime / 2)
         self._expires_at = now + lifetime - min(_EXPIRY_SAFETY_S, lifetime / 2)
         return token
 
-    def _exchange(self, request: Request) -> str:
+    def _exchange(self, request: Request) -> tuple[str, str | None]:
         try:
             with urlopen(request, timeout=self._timeout_s) as resp:
                 answer = json.loads(resp.read().decode("utf-8"))
@@ -291,7 +319,57 @@ class IdentityTokenProvider:
                 code="bad_response",
                 source="aios-identity",
             )
-        return token
+        sid = answer.get("session_id")
+        return token, (sid if isinstance(sid, str) and _SESSION_ID_SHAPE.fullmatch(sid) else None)
+
+    # -- revocation (best effort) ------------------------------------------------------------------------------------------------------------------------
+
+    def _drain_retired(self) -> list[tuple[str, str]]:
+        with self._lock:
+            out, self._retired = self._retired, []
+        return out
+
+    def _revoke(self, retired: list[tuple[str, str]]) -> None:
+        """DELETE {identity}/sessions/{id} with the retired token itself (a session's owner may end it). Never raises, never logs a token: a failed revoke only
+        means the session lives out its own ttl_days (1 day), which is exactly what happened before this call existed."""
+        for token, sid in retired:
+            req_id = generate_request_id()
+            outcome = "error"
+            try:
+                request = Request(
+                    f"{self._base}/sessions/{sid}",
+                    headers={"Authorization": f"Bearer {token}", "Accept": "application/json", **trace_headers(req_id)},
+                    method="DELETE",
+                )
+                with urlopen(request, timeout=_REVOKE_TIMEOUT_S) as resp:
+                    resp.read()
+                outcome = "ok"
+            except HTTPError as exc:
+                outcome = f"http_{exc.code}"  # 401 / 404: already gone; nothing to do
+                close_http_error(exc)
+            except Exception as exc:  # noqa: BLE001 - best effort by design: network, TLS, timeout, anything
+                close_http_error(exc)  # KD-ATP-013: a broad handler that can be handed an open HTTPError closes it
+            finally:
+                record_trace(
+                    request_id=req_id,
+                    target_module="aios-identity",
+                    route="/sessions/{id}",
+                    method="DELETE",
+                    status=outcome,
+                    duration_ms=0,
+                    contract_version=_CONTRACT,
+                )
+
+    def close(self) -> None:
+        """End the session behind the cached token (best effort) and forget it. Call it when the process is going away; idempotent."""
+        with self._lock:
+            if self._token is not None and self._session_id is not None:
+                self._retired.append((self._token, self._session_id))
+            self._token = None
+            self._session_id = None
+            self._refresh_at = 0.0
+            self._expires_at = 0.0
+        self._revoke(self._drain_retired())
 
     def _refusal(self, status: int, code: str | None, message: str | None) -> Exception:
         detail = f"HTTP {status}" + (f" {code}" if code else "") + (f" - {_scrub(message, self._secret)}" if message else "")
@@ -335,6 +413,14 @@ def get_provider(env: Mapping[str, str] | None = None) -> IdentityTokenProvider 
         if _provider is None or not _provider.matches(url, secret, username):
             _provider = IdentityTokenProvider(url, secret, username=username)
         return _provider
+
+
+def close_provider() -> None:
+    """Revoke the process-wide provider's session at identity (best effort) and forget it. For the shutdown path of the bridge."""
+    with _provider_lock:
+        provider = _provider
+    if provider is not None:
+        provider.close()
 
 
 def reset_provider() -> None:
