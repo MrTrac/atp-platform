@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=COPILOT -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261015T043616Z
+GeneratedAtUTC: 20261015T044847Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -111,13 +111,13 @@ SHA256: 3a517fd9e0cbc9f8e83a39f8b286cfc9d365f5fda3546443e93b4479f417748e
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: 928684f3b7fb6d2b5d3cec95d8964de2371d09bc199008e82ad99f12062a7dcc
+SHA256: bcf4235595522576d90935d5707b778455b01f45765bd22339eb2cf189334b88
 ----
 # AI Next Step — ATP
 
 - **Last updated:** 2026-10-15
-- **Phase:** v2.7.1 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
-- **Current state:** v2.7.1 (RELEASED 2026-10-15T10:33:20+07:00) = v2.7.0 + KD-ATP-022 (a missing `aios-gate` no longer turns a successful `/run` into HTTP 500) + `make ci-local`. Running on `aios-server` with the aios-flow authentication ON (KD-ATP-021). `main` is 4 commits ahead and NOT released: generator `report_v2` (KD-ATP-006 phases 2a/2b) and a size guard for the AI-context files. Details: §1.
+- **Phase:** v2.7.2 — maintenance line after v2.6.0 (Doctrine v6.0 D6.2 closed via M4 scope-cut, ATP synthesis surface complete); v6.1 consumer cutover still open (backlog below)
+- **Current state:** v2.7.2 (RELEASED 2026-10-15T11:31:58+07:00) = v2.7.1 + generator `report_v2` (KD-ATP-006 phases 2a/2b, `partial`; nothing calls it yet) + a size guard for the AI-context files. Running on `aios-server` with the aios-flow authentication ON (KD-ATP-021). Nothing on `main` is unreleased. Details: §1.
 ---
 
 ## D6.2 closure rationale (M4 scope-cut, 2026-05-04)
@@ -149,31 +149,31 @@ ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above 
 
 ## 1. Current state (verified 2026-10-15 unless marked)
 
-**Release.** v2.7.1 (tag `v2.7.1` -> `4fdc338`, RELEASED 2026-10-15T10:33:20+07:00). Running on `aios-server` from `/opt/aios/atp/current -> releases/2.7.1` since 2026-10-15T03:49:57Z (10:49 +07, on the Owner's order; published to the VPS store by hand, see Deploy path); `/health` = `2.7.1` and the `released` of `RELEASED`, 0 restarts (re-read 2026-10-15). The install checks are in the ledger block `2.7.1`; the 2.7.0 package was checked byte-for-byte against its tag.
-**Rollback (KD-ATP-014, `partial`).** Target `2.7.0` (`releases/`: `0-legacy`, `2.7.0`, `2.7.1`; the tool pruned `2.6.6`). `aios-deploy atp --rollback` picks the last successfully activated other release from `/opt/aios/atp/.deploy-history.log` (never `0-legacy`); `--rollback-to <ver>` and `--list` exist; no `--dry-run`. **Manual rollback rehearsed live 2026-10-15 00:47 +07** (Owner's order, 2.7.0 <-> 2.6.6): 2.6 s each way, `/health` right each time, `MainPID` changed, 0 restarts, unserved at most 0.31 s / 0.42 s probed from the Mac (one measurement). **Automatic rollback** (a new release's `/health` fails): never fired on the live service; the sandbox suite `~/AI_OS/30_RUNTIME/tests/deploy_local_rehearsal` was re-run 2026-10-15: **46/46**, on a script with the same sha256 (`6d1d4a8b…`) as `/usr/local/bin/aios-deploy-local` on `aios-server`. Still untried: a rollback with a run in flight.
+**Release.** v2.7.2 (tag `v2.7.2` -> `875ceaa`, RELEASED 2026-10-15T11:31:58+07:00; the number is a patch by the Owner's choice although a generator was added). Running on `aios-server` from `/opt/aios/atp/current -> releases/2.7.2` since 2026-10-15T04:41:32Z (11:41 +07, on the Owner's order; published to the VPS store by hand, see Deploy path); `/health` = `2.7.2` and the `released` of `RELEASED`, `aios-atp` active, 0 restarts, 8 read routes 200, 246/246 package files equal to `git archive v2.7.2` by sha256, `report_v2` called for real (skeleton): HTTP 200. Install checks: ledger block `2.7.2`.
+**Rollback (KD-ATP-014, `partial`).** Target now **`2.7.1`** (`releases/`: `0-legacy`, `2.7.1`, `2.7.2`; the tool pruned `2.7.0` on this install, so the 2.7.0 <-> 2.6.6 pair rehearsed on 15/10 cannot be repeated). `aios-deploy atp --rollback` picks the last successfully activated other release from `/opt/aios/atp/.deploy-history.log` (never `0-legacy`); `--rollback-to <ver>` and `--list` exist; no `--dry-run`. **Manual rollback rehearsed live 2026-10-15 00:47 +07** (Owner's order, 2.7.0 <-> 2.6.6): 2.6 s each way, `/health` right each time, `MainPID` changed, 0 restarts, unserved at most 0.31 s / 0.42 s probed from the Mac (one measurement); the 2.7.2 -> 2.7.1 pair has NOT been rehearsed. **Automatic rollback** (a new release's `/health` fails): never fired on the live service; the sandbox suite `~/AI_OS/30_RUNTIME/tests/deploy_local_rehearsal` was re-run 2026-10-15: **46/46**, on a script with the same sha256 (`6d1d4a8b…`) as `/usr/local/bin/aios-deploy-local` on `aios-server`. Still untried: a rollback with a run in flight.
 
 **History.** The 2.6.4–2.6.6 fixes (KD-ATP-003/008/011/012/013: tests, docs, `HTTPError` closing in the handlers and in `core/retry.with_retry`) are in CHANGELOG `[2.6.5]`/`[2.6.6]` and the ledger; not repeated here (context size, G-CTXBLOAT-1).
 
-**What 2.7.0 and 2.7.1 brought** — details: CHANGELOG and the ledger blocks (statuses are the ledger's):
+**What 2.7.0, 2.7.1 and 2.7.2 brought** — details: CHANGELOG and the ledger blocks (statuses are the ledger's):
 - **aios-flow authentication (KD-ATP-016 `fixed_verified`; KD-ATP-021 `fixed_verified`: ON on `aios-server`)** — `adapters/aios_flow/identity_token.py`: with `AIOS_FLOW_IDENTITY_URL` set (https/loopback) every aios-flow request carries the `svc:atp` token (secret `AIOS_FLOW_IDENTITY_SECRET`, never logged). The Owner switched it on 14-15/10 (secret typed at a hidden prompt, never seen by an AI); aios-flow 1.2.1 enforces on the server; minting a token and an authenticated read were measured. NOT measured: renewal after a real expiry (only `exp - iat`), TLS to a real https identity. Never set the URL without the secret; never configure it on the Mac (KD-ATP-019).
 - **Errors named correctly (KD-ATP-016/017)** — aios-flow failures carry `error_code`, `retryable`, `reason_code`…; a 401 gets one fresh token; `wait` retries transient 429/502/503/504 (4 attempts max); `dispatch` is `retryable` only when no run can have been created.
 - **KD-ATP-022 (2.7.1, `fixed_verified`)** — `bridge/governance_hook.run_governance_review` turns a missing/non-executable `aios-gate` into a normal verdict (class E, status error) instead of HTTP 500; re-measured on the server after the install. **KD-ATP-023 (`wontfix`, Owner: keep)**: `aios-server` has no `aios-gate`, so every ATP result there carries `governance_class: E`; reopen if anyone starts to rely on `governance_status`.
 - **KD-ATP-020 / 018 / 015 / 009** (`fixed_verified` / `fixed_verified` / `fixed_verified` / `wontfix`) — the agent env keeps the secret out of `claude -p`/`codex exec`/`cursor-agent`; tests no longer write into the real `~/.aios/state/cross_module_trace.jsonl`; an unknown provider on the local node answers HTTP 400 (was 200 `deferred`; only AIOS-OC calls the bridge); the 4 placeholder adapter dirs stay.
 - **KD-ATP-019 (`mitigated`, Owner: no code change)** — the bridge listens on `0.0.0.0:8765` unauthenticated; on `aios-server` ufw allows port 8765 only from the Mac `10.88.0.10` (read only, 14/10). Authenticate the bridge before opening it to more hosts.
 
-**On `main` after 2.7.1, NOT released** (CHANGELOG `[Unreleased]`, CI green at `d64275f`): (a) **`report_v2`** (KD-ATP-006 phases 2a/2b, `partial`) — a Python port of AOKP's `src/runtime/synthesis` (sections, domain suggestions, quality guard + retry, Jaccard grounding, KB gap), equal to AOKP on 1,054 golden cases generated from AOKP's TypeScript (commit `51b1139b`); default mode `skeleton` = no model; `real` mode has only run against scripted models, so answer quality from a real model is unmeasured. Nothing calls it yet: the AOKP client (phase 2c/2d) was handed to an AOKP session on 15/10; phase 3 (24 h soak) and 4 (promotion) are not started. (b) `tests/unit/test_context_files_size.py`: the AI-context files must stay under 49,000 bytes (the bridge copies the first 80 lines of this file). `make ci-local` (released in 2.7.1): **run it before every push**.
+**2.7.2 content** (ledger block `2.7.2`): (a) **`report_v2`** (KD-ATP-006 phases 2a/2b, `partial`) — a Python port of AOKP's `src/runtime/synthesis` (sections, domain suggestions, quality guard + retry, Jaccard grounding, KB gap), equal to AOKP on 1,054 golden cases generated from AOKP's TypeScript (commit `51b1139b`); default mode `skeleton` = no model; `real` mode has only run against scripted models, so answer quality from a real model is unmeasured. Nothing calls it yet: the AOKP client (phase 2c/2d) was handed to an AOKP session on 15/10; phase 3 (24 h soak) and 4 (promotion) are not started. (b) `tests/unit/test_context_files_size.py`: the AI-context files must stay under 49,000 bytes (the bridge copies the first 80 lines of this file). (c) **KD-ATP-024 (`new_open`, low):** the hand-written version lines in README.md/AGENTS.md have no guard test (2.7.1 left AGENTS.md at v2.7.0 and `test_version_consistency` stayed green); fixed by hand in 2.7.2. `make ci-local` (released in 2.7.1): **run it before every push**.
 
 **Execution stack** (read from `registry/providers/*.yaml`, `EXECUTOR_MAP`, `bridge/bridge_server.py`):
 - LLM providers: **Anthropic** (default; bridge default model `claude-haiku-4-5-20251001`) and **OpenAI**. `non_llm_execution` for shell/git/build/test/lint. Bridge-level dispatchers: `tdf-run` (:4180), `aios-flow` (:7700; authenticated as `svc:atp` when configured, ON on `aios-server`). AOKP adapter opt-in (6 queries).
 - **No local LLM.** The Ollama adapter was removed in v2.6.0; macOS hosts must not run Ollama or any local model (`Global_Mac_No_Ollama_Rule`). A provider with no handler (e.g. `ollama/...`) on the local node is an error since 2.7.0 (`UnsupportedProviderError`, HTTP 400); only on a node the registry does not know as local does it still fall through to the deferred SSH stub and return `status=deferred`.
 - Bridge routes: 12 distinct paths / 13 method+path pairs, all listed in README and AGENTS and guarded by `tests/unit/test_bridge_routes_documented.py`.
-- Synthesis generators: 9 (`generators/stubs/`): the 8 originals + `report_v2` (incubating, on `main`, not released). Consumer cutover still open (§D6.2 / v6.1 above).
+- Synthesis generators: 9 (`generators/stubs/`): the 8 originals + `report_v2` (incubating, released in 2.7.2, nothing calls it). Consumer cutover still open (§D6.2 / v6.1 above).
 
 **Deploy path.** Tag on GitHub -> a watcher publishes it to the VPS release store (it never deploys) -> `aios-deploy atp <version>` (Mac -> `sudo aios-deploy-local atp`): installs into a new `releases/<ver>` directory, swaps `current`, restarts,
 requires HTTP 200 **and** the exact version in `/health`, rolls back by itself on failure. See `Global_Build_Deploy_Topology_Rule.md` §5.2c and §8.
-Watcher note: `com.aios.publish-watch` runs about every 15 minutes and holds a one-run lock (at 2.7.0 it was busy building `aios-oc@4.6.14`), so `aios-publish atp <ver>` was run by hand after the 2.6.6, 2.7.0 and 2.7.1 tags (the same work it does; it does NOT deploy; idempotent for the same tag).
+Watcher note: `com.aios.publish-watch` runs about every 15 minutes and holds a one-run lock (at 2.7.0 it was busy building `aios-oc@4.6.14`), so `aios-publish atp <ver>` was run by hand after the 2.6.6, 2.7.0, 2.7.1 and 2.7.2 tags (the same work it does; it does NOT deploy; idempotent for the same tag).
 
-**Tests.** `main` at `d64275f`: 996 unit (+49 subtests) + 26 integration passed (7 skipped); CI green on 3.11 and 3.12 (run 38680613505) and `make ci-local` the same. At the `v2.7.0` tag in the clean environment: 931 + 26. CHANGELOG `[2.7.0]` quotes 944 passed: it was measured on the release branch BEFORE `main` (with KD-ATP-015's 13 tests: 9 + 4) was merged into it; 944 + 13 = 957. Not an error.
+**Tests.** `main` at `875ceaa` (tag `v2.7.2`): 996 unit (+49 subtests) + 26 integration passed (7 skipped); CI green on 3.11 and 3.12 (run 38682625573) and `make ci-local` the same (on the release tree before the commit). At the `v2.7.0` tag in the clean environment: 931 + 26. CHANGELOG `[2.7.0]` quotes 944 passed: it was measured on the release branch BEFORE `main` (with KD-ATP-015's 13 tests: 9 + 4) was merged into it; 944 + 13 = 957. Not an error.
 
 ---
 
@@ -187,7 +187,7 @@ Verified in code on 2026-10-14:
 - ✅ `/health` reports the running version + `released`
 - ✅ (2026-10-15) aios-flow adapter: identity token provider, structured errors with `error_code`/`retryable`, `wait` retry — exercised against a real aios-identity + a real enforcing aios-flow on a throwaway stack, and ON on `aios-server` (token minted, authenticated read measured)
 - ✅ (2026-10-15) an unknown provider on a local node -> `UnsupportedProviderError` -> HTTP 400 (checked on the server's Python 3.12.3)
-- ✅ (2026-10-15) generator `report_v2` (on `main`, not released): equal to AOKP's synthesizer on 1,054 golden cases generated from the TypeScript, 30/30 seeded defects caught; real-model answer quality unmeasured
+- ✅ (2026-10-15) generator `report_v2` (released in 2.7.2, running on `aios-server`): equal to AOKP's synthesizer on 1,054 golden cases generated from the TypeScript, 30/30 seeded defects caught; called for real on the server in skeleton mode (HTTP 200, 0 model calls); real-model answer quality unmeasured
 
 Per CHANGELOG, **not re-verified today**: vision (image inputs), per-model timeout, per-model pricing values, OpenAI Batch API + `wait` helper (v2.3.0 / v2.5.0), evaluator wiring (v2.1.0). (aios-flow status/wait were exercised against the real aios-flow in 2.7.0.)
 
