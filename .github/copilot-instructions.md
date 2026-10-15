@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=COPILOT -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261015T050407Z
+GeneratedAtUTC: 20261015T052003Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -111,7 +111,7 @@ SHA256: 3a517fd9e0cbc9f8e83a39f8b286cfc9d365f5fda3546443e93b4479f417748e
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: d5773be518dcd13208fdab8f6fac7d50063f9890124efccad96c723ea783f1f7
+SHA256: 2db8266a0c1169d65837042b97dad70994fa96d85103c7976af9e2e1cf60b160
 ----
 # AI Next Step — ATP
 
@@ -150,7 +150,7 @@ ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above 
 ## 1. Current state (verified 2026-10-15 unless marked)
 
 **Release.** v2.7.2 (tag `v2.7.2` -> `875ceaa`, RELEASED 2026-10-15T11:31:58+07:00; the number is a patch by the Owner's choice although a generator was added). Running on `aios-server` from `/opt/aios/atp/current -> releases/2.7.2` since 2026-10-15T04:41:32Z (11:41 +07, on the Owner's order; published to the VPS store by hand, see Deploy path); `/health` = `2.7.2` and the `released` of `RELEASED`, `aios-atp` active, 0 restarts, 8 read routes 200, 246/246 package files equal to `git archive v2.7.2` by sha256, `report_v2` called for real (skeleton): HTTP 200. Install checks: ledger block `2.7.2`.
-**Rollback (KD-ATP-014, `partial`).** Target now **`2.7.1`** (`releases/`: `0-legacy`, `2.7.1`, `2.7.2`; the tool pruned `2.7.0` on this install, so the 2.7.0 <-> 2.6.6 pair rehearsed on 15/10 cannot be repeated). `aios-deploy atp --rollback` picks the last successfully activated other release from `/opt/aios/atp/.deploy-history.log` (never `0-legacy`); `--rollback-to <ver>` and `--list` exist; no `--dry-run`. **Manual rollback rehearsed live 2026-10-15 00:47 +07** (Owner's order, 2.7.0 <-> 2.6.6): 2.6 s each way, `/health` right each time, `MainPID` changed, 0 restarts, unserved at most 0.31 s / 0.42 s probed from the Mac (one measurement); the 2.7.2 -> 2.7.1 pair has NOT been rehearsed. **Automatic rollback** (a new release's `/health` fails): never fired on the live service; the sandbox suite `~/AI_OS/30_RUNTIME/tests/deploy_local_rehearsal` was re-run 2026-10-15: **46/46**, on a script with the same sha256 (`6d1d4a8b…`) as `/usr/local/bin/aios-deploy-local` on `aios-server`. Still untried: a rollback with a run in flight.
+**Rollback (KD-ATP-014, `partial`).** Target now **`2.7.1`** (`releases/`: `0-legacy`, `2.7.1`, `2.7.2`; the tool pruned `2.7.0` on this install, so the 2.7.0 <-> 2.6.6 pair rehearsed on 15/10 cannot be repeated). `aios-deploy atp --rollback` picks the last successfully activated other release from `/opt/aios/atp/.deploy-history.log` (never `0-legacy`); `--rollback-to <ver>` and `--list` exist; no `--dry-run`. **Manual rollback rehearsed live 2026-10-15 00:47 +07** (Owner's order, 2.7.0 <-> 2.6.6): 2.6 s each way, `/health` right each time, `MainPID` changed, 0 restarts, unserved at most 0.31 s / 0.42 s probed from the Mac (one measurement); **the 2.7.2 <-> 2.7.1 pair was rehearsed live 2026-10-15 12:07 +07** (Owner's order, `--rollback` twice, 2 s each way, `/health` right and `MainPID` changed each time, 0 restarts, 0 warnings, unserved at most 0.31 s / 0.42 s probed from the Mac at ~9 probes/s: 923 probes, 5 errors; 2.7.2 files still equal to the tag afterwards; `/runs/active` was empty both times). **Automatic rollback** (a new release's `/health` fails): never fired on the live service; the sandbox suite `~/AI_OS/30_RUNTIME/tests/deploy_local_rehearsal` was re-run 2026-10-15: **46/46**, on a script with the same sha256 (`6d1d4a8b…`) as `/usr/local/bin/aios-deploy-local` on `aios-server`. Still untried: a rollback with a run in flight.
 
 **History.** The 2.6.4–2.6.6 fixes (KD-ATP-003/008/011/012/013: tests, docs, `HTTPError` closing in the handlers and in `core/retry.with_retry`) are in CHANGELOG `[2.6.5]`/`[2.6.6]` and the ledger; not repeated here (context size, G-CTXBLOAT-1).
 
