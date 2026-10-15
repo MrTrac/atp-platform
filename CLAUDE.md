@@ -1,7 +1,7 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261015T042055Z
+GeneratedAtUTC: 20261015T043614Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
@@ -90,12 +90,12 @@ Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
-SHA256: 1fa4716ccb67ca19c5ee5e35123da07661b70af20c6d88f50317e3c9db2a0aa8
+SHA256: 3a517fd9e0cbc9f8e83a39f8b286cfc9d365f5fda3546443e93b4479f417748e
 ----
 # AI_CURRENT_BASELINE — ATP
 
-- **Version:** v2.7.1
-- **Released:** 2026-10-15T10:33:20+07:00
+- **Version:** v2.7.2
+- **Released:** 2026-10-15T11:31:58+07:00
 - **Last synced:** 2026-10-15 (via aios sync reverse)
 
 ## Status
@@ -251,32 +251,30 @@ Target **AI_OS** = self repo → trích từ `30_RUNTIME/self_project_pack/` (**
 AIOS7L HANDOFF
 Project: ATP
 File: 20_PROJECTS/ATP/AI_HANDOFF_LATEST.md
-SHA256: 3a8e2850e8ce7485e53077be8bd9138e7758fce41b54849b69e858bb81d07723
+SHA256: caa889ab96732107f982b2feac0461e39821cd3f50ad418a85faa7aab82ed89b
 ----
 # AI_HANDOFF_LATEST — ATP
 
-## Handoff: v2.7.1 — reverse sync from source repo
+## Handoff: v2.7.2 — reverse sync from source repo
 **Date**: 2026-10-15
 
-### What changed in v2.7.1
-## [2.7.1] — 2026-10-15
+### What changed in v2.7.2
+## [2.7.2] — 2026-10-15
 
-### Fixed — a missing or non-executable `aios-gate` no longer turns a successful `POST /run` into HTTP 500 (KD-ATP-022)
+Contents: the new generator `report_v2` (incubating; nothing calls it yet) and a size guard for the AI-context files. Nothing that existed changes behaviour: the additions are a generator, an optional `system` argument of `call_llm`, and an optional `structured` key that only `report_v2` sets. A patch number was chosen by the Owner although a generator is added.
 
-`bridge/governance_hook.py::run_governance_review` runs `~/AI_OS/30_RUNTIME/bin/aios-gate review` after every dispatch that returned a result. It handled a non-zero exit, a timeout and unparseable output, but not a gate that cannot be started: `subprocess.run` raised `FileNotFoundError` (no such file) or `PermissionError` (not executable), `BridgeHandler.do_POST`'s catch-all answered `500 {"error": "Bridge execution failed: [Errno 2] ..."}`, and the provider's real result was thrown away AFTER the provider had done its work.
-Measured 15/10/2026 on aios-server (no AI_OS tree, no file named `aios-gate*` anywhere on the host): `POST /run {provider: aios-flow, action: status, flow_run_id: <unknown>}` reached aios-flow and was authenticated (aios-flow logged `GET /api/runs/... 404`, no `deny` line; an unauthenticated call gets 401), and ATP still answered 500. For `provider=aios-flow` action `dispatch` the lost work is a run already started in aios-flow, so the 500 also invites a retry that starts it twice (from reading the code; not exercised, because that would create a run on the server). Nothing real had hit it yet: the server's ATP journal (since 7 Oct) shows two `/run` requests, one rejected earlier as an unsupported provider and one the probe above.
-CI hit the same file once (a runner without it: 500 "No such file ... aios-gate") and the test was patched around it (`tests/unit/test_unsupported_provider.py` stubs the review) instead of the hook.
-Now an `OSError` from starting the gate returns the verdict every other gate failure already returns: `{"governance_class": "E", "governance_status": "error", "governance_reason": "aios-gate unavailable: <error, with the path>", "requires_human": False}`, HTTP 200, the provider's own fields intact. This is the same fail-open-with-a-flag behaviour as a gate that exits non-zero — it is NOT a decision that an absent gate should approve anything (`governance_status` is `error`, class `E`); a deployment that wants a missing gate to block must say so and is a different change.
-`tests/unit/test_governance_hook.py` (+8): missing gate, non-executable gate, no leaked temp artifact when the gate never ran, the real `BridgeHandler` over HTTP (200, provider fields kept, governance `error`), and the four pre-existing paths unchanged (non-zero exit, garbage output, timeout, working gate). 4 of the 8 failed before the fix. Seeded defects, each caught: handler removed (4 failed), catching only `FileNotFoundError` (1), an unavailable gate reported `approved` (3), reason without the cause (1). Unit suite 961 passed (+49 subtests).
-Not changed: whether aios-server should have an `aios-gate` at all (the gate belongs to the AI_OS control plane on the Mac) — an owner decision; until then every ATP result on aios-server carries `governance_status: error`.
+### Added — `report_v2`: structured, grounded, quality-checked answers (a Python port of AOKP `src/runtime/synthesis`; KD-ATP-006 phases 2a/2b)
 
-### Added — `make ci-local`: run the tests the way CI does, before the push
+New generator `report_v2` (0.1.0, `incubating`; `report` v1 is untouched) = `generators/synthesis_v2/` + `generators/prompts/synthesis_bank.py` + `generators/stubs/report_v2.py`: JSON sections (Tóm tắt / Chi tiết / ...), follow-up suggestions from the ATM domain engine (radar, FDP, safety net, network, firewall, rack, TWR), an LLM quality guard with retry, a Jaccard grounding verdict for every `[n]`, the KB-gap statement, `<think>` stripping and AOKP's chunk-based fallback. Standard library only; the model is injected as `chat(messages)`, so the logic runs unchanged against a scripted model in tests. `params.llm_mode` = `skeleton` (default: no model, deterministic) or `real` (through `generators.llm.call_llm`, system prompt kept separate as AOKP does); a failing model gives status `partial` and AOKP's fallback answer, never an exception. NOT a cutover: nothing in AOKP or AIOS-OC calls it yet.
+Interface additions, all additive: `call_llm(prompt, model, system=None)` (a provider that does not declare `system` still works: the system text is put in front of the prompt; with no `system` the call is exactly what it was), `SynthesisResult.structured` and a `structured` key in the `/api/synthesis/generate` response ONLY when a generator sets it (every other generator's response is unchanged), the generator count goes 8 -> 9. The Z2 contract `ATP_AIOS-OC_v3` does not forbid extra properties, but its owner should record the optional `structured` block.
+How it is proven equal to AOKP: golden vectors made by running AOKP's own TypeScript (commit `51b1139b12`, node, `tsx`; the model replaced by a scripted stand-in) on 1054 inputs (grounding 315, citation linker 65, suggestions 182, JSON parser 353, quality guard 78, whole-loop scenarios 45 that also compare every prompt sent and its order, prompt rendering 16); the six prompt texts are byte-identical to AOKP's (sha256) and the constants (stopwords, topic suggestions, the regex sources) were read out of the TypeScript, not retyped. The fixture is committed (`tests/fixtures/synthesis_v2/golden.json.gz`, 200 KB) so CI needs no AOKP checkout; `run_golden.sh` regenerates it.
+Where JavaScript and Python quietly disagree, and the port reproduces JavaScript (each has a golden case): `toFixed(3)` rounds an exact tie half UP (1/16 -> 0.063; Python `round` gives 0.062); `String.length` counts UTF-16 units; the tokenizer decomposes text (NFKD) and combining marks are not letters, so Vietnamese words are cut at their diacritics, and the Vietnamese stopwords (NFC) therefore never match; `\b` is ASCII-only (a topic ending in "ủ" needs a word character AFTER it) and `/i` never folds a non-ASCII letter onto an ASCII one (U+017F, U+0131); `trim()`/`\s` include U+FEFF and exclude U+001C-001F; `[]` and `{}` are truthy; `JSON.parse` refuses NaN/Infinity; `Number("0x10")` is 16; `replaceAll` treats `$&`, `$$` in the replacement (user text goes through it); `slice(0, 200)` can cut an emoji in half. One trap was found only because the golden set was widened after seeded defects survived: **from Python 3.12 `sum()` of floats is compensated (not on 3.11)**, so averaging the support scores with `sum()` gives a different last bit than JavaScript's `reduce` and flips `average < 0.08` for some inputs; the port adds one by one, so 3.11 and 3.12 agree with AOKP.
+Verification (G-AUTOVERIFY-1): 30 seeded defects in the port, every one caught by the golden test (31st, `lastIndexOf` window off by one, is an equivalent mutant: the character at that position is always `[`); `make ci-local` on the commit (clean clone, scrubbed environment): PASS on Python 3.11.15 and 3.12.14, 996 unit (+49 subtests) and 26 integration passed (7 skipped) on each (the two Pythons are why the `sum()` trap matters: it passes on 3.11 and fails on 3.12).
+NOT done / limits: AOKP-side client and the `AOKP_USE_ATP_SYNTHESIS` flag (phase 2c), the 24 h soak with a divergence log (phase 3) and the contract/lifecycle promotion (phase 4) are not done, so KD-ATP-006 stays open. The port was exercised only against scripted models: no real model was called (no local LLM on macOS; no API call was made), so answer QUALITY from a real model is not measured. The Unicode tables of Python's `unicodedata` and of Node's ICU can differ for very recently assigned code points; not covered.
 
-`make test` runs in the working copy with the developer machine's environment; CI runs a clean checkout. CI has been red twice while `make test` was green locally: in 2.6.2 (CI had no `pytest` and nothing declared `jinja2`; the dev machine had both) and at `c501335` (a test that needed `~/AI_OS/30_RUNTIME/bin/aios-gate`, which the runner does not have). A third gap sat in plain sight: on the maintainer's Mac `python3` is 3.14, so `make test` ran on a version CI never uses (CI: 3.11 and 3.12).
-`scripts/ci_local.sh` (`make ci-local`, options through `CI_LOCAL_ARGS`: `--ref`, `--python`, `--strict`, `--keep`, `--print-matrix`, `--self-check`) tests ONE COMMIT (default `HEAD`) in a fresh `git clone` (no hook runs; untracked, ignored and uncommitted files are not there), under `env -i` with an empty HOME, a PATH of system directories plus the venv, `CI=true`, once per Python version of the matrix it reads from that commit's own `ci.yml`, each in a fresh venv installed like CI (`pip install -e ".[dev]"`, then `make test`). Interpreters come from `PATH` or from versions `uv` already manages; it never downloads one, and a missing version is reported as NOT TESTED (`--strict` turns that into exit 3). Before every run an isolation probe proves the sandbox leaks nothing (no `ATP_*`/`AIOS*`/API-key/ssh-agent/`PYTHON*` variable, HOME is not the real home and starts empty, no `~/AI_OS`, no PATH entry under the real home, no `aios`/`aios-gate`/`gsgr` tool, `python3` is the venv's); a leak is an error, not a pass. When the commit under test is `HEAD`, uncommitted changes and new untracked files are listed as NOT in the run. An unreadable matrix stops the run instead of being guessed. Exit codes: 0 green, 1 a test run failed, 2 could not run, 3 `--strict` with a missing version.
-Measured 14/10/2026 on the maintainer's Mac: the tree of this change passes on Python 3.11.15 and 3.12.14 (953 unit + 26 integration passed per version, 7 integration skipped; 101 s for both). Replaying `c501335` through it fails on both versions with `1 failed, 704 passed`: the same test, the same cause and the same counts CI reported (run 38597951524); the error path points inside the sandbox HOME, so the test looked in the fake home, not the real one.
-`tests/unit/test_ci_local.py` (+22 tests, 20 subtests) pins the parts that make the result mean something: every kind of leak the probe must flag (seeded one by one), the sandbox builder, the clone (holds the commit and nothing else, fires no hook even with a global `core.hooksPath`), matrix parsing, `find_python`, the Makefile target (and that `make test` does not call it), and that README/AGENTS mention it. 20 seeded defects in the script and the Makefile, all caught; the files were restored byte for byte. README and `AGENTS.md` ("Before pushing") tell people and AI agents to run it before every push.
-Not covered, said plainly: the OS (this runs on macOS, CI on Ubuntu), absolute paths hardcoded to this machine (`CANONICAL_WORKSPACE_ROOT` is one; CI is green with it, so nothing needs that path to exist), and network access (`pip` needs PyPI; a proxy is not passed through).
+### Added — a guard for the size of the AI-context files
+
+`tests/unit/test_context_files_size.py`: `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, `.github/copilot-instructions.md` and `AI_OS_CONTEXT.md` must stay under 49,000 BYTES (the rule, G-CTXBLOAT-1, is 50,000). On 15/10/2026 a refresh took `CLAUDE.md` from 44,708 to 50,210 bytes unnoticed: the generator copies the first 80 lines of `AI_NEXT_STEP.md` into the managed block. Counts bytes, not characters (Vietnamese is multi-byte); a seeded oversize file turns it red.
 
 Đầy đủ / full history: `/Users/nguyenthanhthu/SOURCE_DEV/platforms/ATP/CHANGELOG.md`
 
