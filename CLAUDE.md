@@ -1,19 +1,19 @@
 <!-- AI_OS:BEGIN MANAGED BLOCK project=ATP target=CLAUDE -->
 AIOS7L CONTEXT
 Project: ATP
-GeneratedAtUTC: 20261015T045900Z
+GeneratedAtUTC: 20261015T050406Z
 
 ## Project Context (excerpt)
 File: 20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md
-SHA256: 35d5453215c4306cb971b3302770cd2ede844ab825acd6ea106626ca6d242da5
+SHA256: 3404238cbac7892ff106ed25cd3d448937f402f0195f76cca7f1fdbcf74191cb
 ----
 # AI Project Context — ATP
 ## Autonomous Task Platform
 
 - **Project:** ATP (Autonomous Task Platform)
 - **Repo path:** ~/SOURCE_DEV/platforms/ATP
-- **Stable baseline on `main`:** **v2.6.4** (tag `v2.6.4` → `1e8d0c5`, RELEASED 2026-10-14T21:05:12+07:00)
-- **Last updated:** 2026-10-14
+- **Baseline đã phát hành:** số hiệu, tag và thời điểm phát hành nằm ở `AI_CURRENT_BASELINE.md` (do `aios sync reverse` ghi mỗi bản) và ở `VERSION` + `RELEASED` của repo. **KHÔNG chép số hiệu vào tệp này**: bản chép tay đã đứng ở v2.6.4 qua ba bản phát hành mà không ai thấy (KD-ATP-025; `sync_reverse.sh` không tự sửa tệp này cho ATP).
+- **Last updated:** 2026-10-15 (nội dung đối chiếu với mã `main` ngày này; các khẳng định bên dưới gắn ngày, không gắn số hiệu)
 - **Khiếm khuyết đã biết + trạng thái từng mục:** `~/AI_OS/20_PROJECTS/ATP/AI_ISSUE_LEDGER.yaml` (mã `KD-ATP-<số>`); lịch sử thay đổi: `CHANGELOG.md` trong repo.
 
 ---
@@ -26,29 +26,29 @@ ATP là một platform repository có governance-first discipline, phục vụ b
 requested user ⇄ ATP ⇄ products
 ```
 
-ATP là **Transformation Plane** trong 6-plane multi-AI ecosystem. Current execution reality trên `main` (v2.6.4):
+ATP là **Transformation Plane** trong 6-plane multi-AI ecosystem. Current execution reality trên `main` (đối chiếu mã ngày 2026-10-15):
 
 - repo-local, JSON-first, human-gated, bounded
-- **provider-abstracted** — execution providers (đối chiếu `registry/providers/*.yaml` + `EXECUTOR_MAP` ngày 2026-10-14):
+- **provider-abstracted** — execution providers (đối chiếu `registry/providers/*.yaml` + `EXECUTOR_MAP` ngày 2026-10-15):
   - **Anthropic cloud** — provider LLM mặc định (chat + tool_use + json_mode + vision + streaming); model mặc định của cầu nối `claude-haiku-4-5-20251001`, escalation lên Sonnet
   - **OpenAI cloud** (gpt-4o/5, o1, o3 + tool_use + json_mode + vision + streaming + Batch API)
   - **non_llm_execution** — shell/git/build/test/lint chạy local (subprocess)
-  - dispatcher mức cầu nối: `tdf-run` (TDF Web Panel :4180), `aios-flow` (DAG workflow :7700)
-  - **KHÔNG có LLM local.** Adapter Ollama đã xoá từ v2.6.0; máy macOS không chạy Ollama/model local (`00_AUTHORITY/Global_Mac_No_Ollama_Rule.md`). Provider `ollama/...` không có handler — từ v2.6.4 mặc định của generators cũng không còn trỏ tới nó
+  - dispatcher mức cầu nối: `tdf-run` (TDF Web Panel :4180), `aios-flow` (DAG workflow :7700; khi cấu hình `AIOS_FLOW_IDENTITY_URL` + `AIOS_FLOW_IDENTITY_SECRET` thì mọi lời gọi mang thẻ `svc:atp` của aios-identity — đang BẬT trên aios-server, KHÔNG cấu hình trên Mac; lỗi xác thực được phân biệt với sự cố mạng)
+  - **KHÔNG có LLM local.** Adapter Ollama đã xoá từ v2.6.0; máy macOS không chạy Ollama/model local (`00_AUTHORITY/Global_Mac_No_Ollama_Rule.md`). Provider `ollama/...` không có handler — từ v2.6.4 mặc định của generators cũng không còn trỏ tới nó. Trên node LOCAL, provider không có handler là lỗi (`UnsupportedProviderError` → `POST /run` trả HTTP 400); chỉ node registry không biết là local mới rơi vào stub SSH trả `status=deferred`
 - **bridge-enabled** — HTTP bridge server (stdlib) tại localhost:8765; route đối chiếu `bridge/bridge_server.py`:
   - POST `/run` (blocking), `/run/stream` (SSE), `/api/synthesis/generate`
   - DELETE `/runs/<id>` (cancellation)
   - GET `/health` và `/` (từ v2.6.1 trả `version` = phiên bản nền tảng + `released`), `/status`, `/providers`, `/capabilities`, `/runs`, `/runs/active`, `/runs/<id>`, `/api/synthesis/generators`
 - **knowledge-integrated** — AOKP adapter (opt-in, 6 truy vấn: health, knowledge, graph, chat, graph-rag, temporal)
-- **synthesis generators** (v2.6.0) — 8: analyze, federation, graphrag_synth, react, report, temporal, tot, transform. Cutover phía AOKP/AIOS-OC/ATCC_HCM chưa làm (KD-ATP-006)
+- **synthesis generators** — 9 (đếm từ registry ngày 2026-10-15): analyze, federation, graphrag_synth, react, report, **report_v2** (incubating; bản port Python của bộ tổng hợp AOKP, khớp AOKP trên 1.054 ca vàng; chưa có ai gọi), temporal, tot, transform. Cutover phía AOKP/AIOS-OC/ATCC_HCM chưa làm (KD-ATP-006)
 - **observable** — central config, structured JSON logging, 7 mã lỗi có kiểu (`core/error_codes.py`)
 - **production-resilient / agentic-ready / streaming-capable** — có `core/retry.py`, `core/pricing.py`, `core/streaming.py`, `core/in_flight_tracker.py`
-- **governance-gated** — aios-gate phân loại artifacts tier A–E *(mang từ bản v2.0.0, CHƯA kiểm lại ở v2.6.4)*
+- **governance-gated** — aios-gate phân loại artifacts tier A–E *(mang từ bản v2.0.0, CHƯA kiểm lại trên Mac)*. Thiếu `aios-gate` không còn làm mất kết quả: `POST /run` vẫn trả 200 kèm `governance_class: E`, `governance_status: error` (KD-ATP-022). aios-server không có `aios-gate` nên mọi kết quả ở đó mang lớp E — Owner chọn giữ nguyên (KD-ATP-023)
 - non-persistent runtime by default (artifacts optional via ATP_PERSIST_RUNS / ATP_PERSIST_ARTIFACTS)
 - non-orchestrating (không có scheduler hay graph execution)
 - non-daemonized (bridge server là opt-in, không auto-start)
 
-Current accepted line status (v2.6.4):
+Current accepted line status:
 - v1.6.0 observability baseline frozen
 - v1.7.0 cloud API key passthrough + AOKP v2.3.x frozen
 - v1.8.0 Cloud Foundations (OpenAI adapter, retry, pricing, timeout)
@@ -57,6 +57,11 @@ Current accepted line status (v2.6.4):
 - v2.0.1–v2.0.4 ecosystem alignment, codex/cursor adapters, tdf-run bridge provider
 - v2.1.0 G9 observability, aios-flow adapter, evaluator wiring · v2.2.0 Ollama streaming parity (lịch sử; Ollama đã xoá ở v2.6.0) · v2.3.0 OpenAI Batch API · v2.4.0 aios-flow status + wait · v2.5.0 OpenAI Batch `wait` helper
 - **v2.6.0** Ollama provider removed (Anthropic là mặc định duy nhất) + synthesis generators surface; **v2.6.1** `/health` báo đúng phiên bản + SIGTERM dừng được bridge; **v2.6.2** `cli/inspect.py` che stdlib `inspect` (sửa), CI ma trận 3.11/3.12, `jinja2` là extra tùy chọn `adapters`; **v2.6.3** `write_exchange_bundle` ghi vào `_shared/exchange/current-task/`; **v2.6.4** model mặc định của `generators/llm.py` không còn là `ollama/qwen3:8b`
+- **v2.6.5** 14 handler bắt `HTTPError` nay đóng phản hồi (`core/http_errors.py`); **v2.6.6** `core/retry.with_retry` đóng `HTTPError` của mỗi lần thử lại, lỗi cuối giữ mở cho adapter đọc thân
+- **v2.7.0** adapter aios-flow gửi thẻ `svc:atp` và phân biệt lỗi xác thực với sự cố mạng; `wait` thử lại 429/502/503/504 có giới hạn; provider không có handler trên node local trả HTTP 400 thay vì `deferred` (KD-ATP-015/016/017/020/021)
+- **v2.7.1** thiếu `aios-gate` không còn biến `/run` thành HTTP 500 (KD-ATP-022); thêm `make ci-local` (chạy bộ kiểm như CI, trước khi push)
+- **v2.7.2** thêm generator `report_v2` (KD-ATP-006 phase 2a/2b), `call_llm(system=)` và bài canh kích thước tệp ngữ cảnh AI (< 49.000 byte)
+- Sau thẻ mới nhất có thể còn thay đổi chưa phát hành (đang chỉ có test): xem `AI_NEXT_STEP.md` và `CHANGELOG.md` mục `[Unreleased]`
 - (lịch sử) PRs #19, #20, #21 merged 2026-04-15; tagged v1.8.0 / v1.9.0 / v2.0.0
 
 ---
@@ -82,11 +87,6 @@ Nếu AI_OS projected planning wording mâu thuẫn với accepted repo-local ex
 - **Governance-first**: mọi thay đổi phải bám architecture doctrine trước khi implementation
 - **Slice-based bounded development**: mỗi slice narrow, testable, verifiable, traceable
 - **Review → consolidation → freeze chain**: bắt buộc trước khi version được coi là done
-- **Không mở scope mới** khi chưa có evidence justify
-- **Không nhảy version/minor line** khi major intent hiện tại chưa đủ dày
-- **Stable core** không được thay đổi tùy tiện — thay đổi core cần human-approved architectural decision
-
-Stable core của ATP bao gồm tối thiểu:
 
 ## Current Baseline (excerpt)
 File: 20_PROJECTS/ATP/AI_CURRENT_BASELINE.md
@@ -111,7 +111,7 @@ SHA256: 3a517fd9e0cbc9f8e83a39f8b286cfc9d365f5fda3546443e93b4479f417748e
 
 ## Next Step (excerpt)
 File: 20_PROJECTS/ATP/AI_NEXT_STEP.md
-SHA256: d19909079a964a305599edf2bcaa725d4a58f811b781f3fec0819939dbb6b864
+SHA256: d5773be518dcd13208fdab8f6fac7d50063f9890124efccad96c723ea783f1f7
 ----
 # AI Next Step — ATP
 
@@ -161,7 +161,7 @@ ATP runbook §3 mid-step gate authorizes scope-cut when budget burn > 50% above 
 - **KD-ATP-020 / 018 / 015 / 009** (`fixed_verified` / `fixed_verified` / `fixed_verified` / `wontfix`) — the agent env keeps the secret out of `claude -p`/`codex exec`/`cursor-agent`; tests no longer write into the real `~/.aios/state/cross_module_trace.jsonl`; an unknown provider on the local node answers HTTP 400 (was 200 `deferred`; only AIOS-OC calls the bridge); the 4 placeholder adapter dirs stay.
 - **KD-ATP-019 (`mitigated`, Owner: no code change)** — the bridge listens on `0.0.0.0:8765` unauthenticated; on `aios-server` ufw allows port 8765 only from the Mac `10.88.0.10` (read only, 14/10). Authenticate the bridge before opening it to more hosts.
 
-**2.7.2 content** (ledger block `2.7.2`): (a) **`report_v2`** (KD-ATP-006 phases 2a/2b, `partial`) — a Python port of AOKP's `src/runtime/synthesis` (sections, domain suggestions, quality guard + retry, Jaccard grounding, KB gap), equal to AOKP on 1,054 golden cases generated from AOKP's TypeScript (commit `51b1139b`); default mode `skeleton` = no model; `real` mode has only run against scripted models, so answer quality from a real model is unmeasured. Nothing calls it yet: the AOKP client (phase 2c/2d) was handed to an AOKP session on 15/10; phase 3 (24 h soak) and 4 (promotion) are not started. (b) `tests/unit/test_context_files_size.py`: the AI-context files must stay under 49,000 bytes (the bridge copies the first 80 lines of this file). (c) **KD-ATP-024 (`fixed_verified`, on `main` after the tag):** `TestHandWrittenVersionLines` guards 5 hand-written version lines of README.md/AGENTS.md (2.7.1 left AGENTS.md at v2.7.0 and nothing failed); proven on the `v2.7.1` tree and by 8 seeded defects. **KD-ATP-025 (`new_open`, low):** `~/AI_OS/20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md` is hand-written and still says v2.6.4 (stale since 2.7.0), and every bridge file repeats it. `make ci-local` (released in 2.7.1): **run it before every push**.
+**2.7.2 content** (ledger block `2.7.2`): (a) **`report_v2`** (KD-ATP-006 phases 2a/2b, `partial`) — a Python port of AOKP's `src/runtime/synthesis` (sections, domain suggestions, quality guard + retry, Jaccard grounding, KB gap), equal to AOKP on 1,054 golden cases generated from AOKP's TypeScript (commit `51b1139b`); default mode `skeleton` = no model; `real` mode has only run against scripted models, so answer quality from a real model is unmeasured. Nothing calls it yet: the AOKP client (phase 2c/2d) was handed to an AOKP session on 15/10; phase 3 (24 h soak) and 4 (promotion) are not started. (b) `tests/unit/test_context_files_size.py`: the AI-context files must stay under 49,000 bytes (the bridge copies the first 80 lines of this file). (c) **KD-ATP-024 (`fixed_verified`, on `main` after the tag):** `TestHandWrittenVersionLines` guards 5 hand-written version lines of README.md/AGENTS.md (2.7.1 left AGENTS.md at v2.7.0 and nothing failed); proven on the `v2.7.1` tree and by 8 seeded defects. **KD-ATP-025 (`fixed_verified`):** `~/AI_OS/20_PROJECTS/ATP/AI_PROJECT_CONTEXT.md` was hand-written and stuck at v2.6.4 (`sync_reverse.sh` only rewrites a ManagAIR KB version and never touched it for ATP); the current-version lines are now a pointer to `AI_CURRENT_BASELINE.md`, the measured facts are dated. `make ci-local` (released in 2.7.1): **run it before every push**.
 
 **Execution stack** (read from `registry/providers/*.yaml`, `EXECUTOR_MAP`, `bridge/bridge_server.py`):
 - LLM providers: **Anthropic** (default; bridge default model `claude-haiku-4-5-20251001`) and **OpenAI**. `non_llm_execution` for shell/git/build/test/lint. Bridge-level dispatchers: `tdf-run` (:4180), `aios-flow` (:7700; authenticated as `svc:atp` when configured, ON on `aios-server`). AOKP adapter opt-in (6 queries).
