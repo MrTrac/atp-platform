@@ -4,6 +4,10 @@ All notable changes to ATP are documented here.
 
 ## [Unreleased]
 
+## [2.7.2] — 2026-10-15
+
+Contents: the new generator `report_v2` (incubating; nothing calls it yet) and a size guard for the AI-context files. Nothing that existed changes behaviour: the additions are a generator, an optional `system` argument of `call_llm`, and an optional `structured` key that only `report_v2` sets. A patch number was chosen by the Owner although a generator is added.
+
 ### Added — `report_v2`: structured, grounded, quality-checked answers (a Python port of AOKP `src/runtime/synthesis`; KD-ATP-006 phases 2a/2b)
 
 New generator `report_v2` (0.1.0, `incubating`; `report` v1 is untouched) = `generators/synthesis_v2/` + `generators/prompts/synthesis_bank.py` + `generators/stubs/report_v2.py`: JSON sections (Tóm tắt / Chi tiết / ...), follow-up suggestions from the ATM domain engine (radar, FDP, safety net, network, firewall, rack, TWR), an LLM quality guard with retry, a Jaccard grounding verdict for every `[n]`, the KB-gap statement, `<think>` stripping and AOKP's chunk-based fallback. Standard library only; the model is injected as `chat(messages)`, so the logic runs unchanged against a scripted model in tests. `params.llm_mode` = `skeleton` (default: no model, deterministic) or `real` (through `generators.llm.call_llm`, system prompt kept separate as AOKP does); a failing model gives status `partial` and AOKP's fallback answer, never an exception. NOT a cutover: nothing in AOKP or AIOS-OC calls it yet.
