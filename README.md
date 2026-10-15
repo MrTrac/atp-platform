@@ -2,7 +2,7 @@
 
 ATP là `platform repository` tại `SOURCE_DEV/platforms/ATP`.
 
-ATP là một governance-first platform tại baseline **v2.7.2**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
+ATP là một governance-first platform tại baseline **v2.7.3**, phát triển từ v0 shape-correct MVP. Repo này dùng để phát triển và duy trì ATP source; repo này không phải runtime artifact repository.
 
 Trạng thái release:
 
@@ -31,11 +31,12 @@ Trạng thái release:
 - `v2.6.4` — model mặc định của `generators/llm.py` không còn là `ollama/qwen3:8b`; để trống thì cầu nối dùng mặc định Anthropic
 - `v2.6.5` — 14 handler bắt `HTTPError` nay đóng phản hồi qua `core/http_errors.py`; bài kiểm timeout, bài kiểm `cli/` và danh sách route trong tài liệu được siết lại
 - `v2.6.6` — `core/retry.with_retry` đóng phản hồi của mỗi `HTTPError` bị bỏ khi thử lại; lỗi cuối cùng được giữ mở cho adapter đọc thân
-- **`v2.7.2`** — **current released baseline** (thêm generator `report_v2`: bản port Python bộ tổng hợp của AOKP — mục có cấu trúc, gợi ý theo miền, kiểm chất lượng + thử lại, kiểm chứng căn cứ; khớp AOKP trên 1.054 ca vàng sinh từ mã TypeScript của AOKP; chưa có ai gọi nó; thêm `call_llm(system=)` và bài canh kích thước tệp ngữ cảnh)
-- `v2.7.1` — baseline trước (bản vá: thiếu `aios-gate` trên host không còn làm mất kết quả của `POST /run` — trả HTTP 200 kèm `governance_status: error` thay vì 500; KD-ATP-022). Trước đó:
+- **`v2.7.3`** — **current released baseline** (bản vá chỉ có bài kiểm, KHÔNG đổi mã chạy: bài canh các dòng số hiệu viết tay trong `README.md` và `AGENTS.md`, để chuyện bản 2.7.1 để sót `AGENTS.md` không lặp lại — KD-ATP-024). Trước đó:
+- `v2.7.2` — baseline trước (thêm generator `report_v2`: bản port Python bộ tổng hợp của AOKP — mục có cấu trúc, gợi ý theo miền, kiểm chất lượng + thử lại, kiểm chứng căn cứ; khớp AOKP trên 1.054 ca vàng sinh từ mã TypeScript của AOKP; chưa có ai gọi nó; thêm `call_llm(system=)` và bài canh kích thước tệp ngữ cảnh)
+- `v2.7.1` — (bản vá: thiếu `aios-gate` trên host không còn làm mất kết quả của `POST /run` — trả HTTP 200 kèm `governance_status: error` thay vì 500; KD-ATP-022). Trước đó:
 - `v2.7.0` — (adapter aios-flow gửi token `svc:atp` của aios-identity và phân biệt lỗi xác thực với sự cố mạng; `wait` thử lại 503/lỗi mạng có giới hạn; provider không có handler trên node local trả lỗi 400 thay vì `deferred` (KD-ATP-015))
 
-Runtime components (v2.7.2):
+Runtime components (v2.7.3):
 
 - **Anthropic adapter** — cloud + retry + pricing + tool use + JSON mode + vision + **streaming**
 - **OpenAI adapter** — gpt-4o/5 + o1/o3 + retry + pricing + tool use + JSON mode + vision + **streaming** + **Batch API** (v2.3.0, async jobs at 50% cost) + **batch wait helper** (v2.5.0)

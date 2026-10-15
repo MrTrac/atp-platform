@@ -4,12 +4,16 @@ All notable changes to ATP are documented here.
 
 ## [Unreleased]
 
+## [2.7.3] — 2026-10-15
+
+Contents: tests only. No runtime code changed since 2.7.2 (`git diff v2.7.2..` shows `tests/unit/test_version_consistency.py` and this file; the other changes are the AI-context bridge files). The version number moves so the guard below ships in a tagged release and `/health` reports the tree it was proven on.
+
 ### Added — a guard for the hand-written version lines in `README.md` and `AGENTS.md` (KD-ATP-024; tests only, no runtime change)
 
 `tests/unit/test_version_consistency.py` checked `pyproject.toml`, `core/version.py`, `RELEASED`, the CHANGELOG date and `/health`, but read neither `README.md` nor `AGENTS.md`. Nothing generates the lines that name the current version there, so 2.7.1 shipped with `AGENTS.md` still saying v2.7.0 while every check stayed green; 2.7.2 fixed it by hand.
 New class `TestHandWrittenVersionLines`: 5 lines (README: the baseline sentence, the "current released baseline" bullet, the "Runtime components" heading; AGENTS: the baseline sentence, the "Current runtime components" heading), each matched by a pattern with one capture group that must equal `VERSION`. A pattern that matches zero or two lines is a failure, not a pass (a guard that matches nothing guards nothing), and the message says to update the table if the sentence was reworded on purpose. The managed block between the AI_OS markers and the history bullets are deliberately not checked.
 Measured 15/10/2026: on the tree of tag `v2.7.1` plus this test, exactly the two `AGENTS.md` lines fail ("says v2.7.0, VERSION is 2.7.1"); on the current tree it passes. 8 seeded defects, all caught (each of the 5 lines set to the previous version, the README bullet deleted, the AGENTS heading duplicated, the AGENTS sentence reworded); 2 negative controls stay green (a managed-block line naming an old version; a history bullet naming an old version). Files restored byte for byte.
-Not covered: the managed block's own lines (`Stable baseline on main: v2.6.4` and similar) come from `AI_PROJECT_CONTEXT.md` in the AI_OS pack, which is hand-maintained there and was last updated for 2.6.4; that is outside this repository (recorded as KD-ATP-025 in the ledger).
+Not covered: the managed block's own lines (`Stable baseline on main: v2.6.4` and similar) come from `AI_PROJECT_CONTEXT.md` in the AI_OS pack, which is hand-maintained there and was last updated for 2.6.4; that is outside this repository (KD-ATP-025 in the ledger; fixed afterwards in the AI_OS pack by replacing the hand-copied version with a pointer to `AI_CURRENT_BASELINE.md`).
 
 ## [2.7.2] — 2026-10-15
 
