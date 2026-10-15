@@ -54,6 +54,36 @@ class TestVersionConsistency(unittest.TestCase):
         self.assertEqual(self.released[:10], m.group(1))
 
 
+# Hand-written lines that name the CURRENT version (KD-ATP-024). Nothing generates them, so before this
+# guard 2.7.1 shipped with AGENTS.md still saying v2.7.0 and every other check stayed green. Each entry is
+# (file, what the line is, a pattern with ONE capture group = the version it names). The managed block
+# between the AI_OS markers is not listed: `aios sync` regenerates it from the pack.
+_HAND_WRITTEN_VERSION_LINES = (
+    ("README.md", "baseline sentence", r"governance-first platform tại baseline \*\*v(\d+\.\d+\.\d+)\*\*"),
+    ("README.md", "'current released baseline' bullet", r"^- \*\*`v(\d+\.\d+\.\d+)`\*\* — \*\*current released baseline\*\*"),
+    ("README.md", "runtime components heading", r"^Runtime components \(v(\d+\.\d+\.\d+)\):"),
+    ("AGENTS.md", "baseline sentence", r"governance-first platform at v(\d+\.\d+\.\d+) baseline"),
+    ("AGENTS.md", "runtime components heading", r"^Current runtime components \(v(\d+\.\d+\.\d+)\):"),
+)
+
+
+class TestHandWrittenVersionLines(unittest.TestCase):
+    """The docs a person or an AI reads first must name the version that is released."""
+
+    def test_every_hand_written_version_line_names_the_current_version(self) -> None:
+        version = _read("VERSION").strip()
+        for name, what, pattern in _HAND_WRITTEN_VERSION_LINES:
+            with self.subTest(file=name, line=what):
+                found = re.findall(pattern, _read(name), re.M)
+                self.assertEqual(
+                    len(found), 1,
+                    f"{name}: expected exactly one {what} (pattern {pattern!r}), found {len(found)}. "
+                    "If the sentence was reworded on purpose, update _HAND_WRITTEN_VERSION_LINES — "
+                    "a guard that matches nothing guards nothing.",
+                )
+                self.assertEqual(found[0], version, f"{name}: the {what} says v{found[0]}, VERSION is {version}")
+
+
 class TestHealthReportsRealVersion(unittest.TestCase):
     def test_health_serves_platform_version_and_release_time(self) -> None:
         body = _build_health_response()
