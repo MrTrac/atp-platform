@@ -4,6 +4,10 @@ All notable changes to ATP are documented here.
 
 ## [Unreleased]
 
+## [2.7.4] — 2026-10-15
+
+Contents: one runtime fix (KD-ATP-026), below. Nothing else changed since 2.7.3 (`git diff v2.7.3..` shows the 4 adapter/bridge files, 2 test files and this file; the other changes are the AI-context bridge files). Released and published, but NOT installed on `aios-server` when this entry was written: until it is installed the fix does nothing there, and the restart that installs it still ends no session of the process it replaces (that process runs the old code).
+
 ### Fixed — every ATP start left a live `svc:atp` session at aios-identity, and ATP never ended it (KD-ATP-026)
 
 Found by the aios-identity session on 15/10/2026 (it saw three 365-day `svc:atp` sessions on the identity host, one per ATP start/deploy: 14/10 18:09, 15/10 03:00 and 03:50 UTC; read from that session's report, not measured here). Cause, read in `adapters/aios_flow/identity_token.py`: the `POST /service-account/token` request sent no `ttl_days` (it took the server default) and `_exchange` threw the answer's `session_id` away, so nothing could be revoked. Identity 1.2.9 already softened the server side (omitted `ttl_days` = 1 day, maximum 90); ATP still never ended a session.
