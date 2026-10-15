@@ -22,7 +22,7 @@ import generators
 
 
 class TestGeneratorsListRoute(unittest.TestCase):
-    def test_response_includes_all_8_generators(self) -> None:
+    def test_response_includes_all_9_generators(self) -> None:
         resp = _build_synthesis_generators_response()
         self.assertIn("generators", resp)
         self.assertIn("registry_version", resp)
@@ -36,6 +36,7 @@ class TestGeneratorsListRoute(unittest.TestCase):
                 "federation",
                 "temporal",
                 "report",
+                "report_v2",
                 "analyze",
                 "transform",
             },
@@ -65,7 +66,8 @@ class TestGenerateRoute(unittest.TestCase):
         self.assertEqual(status, 404)
         self.assertEqual(payload["error"], "generator_not_found")
         self.assertIn("report", payload["available"])
-        self.assertEqual(len(payload["available"]), 8)
+        self.assertIn("report_v2", payload["available"])
+        self.assertEqual(len(payload["available"]), 9)
 
     def test_params_must_be_object(self) -> None:
         status, payload = _handle_synthesis_generate({"generator": "report", "params": "string"})

@@ -100,7 +100,7 @@ def _citation_to_dict(c: "_generators.Citation") -> dict:
 
 
 def _synthesis_result_to_dict(r: "_generators.SynthesisResult") -> dict:
-    return {
+    out = {
         "run_id": r.run_id,
         "generator": r.generator,
         "status": r.status,
@@ -109,6 +109,9 @@ def _synthesis_result_to_dict(r: "_generators.SynthesisResult") -> dict:
         "usage": r.usage,
         "diagnostics": r.diagnostics,
     }
+    if getattr(r, "structured", None):  # additive and optional (report_v2); absent for every other generator
+        out["structured"] = r.structured
+    return out
 
 
 def _build_synthesis_generators_response() -> dict:
