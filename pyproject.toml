@@ -28,7 +28,7 @@ namespaces = true
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0",
+    "pytest>=9.2.0",
 ]
 # The three task-running adapters (adapters/claude_code.py, codex.py, cursor.py) render their prompt with jinja2. The core stays dependency-free; install this extra
 # only where those adapters run: `pip install -e ".[adapters]"`. aios-server does NOT install it (no adapter run observed there; Global_Build_Deploy_Topology_Rule §8 item 15).
